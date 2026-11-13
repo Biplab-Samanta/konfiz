@@ -4,26 +4,49 @@ import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate
 } from "react-router-dom";
-// import { CartProvider } from "../src/context/cartcontext";
+
 import Home from "./pages/home";
-import Product from "../src/pages/product";
+import Product from "./pages/product";
+import Login from "./pages/admin/login";
+import Dashboard from "./pages/admin/dashboard";
+
+function ProtectedAdminRoute({ children }) {
+  const isLoggedIn =
+    sessionStorage.getItem("konfizAdminLoggedIn") === "true";
+
+  return isLoggedIn
+    ? children
+    : <Navigate to="/login" replace />;
+}
 
 function App() {
   return (
-    // <CartProvider>
-     
-    // </CartProvider>
-     <BrowserRouter>
-        <Routes>
+    <BrowserRouter>
+      <Routes>
 
-          <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home />} />
 
-          <Route path="/products" element={<Product />} />
+        <Route path="/products" element={<Product />} />
 
-        </Routes>
-      </BrowserRouter>
+        {/* Single Login */}
+        <Route path="/login" element={<Login />} />
 
+        {/* Admin Dashboard */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedAdminRoute>
+              <Dashboard />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+
+      </Routes>
+    </BrowserRouter>
   );
 }
 

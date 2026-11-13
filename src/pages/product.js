@@ -1,6 +1,6 @@
 
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../style/product.css";
 import Navbar from "../components/navber";
@@ -75,6 +75,8 @@ function Product() {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("default");
 
+
+  const [productData, setProductData] = useState([]);
   // Filter products
   let filteredProducts = productData.filter((product) => {
     const matchesSearch = product.name
@@ -100,11 +102,46 @@ function Product() {
   const addToCart = () => {
     setCart((previousCart) => previousCart + 1);
   };
+  // const [productData, setProductData] = useState([]);
+
+
+
+  useEffect(() => {
+  const loadProducts = () => {
+    try {
+      const savedProducts = JSON.parse(
+        localStorage.getItem("konfizProducts") || "[]"
+      );
+
+      setProductData(
+        Array.isArray(savedProducts) ? savedProducts : []
+      );
+    } catch (error) {
+      console.error("Product loading error:", error);
+      setProductData([]);
+    }
+  };
+
+  loadProducts();
+
+  window.addEventListener("storage", loadProducts);
+  window.addEventListener("focus", loadProducts);
+
+  return () => {
+    window.removeEventListener("storage", loadProducts);
+    window.removeEventListener("focus", loadProducts);
+  };
+}, []);
+
+
+
+
+
 
   return (
     <div className="product-page">
-<Navbar />
-      
+      <Navbar />
+
       {/* Product Banner */}
       <section className="product-banner">
         <h1>Our Ice Cream Collection</h1>
@@ -118,7 +155,10 @@ function Product() {
 
           {/* Category Filter */}
           <div className="category-filters">
-            {["All", "Chocolate", "Fruit", "Classic"].map((item) => (
+            {[
+              "All",
+              ...new Set(productData.map((product) => product.category).filter(Boolean))
+            ].map((item) => (
               <button
                 key={item}
                 className={

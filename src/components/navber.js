@@ -5,29 +5,36 @@ import "../../src/App.css";
 // import { useCart } from "../context/cartcontext";
 
 function Navbar() {
-        // const { totalQuantity } = useCart();
+    // const { totalQuantity } = useCart();
 
     return (
 
         <nav className="navbar">
-            <a href="#home" className="logo">
-                KONFiZ<span>.</span>
+            {/* LOGO */}
+            <Link to="/" className="logo">
+                KONFiZ
                 <small>ICE CREAM & HAPPINESS</small>
-            </a>
+            </Link>
 
+            {/* NAVIGATION LINKS */}
             <div className="nav-links">
                 <Link to="/">Home</Link>
                 <Link to="/products">Products</Link>
 
-                <a href="#categories">Categories</a>
-                <a href="#products">Our Flavours</a>
-                <a href="#story">Our Story</a>
+                <a href="/#categories">Categories</a>
+                <a href="/#products">Our Flavours</a>
+                <a href="/#story">Our Story</a>
             </div>
 
-            <a href="#products" className="cart-button">
-                🛒 Cart
-                {/* <span>({totalQuantity})</span> */}
-            </a>
+            <div>
+                <Link className="konfiz_login" to="/login">login</Link>
+
+                <a href="#products" className="cart-button">
+                    🛒 Cart
+                    {/* <span>({totalQuantity})</span> */}
+                </a>
+            </div>
+
         </nav>
 
     );
