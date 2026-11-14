@@ -8,22 +8,31 @@ import React, {
 
 const CartContext = createContext();
 
-export const CartProvider = ({ children }) => {
+export const CartProvider = ({ children, customerId }) => {
 
-  const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem("konfiz_cart");
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const cartKey = customerId
+    ? `konfiz_cart_${customerId}`
+    : "konfiz_cart_guest";
 
-  // GST type
+  const [cart, setCart] = useState([]);
+
   const [taxType, setTaxType] = useState("intra");
-  // intra = CGST + SGST
-  // inter = IGST
 
-  // Save cart in localStorage
+  // LOAD CUSTOMER CART
   useEffect(() => {
-    localStorage.setItem("konfiz_cart", JSON.stringify(cart));
-  }, [cart]);
+    try {
+      const savedCart = localStorage.getItem(cartKey);
+      setCart(savedCart ? JSON.parse(savedCart) : []);
+    } catch (error) {
+      console.error("Cart loading error:", error);
+      setCart([]);
+    }
+  }, [cartKey]);
+
+  // SAVE CUSTOMER CART
+  useEffect(() => {
+    localStorage.setItem(cartKey, JSON.stringify(cart));
+  }, [cart, cartKey]);
 
   // ADD PRODUCT
   const addToCart = (product) => {
@@ -59,14 +68,29 @@ export const CartProvider = ({ children }) => {
 
   // UPDATE QUANTITY
   const updateQuantity = (id, quantity) => {
-    if (quantity < 1) return;
+    const qty = Number(quantity);
+
+    if (!Number.isFinite(qty) || qty < 1) return;
 
     setCart((prevCart) =>
       prevCart.map((item) =>
         item.id === id
-          ? { ...item, quantity: Number(quantity) }
+          ? { ...item, quantity: qty }
           : item
       )
+    );
+  };
+
+  // DECREASE QUANTITY
+  const decreaseQuantity = (id) => {
+    setCart((prevCart) =>
+      prevCart
+        .map((item) =>
+          item.id === id
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
     );
   };
 
@@ -76,20 +100,21 @@ export const CartProvider = ({ children }) => {
   };
 
   // CALCULATIONS
-
   const totalQuantity = cart.reduce(
-    (sum, item) => sum + item.quantity,
+    (sum, item) => sum + Number(item.quantity || 0),
     0
   );
 
   const subTotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) =>
+      sum + Number(item.price || 0) * Number(item.quantity || 0),
     0
   );
 
   const totalTax = cart.reduce((sum, item) => {
     const gstRate = Number(item.gstRate || 0);
-    const taxableAmount = item.price * item.quantity;
+    const taxableAmount =
+      Number(item.price || 0) * Number(item.quantity || 0);
 
     return sum + (taxableAmount * gstRate) / 100;
   }, 0);
@@ -112,6 +137,7 @@ export const CartProvider = ({ children }) => {
         addToCart,
         removeFromCart,
         updateQuantity,
+        decreaseQuantity,
         clearCart,
 
         totalQuantity,
@@ -129,9 +155,9 @@ export const CartProvider = ({ children }) => {
   );
 };
 
-// CUSTOM HOOK
 export const useCart = () => {
   const context = useContext(CartContext);
+  
 
   if (!context) {
     throw new Error(

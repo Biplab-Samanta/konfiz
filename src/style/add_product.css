@@ -1,0 +1,440 @@
+
+/* =========================================
+   KONFIZ - ADD PRODUCT PAGE
+========================================= */
+
+.add-product-page {
+  width: 100%;
+  max-width: 1250px;
+  margin: 0 auto;
+  padding: 28px;
+  background: #ffffff;
+  color: #202124;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   PAGE HEADING
+========================================= */
+
+.add-product-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  gap: 15px;
+}
+
+.add-product-heading h2 {
+  font-size: 25px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: #202124;
+}
+
+.add-product-heading p {
+  margin: 0;
+  font-size: 14px;
+  color: #777;
+}
+
+/* =========================================
+   FORM CONTAINER
+========================================= */
+
+.product-form {
+  width: 100%;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* Left column fields */
+
+.form-grid > .form-group:not(.addon-panel) {
+  grid-column: 1;
+}
+
+/* Right column addons */
+
+.form-grid > .addon-panel {
+  grid-column: 2;
+  grid-row: 1 / span 6;
+  align-self: stretch;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+
+/* =========================================
+   FORM GROUPS
+========================================= */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #393939;
+}
+
+.form-group h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 5px;
+  color: #252525;
+}
+
+.form-group p {
+  color: #777;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* =========================================
+   INPUTS
+========================================= */
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #dedede;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 14px;
+  color: #292929;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: #e68b45;
+  box-shadow: 0 0 0 3px rgba(230, 139, 69, 0.12);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #aaa;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* =========================================
+   PRODUCT IMAGE UPLOAD
+========================================= */
+
+.product-image-section {
+  margin-bottom: 22px;
+  min-height: 190px;
+  padding: 22px;
+  border: 2px dashed #d8d8d8;
+  border-radius: 12px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: 0.2s;
+}
+
+.product-image-section:hover {
+  border-color: #e68b45;
+  background: #fffaf5;
+}
+
+.product-image-section input[type="file"] {
+  max-width: 400px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.image-preview {
+  display: flex;
+  justify-content: center;
+}
+
+.image-preview img {
+  width: 180px;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 9px;
+  background: white;
+}
+
+/* =========================================
+   WEIGHT & PRICING
+========================================= */
+
+.weight-panel {
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+}
+
+.weight-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.weight-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  background: #fff8f1;
+  border: 1px solid #f0d6bd;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.weight-option button,
+.addon-item button {
+  border: none;
+  background: #fff0ed;
+  color: #d94c3f;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 4px 9px;
+  font-size: 16px;
+}
+
+.add-weight-row {
+  display: flex;
+  gap: 10px;
+}
+
+.add-weight-row button,
+.addon-input-row button {
+  border: none;
+  border-radius: 7px;
+  padding: 11px 15px;
+  background: #282828;
+  color: white;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.add-weight-row button:hover,
+.addon-input-row button:hover {
+  background: #e68b45;
+}
+
+/* =========================================
+   ADDONS PANEL
+========================================= */
+
+.addon-panel {
+  min-height: 100%;
+}
+
+.addon-panel h3 {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.addon-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.addon-input-row button {
+  width: 100%;
+}
+
+.addon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.addon-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.addon-item span {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.addon-item strong {
+  color: #e18a45;
+  white-space: nowrap;
+}
+
+/* =========================================
+   PRICE PREVIEW
+========================================= */
+
+.price-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  margin-bottom: 7px;
+  background: #f8f8f8;
+  border-radius: 7px;
+  font-size: 13px;
+}
+
+.price-preview-row strong {
+  color: #23834e;
+  font-size: 14px;
+}
+
+.form-group small {
+  color: #888;
+  font-size: 12px;
+}
+
+/* =========================================
+   IMAGE PREVIEW
+========================================= */
+
+.product-preview {
+  margin-top: 20px;
+}
+
+.product-preview h3 {
+  font-size: 16px;
+}
+
+.product-preview img {
+  width: 180px;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 9px;
+  border: 1px solid #eee;
+}
+
+/* =========================================
+   FORM ACTIONS
+========================================= */
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 24px;
+}
+
+.primary-btn {
+  padding: 13px 30px;
+  border: none;
+  border-radius: 8px;
+  background: #e68b45;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.primary-btn:hover {
+  background: #cf7532;
+  transform: translateY(-1px);
+}
+
+.secondary-btn {
+  padding: 10px 20px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #333;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.secondary-btn:hover {
+  background: #f5f5f5;
+}
+
+.form-error {
+  color: #d93025;
+  font-size: 13px;
+  margin-top: 15px;
+}
+
+/* =========================================
+   RESPONSIVE DESIGN
+========================================= */
+
+@media (max-width: 850px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 14px;
+  }
+
+  .add-product-page {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 650px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid > .addon-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .form-grid > .form-group:not(.addon-panel) {
+    grid-column: 1;
+  }
+
+  .addon-input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .addon-input-row button {
+    grid-column: 1 / -1;
+  }
+
+  .add-product-page {
+    padding: 14px;
+  }
+
+  .add-product-heading h2 {
+    font-size: 21px;
+  }
+
+  .form-actions .primary-btn {
+    width: 100%;
+  }
+}

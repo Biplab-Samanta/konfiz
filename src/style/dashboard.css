@@ -1,7 +1,10 @@
 * {
     box-sizing: border-box;
 }
-
+.container{
+    max-width: 1320px;
+    margin: auto;
+}
 .admin-layout {
     min-height: 100vh;
     display: flex;
@@ -343,10 +346,13 @@
     grid-gap: 2rem;
     padding: 3.5rem 0 0;
 }
-.products-grid .product-card {
-    padding: 30px;
-}
 
+.products-grid .product-card {
+    padding: 20px;
+}
+.products-grid .product-card img {
+    max-height: 200px;
+}
 @media(max-width: 1100px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);

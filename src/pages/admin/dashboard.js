@@ -63,6 +63,20 @@ function Dashboard({ onLogout }) {
         setProducts((prev) => [...prev, newProduct]);
         setActivePage("Manage Products");
     };
+// to remove the product 
+    const handleDeleteProduct = (id) => {
+        const updatedProducts = products.filter(
+            (product) => product.id !== id
+        );
+
+        setProducts(updatedProducts);
+
+        localStorage.setItem(
+            "konfizProducts",
+            JSON.stringify(updatedProducts)
+        );
+    };
+
     return (
         <div className="admin-layout">
 
@@ -248,7 +262,8 @@ function Dashboard({ onLogout }) {
 
                         </>
 
-                    ) : (
+                    )
+                     : (
 
                         <div className="page-placeholder">
                             <h2>{activePage}</h2>
@@ -263,7 +278,8 @@ function Dashboard({ onLogout }) {
                             </button>
                         </div>
 
-                    )}
+                    )
+                    }
 
                     {activePage === "Add Product" ? (
 
@@ -294,11 +310,11 @@ function Dashboard({ onLogout }) {
 
                                             <p>⭐ {product.rating}</p>
 
-                                            {/* <button
+                                            <button
                                                 onClick={() => handleDeleteProduct(product.id)}
                                             >
-                                                Delete
-                                            </button> */}
+                                              Remove
+                                            </button>
 
                                         </div>
                                     ))}
@@ -306,7 +322,8 @@ function Dashboard({ onLogout }) {
                             )}
                         </div>
 
-                    ) : (
+                    ) 
+                    : (
                         <div className="page-placeholder">
                             <h2>{activePage}</h2>
                             <p>The {activePage} module will be developed next.</p>
@@ -317,7 +334,8 @@ function Dashboard({ onLogout }) {
                                 Back to Dashboard
                             </button>
                         </div>
-                    )}
+                    )
+                    }
                 </div>
 
             </main>
