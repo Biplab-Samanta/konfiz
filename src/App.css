@@ -49,7 +49,215 @@ img {
 }
 
 /* NAVIGATION */
+/* =====================================
+   PRODUCTS MEGA MENU
+===================================== */
 
+.nav-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-product-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dropdown-arrow {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+.nav-dropdown:hover .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* MEGA MENU CONTAINER */
+
+.mega-menu {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+
+    width: min(850px, 90vw);
+
+    background: #fff;
+    border-radius: 16px;
+
+    padding: 25px;
+
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.13);
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition: all 0.3s ease;
+    z-index: 9999;
+}
+
+/* OPEN ON HOVER */
+
+.nav-dropdown:hover .mega-menu,
+.nav-dropdown:focus-within .mega-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* HEADING */
+
+.mega-menu-heading {
+    margin-bottom: 22px;
+}
+
+.mega-menu-heading span {
+    color: #e87936;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.mega-menu-heading h2 {
+    font-size: 23px;
+    margin: 8px 0;
+    color: #292929;
+}
+
+.mega-menu-heading p {
+    color: #777;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* CATEGORY GRID */
+
+.mega-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.mega-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 15px 12px;
+
+    border-radius: 10px;
+    text-decoration: none;
+
+    background: #fffaf5;
+    border: 1px solid #f5eee7;
+
+    transition: all 0.25s ease;
+}
+
+.mega-item:hover {
+    background: #fff0df;
+    border-color: #f2c49b;
+    transform: translateY(-3px);
+}
+
+.mega-emoji {
+    font-size: 30px;
+    min-width: 38px;
+    text-align: center;
+}
+
+.mega-item h3 {
+    font-size: 13px;
+    margin: 0 0 5px;
+    color: #333;
+}
+
+.mega-item p {
+    font-size: 11px;
+    margin: 0;
+    color: #888;
+}
+
+/* FOOTER */
+
+.mega-menu-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-top: 22px;
+    padding-top: 17px;
+
+    border-top: 1px solid #eee;
+    font-size: 12px;
+}
+
+.mega-menu-footer span {
+    color: #777;
+}
+
+.mega-menu-footer a {
+    color: #e87936;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* =====================================
+   RESPONSIVE
+===================================== */
+
+@media (max-width: 900px) {
+
+    .mega-menu {
+        width: min(650px, 90vw);
+    }
+
+    .mega-menu-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    .nav-dropdown {
+        display: block;
+        height: auto;
+    }
+
+    .mega-menu {
+        display: none;
+        position: static;
+        transform: none;
+        width: 100%;
+        box-shadow: none;
+        padding: 15px 5px;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .nav-dropdown:hover .mega-menu,
+    .nav-dropdown:focus-within .mega-menu {
+        transform: none;
+    }
+
+    .mega-menu-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mega-menu-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+}
 .navbar {
   height: 82px;
   padding: 0 7%;
@@ -702,7 +910,11 @@ a.konfiz_login {
   line-height: 1.8;
   font-size: 14px;
 }
-
+.buttun_area {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+}
 /* FOOTER */
 
 .footer {

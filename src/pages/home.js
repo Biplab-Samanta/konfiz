@@ -1,14 +1,16 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom";
 import Navbar from "../components/navber";
+import { useCart } from "../context/cartcontext";
 import "../../src/App.css";
 
+
 const categories = [
-    { name: "Ice Cream Cones", count: "12 Flavours" },
-    { name: "Ice Cream Tubs", count: "18 Products" },
-    { name: "Family Packs", count: "8 Products" },
-    { name: "Sundaes", count: "10 Products" },
+    { name: "Ice Cream Cones", count: "12 Flavours", emoji: "🍦" },
+    { name: "Ice Cream Tubs", count: "18 Products", emoji: "🍨" },
+    { name: "Family Packs", count: "8 Products", emoji: "👨‍👩‍👧‍👦" },
+    { name: "Sundaes", count: "10 Products", emoji: "🍧" },
 ];
 
 const products = [
@@ -57,22 +59,26 @@ const products = [
         tag: "Seasonal",
     },
 ];
+// const phoneNumber = "8013267996"; // Country code + number (no '+' or dashes)
+// const message = "Hello! I'd like to inquire about placing a bulk order.";
+// const whatsappLink =
+//     `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
 function Home() {
-    const [cart, setCart] = useState(0);
+    const [setCart] = useState(0);
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
 
-    const addToCart = () => {
-        setCart((previous) => previous + 1);
-    };
-
+    // const addToCart = () => {
+    //     setCart((previous) => previous + 1);
+    // };
+    const { addToCart, cartCount } = useCart();
     const subscribe = (e) => {
         e.preventDefault();
 
         if (!email.trim()) return;
 
-        setMessage("Thank you! You're on our sweet list ❤️");
+        setMessage("Thank you! You're on our sweet list with love.");
         setEmail("");
     };
 
@@ -80,7 +86,7 @@ function Home() {
         <div className="website">
             <Navbar />
 
-            
+
             {/* SECTION 1: HERO */}
             <section className="hero" id="home">
                 <div className="hero-content">
@@ -168,19 +174,18 @@ function Home() {
                     <p>The flavours everyone keeps coming back for.</p>
                 </div>
 
+
                 <div className="product-grid">
-                    {products.map((product) => (
+                    {products.slice(0, 4).map((product) => (
                         <article className="product-card" key={product.id}>
                             <div className="product-image">
                                 <img src={product.image} alt={product.name} />
                                 <span className="product-tag">{product.tag}</span>
-
                                 <button
-                                    className="quick-add"
-                                    onClick={addToCart}
-                                    aria-label={`Add ${product.name} to cart`}
+                                    className="add-btn"
+                                    onClick={() => addToCart(product)}
                                 >
-                                    +
+                                    Add +
                                 </button>
                             </div>
 
@@ -290,10 +295,24 @@ function Home() {
                         Find your favourite flavour and make today
                         a little more delicious.
                     </p>
+                    <div className="buttun_area">
+                        <a href="#products" className="primary-btn">
+                            Order Your Happiness →
+                        </a>
 
-                    <a href="#products" className="primary-btn">
-                        Order Your Happiness →
-                    </a>
+                        <a
+                            href={`https://wa.me/?text=${encodeURIComponent("Hello! I'd like to inquire about placing a bulk order.")}`}
+                            className="outline-btn"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Bulk Order →
+                        </a>
+
+
+
+                    </div>
+
                 </div>
             </section>
 
@@ -301,8 +320,8 @@ function Home() {
                 <div className="footer-main">
                     <div className="footer-brand">
                         <a href="#home" className="logo">
-                            KONFiZ<span>.</span>
-                            <small>ICE CREAM & HAPPINESS</small>
+                            KONFiZ
+                            <small>ICE CREAM </small>
                         </a>
 
                         <p>

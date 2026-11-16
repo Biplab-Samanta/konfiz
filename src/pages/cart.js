@@ -1,183 +1,321 @@
 
 import React from "react";
-import { useCart } from "../context/cartcontext";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "../context/cartcontext";
+import Navbar from "../components/navber";
 import "../style/cart.css";
 
 function Cart() {
 
-    const {
-        cart,
-        removeFromCart,
-        updateQuantity,
-        subTotal,
-        cgst,
-        sgst,
-        igst,
-        grandTotal,
-        taxType,
-        setTaxType
-    } = useCart();
+  const navigate = useNavigate();
 
-    const navigate = useNavigate();
+  const {
+    cart,
+    removeFromCart,
+    increaseQuantity,
+    decreaseQuantity,
+    clearCart,
+    totalQuantity,
+    subTotal,
+    cgst,
+    sgst,
+    igst,
+    grandTotal,
+    taxType,
+    setTaxType
+  } = useCart();
 
-    return (
-        <div className="cart-container">
+  const formatPrice = (price) =>
+    Number(price || 0).toFixed(2);
 
+  return (
+
+    <>
+      <Navbar />
+
+      <div className="cart-container">
+
+        <div className="cart-heading">
+
+          <div>
             <h2>My Shopping Cart</h2>
 
-            {cart.length === 0 ? (
+            <p>
+              {totalQuantity} item(s) in your cart
+            </p>
+          </div>
 
-                <div className="empty-cart">
-                    <h3>Your cart is empty!</h3>
-                    <p>Add some delicious ice cream.</p>
-
-                    <button
-                        className="checkout-btn"
-                        onClick={() => navigate("/products")}
-                    >
-                        Continue Shopping
-                    </button>
-                </div>
-
-            ) : (
-
-                <>
-                    <div className="cart-items">
-
-                        {cart.map((item) => (
-
-                            <div
-                                className="cart-item"
-                                key={item.cartItemId || item.id || item.productId}
-                            >
-
-                                <div className="cart-details">
-
-                                    <h3>{item.name}</h3>
-
-                                    <p>
-                                        Price: ₹{Number(item.price).toFixed(2)}
-                                        {item.unit ? ` / ${item.unit}` : ""}
-                                    </p>
-
-                                    {item.addons?.length > 0 && (
-                                        <p>
-                                            Add-ons: {item.addons.map(addon => addon.name).join(", ")}
-                                        </p>
-                                    )}
-
-                                    {item.weight && (
-                                        <p>
-                                            Weight: {item.weight} {item.unit}
-                                        </p>
-                                    )}
-
-                                    <div className="quantity-controls">
-
-                                        <button
-                                            onClick={() =>
-                                                updateQuantity(
-                                                    item.id,
-                                                    item.quantity - 1
-                                                )
-                                            }
-                                            disabled={item.quantity <= 1}
-                                        >
-                                            -
-                                        </button>
-
-                                        <span>{item.quantity}</span>
-
-                                        <button
-                                            onClick={() =>
-                                                updateQuantity(
-                                                    item.id,
-                                                    item.quantity + 1
-                                                )
-                                            }
-                                        >
-                                            +
-                                        </button>
-
-                                    </div>
-
-                                    <p>
-                                        Subtotal: ₹
-                                        {(
-                                            Number(item.price) *
-                                            Number(item.quantity)
-                                        ).toFixed(2)}
-                                    </p>
-
-                                </div>
-
-                                <button
-                                    className="remove-btn"
-                                    onClick={() => removeFromCart(item.id)}
-                                >
-                                    Remove
-                                </button>
-
-                            </div>
-
-                        ))}
-
-                    </div>
-
-                    <div className="cart-summary">
-
-                        <h3>Order Summary</h3>
-
-                        <p>
-                            Subtotal: ₹{subTotal.toFixed(2)}
-                        </p>
-
-                        <div>
-                            <label>GST Type: </label>
-
-                            <select
-                                value={taxType}
-                                onChange={(e) => setTaxType(e.target.value)}
-                            >
-                                <option value="intra">
-                                    CGST + SGST
-                                </option>
-
-                                <option value="inter">
-                                    IGST
-                                </option>
-                            </select>
-                        </div>
-
-                        {taxType === "intra" ? (
-                            <>
-                                <p>CGST: ₹{cgst.toFixed(2)}</p>
-                                <p>SGST: ₹{sgst.toFixed(2)}</p>
-                            </>
-                        ) : (
-                            <p>IGST: ₹{igst.toFixed(2)}</p>
-                        )}
-
-                        <h2>
-                            Grand Total: ₹{grandTotal.toFixed(2)}
-                        </h2>
-
-                        <button
-                            className="checkout-btn"
-                            onClick={() => navigate("/checkout")}
-                        >
-                            Proceed to Checkout
-                        </button>
-
-                    </div>
-
-                </>
-
-            )}
+          {cart.length > 0 && (
+            <button
+              className="clear-cart-btn"
+              onClick={clearCart}
+            >
+              Clear Cart
+            </button>
+          )}
 
         </div>
-    );
+
+        {cart.length === 0 ? (
+
+          <div className="empty-cart">
+
+            <div className="empty-cart-icon">
+              🛒
+            </div>
+
+            <h3>Your cart is empty!</h3>
+
+            <p>
+              Looks like you haven't added any
+              delicious ice cream yet.
+            </p>
+
+            <button
+              className="checkout-btn"
+              onClick={() => navigate("/products")}
+            >
+              Explore Ice Creams
+            </button>
+
+          </div>
+
+        ) : (
+
+          <div className="cart-layout">
+
+            {/* CART PRODUCTS */}
+
+            <div className="cart-items">
+
+              {cart.map((item) => {
+
+                const itemSubtotal =
+                  Number(item.price || 0) *
+                  Number(item.quantity || 0);
+
+                return (
+
+                  <div
+                    className="cart-item"
+                    key={item.cartItemId || item.id}
+                  >
+
+                    {/* IMAGE */}
+
+                    <div className="cart-image">
+
+                      {item.image ? (
+
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                        />
+
+                      ) : (
+
+                        <span>🍨</span>
+
+                      )}
+
+                    </div>
+
+                    {/* DETAILS */}
+
+                    <div className="cart-details">
+
+                      <h3>{item.name}</h3>
+
+                      <p className="cart-price">
+                        ₹{formatPrice(item.price)}
+                      </p>
+
+                      {item.weight !== null &&
+                        item.weight !== undefined && (
+
+                          <p className="cart-meta">
+                            Size: {item.weight} {item.unit}
+                          </p>
+
+                        )}
+
+                      {item.addons?.length > 0 && (
+
+                        <div className="cart-addons">
+
+                          <strong>Selected Add-ons:</strong>
+
+                          {item.addons.map((addon) => (
+
+                            <span key={addon.id}>
+                              {addon.name} (+₹
+                              {formatPrice(addon.price)})
+                            </span>
+
+                          ))}
+
+                        </div>
+
+                      )}
+
+                      {/* QUANTITY */}
+
+                      <div className="quantity-controls">
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            decreaseQuantity(item.id)
+                          }
+                          aria-label="Decrease quantity"
+                        >
+                          −
+                        </button>
+
+                        <span>{item.quantity}</span>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            increaseQuantity(item.id)
+                          }
+                          aria-label="Increase quantity"
+                        >
+                          +
+                        </button>
+
+                      </div>
+
+                      <p className="item-subtotal">
+                        Item Total: ₹
+                        {formatPrice(itemSubtotal)}
+                      </p>
+
+                    </div>
+
+                    {/* REMOVE */}
+
+                    <button
+                      type="button"
+                      className="remove-btn"
+                      onClick={() =>
+                        removeFromCart(item.id)
+                      }
+                    >
+                      Remove
+                    </button>
+
+                  </div>
+
+                );
+
+              })}
+
+              <button
+                className="continue-shopping-btn"
+                onClick={() => navigate("/products")}
+              >
+                ← Continue Shopping
+              </button>
+
+            </div>
+
+            {/* ORDER SUMMARY */}
+
+            <div className="cart-page cart-summary">
+
+              <h3>Order Summary</h3>
+
+              <div className="summary-row">
+                <span>Total Items</span>
+                <strong>{totalQuantity}</strong>
+              </div>
+
+              <div className="summary-row">
+                <span>Subtotal</span>
+                <strong>₹{formatPrice(subTotal)}</strong>
+              </div>
+
+              <div className="gst-selector">
+
+                <label>GST Type</label>
+
+                <select
+                  value={taxType}
+                  onChange={(e) =>
+                    setTaxType(e.target.value)
+                  }
+                >
+
+                  <option value="intra">
+                    CGST + SGST
+                  </option>
+
+                  <option value="inter">
+                    IGST
+                  </option>
+
+                </select>
+
+              </div>
+
+              {taxType === "intra" ? (
+
+                <>
+                  <div className="summary-row">
+                    <span>CGST</span>
+                    <strong>₹{formatPrice(cgst)}</strong>
+                  </div>
+
+                  <div className="summary-row">
+                    <span>SGST</span>
+                    <strong>₹{formatPrice(sgst)}</strong>
+                  </div>
+                </>
+
+              ) : (
+
+                <div className="summary-row">
+                  <span>IGST</span>
+                  <strong>₹{formatPrice(igst)}</strong>
+                </div>
+
+              )}
+
+              <div className="summary-total">
+
+                <span>Grand Total</span>
+
+                <strong>
+                  ₹{formatPrice(grandTotal)}
+                </strong>
+
+              </div>
+
+              <button
+                className="checkout-btn"
+                onClick={() => navigate("/checkout")}
+              >
+                Proceed to Checkout →
+              </button>
+
+              <p className="cart-note">
+                Your selected sizes and add-ons
+                are saved in your cart.
+              </p>
+
+            </div>
+
+          </div>
+
+        )}
+
+      </div>
+
+    </>
+
+  );
+
 }
 
 export default Cart;

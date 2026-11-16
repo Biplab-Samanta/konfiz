@@ -1,70 +1,158 @@
 
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "../../src/App.css";
+import { useCart } from "../context/cartcontext";
+import { useAuth } from "../context/authContext";
+import "../App.css";
 
 function Navbar() {
 
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
 
-    // CHECK ADMIN LOGIN
-    const isAdmin =
-        sessionStorage.getItem("konfizAdminLoggedIn") === "true";
+    const { cartCount } = useCart();
 
-    const adminEmail =
-        sessionStorage.getItem("konfizAdminEmail");
+    // =====================================
+    // GLOBAL ADMIN AND CUSTOMER LOGIN
+    // =====================================
 
-    // GET CUSTOMER PROFILE
-    let customer = null;
+    const isAdmin = user?.role?.toLowerCase() === "admin";
 
-    try {
-        customer = JSON.parse(
-            sessionStorage.getItem("konfizCustomer") || "null"
-        );
-    } catch (error) {
-        customer = null;
-    }
+    const isLoggedIn = !!user;
 
-    const isLoggedIn = isAdmin || !!customer;
+    // ADMIN PROFILE
+    const adminEmail = isAdmin ? user?.email : "";
 
-    // LOGOUT FUNCTION
+    // CUSTOMER PROFILE
+    const customer = isAdmin ? null : user;
+
+    // =====================================
+    // LOGOUT
+    // =====================================
+
     const handleLogout = () => {
 
-        sessionStorage.removeItem("konfizAdminLoggedIn");
-        sessionStorage.removeItem("konfizAdminEmail");
-        sessionStorage.removeItem("konfizCustomer");
+        // Clear shared authentication
+        logout();
 
-        navigate("/login");
+        // Redirect to home page
+        navigate("/");
+
     };
 
     return (
 
         <nav className="navbar">
-
+            <div>
+                
+            </div>
             {/* LOGO */}
             <Link to="/" className="logo">
                 KONFiZ
-                <small>ICE CREAM & HAPPINESS</small>
+                <small>ICE CREAM</small>
             </Link>
 
-            {/* NAVIGATION LINKS */}
+            {/* NAVIGATION */}
             <div className="nav-links">
+
                 <Link to="/">Home</Link>
-                <Link to="/products">Products</Link>
+
+                {/* PRODUCTS MEGA MENU */}
+                <div className="nav-dropdown">
+
+                    <Link to="/products" className="nav-product-link">
+                        Products <span className="dropdown-arrow">v</span>
+                    </Link>
+
+                    <div className="mega-menu">
+
+                        <div className="mega-menu-content">
+
+                            <div className="mega-menu-heading">
+                                <span>EXPLORE OUR PRODUCTS</span>
+                                <h2>Find Your Favourite Treat!</h2>
+                                <p>Discover something delicious for every mood.</p>
+                            </div>
+
+                            <div className="mega-menu-grid">
+
+                                <Link to="/products?category=cones" className="mega-item">
+                                    <span className="mega-emoji">🍦</span>
+                                    <div>
+                                        <h3>Ice Cream Cones</h3>
+                                        <p>Classic and premium cones</p>
+                                    </div>
+                                </Link>
+
+                                <Link to="/products?category=tubs" className="mega-item">
+                                    <span className="mega-emoji">🍨</span>
+                                    <div>
+                                        <h3>Ice Cream Tubs</h3>
+                                        <p>Delicious tubs in every flavour</p>
+                                    </div>
+                                </Link>
+
+                                <Link to="/products?category=family-packs" className="mega-item">
+                                    <span className="mega-emoji">👨‍👩‍👧‍👦</span>
+                                    <div>
+                                        <h3>Family Packs</h3>
+                                        <p>More happiness to share</p>
+                                    </div>
+                                </Link>
+
+                                <Link to="/products?category=sundaes" className="mega-item">
+                                    <span className="mega-emoji">🍧</span>
+                                    <div>
+                                        <h3>Sundaes</h3>
+                                        <p>Loaded dessert combinations</p>
+                                    </div>
+                                </Link>
+
+                                <Link to="/products?category=sticks" className="mega-item">
+                                    <span className="mega-emoji">🍫</span>
+                                    <div>
+                                        <h3>Ice Cream Sticks</h3>
+                                        <p>Chocolate-coated treats</p>
+                                    </div>
+                                </Link>
+
+                                <Link to="/products?category=milkshakes" className="mega-item">
+                                    <span className="mega-emoji">🥤</span>
+                                    <div>
+                                        <h3>Milkshakes</h3>
+                                        <p>Thick and creamy shakes</p>
+                                    </div>
+                                </Link>
+
+                            </div>
+
+                            <div className="mega-menu-footer">
+                                <span>🍦 A little scoop of happiness in every bite!</span>
+                                <Link to="/products">View All Products →</Link>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
 
                 <a href="/#categories">Categories</a>
+
                 <a href="/#products">Our Flavours</a>
+
                 <a href="/#story">Our Story</a>
+
             </div>
 
-            {/* PROFILE AND CART */}
+            {/* USER AND CART */}
             <div className="navbar-user-section">
 
+                {/* LOGIN / PROFILE */}
                 {isLoggedIn ? (
 
                     <div className="navbar-profile">
 
-                        {/* PROFILE INFORMATION */}
                         <div className="profile-info">
 
                             <span className="profile-icon">
@@ -82,12 +170,13 @@ function Navbar() {
                                 <small>
                                     {isAdmin
                                         ? "Admin"
-                                        : customer?.customerId || customer?.id || "Customer"}
+                                        : customer?.customerId ||
+                                        customer?.id ||
+                                        "Customer"}
                                 </small>
 
                             </div>
 
-                            {/* PROFILE DROPDOWN */}
                             <div className="profile-dropdown">
 
                                 <h3>Profile Information</h3>
@@ -101,7 +190,9 @@ function Navbar() {
 
                                 <p>
                                     <strong>Role:</strong>{" "}
-                                    {isAdmin ? "Admin" : customer?.role || "Customer"}
+                                    {isAdmin
+                                        ? "Admin"
+                                        : customer?.role || "Customer"}
                                 </p>
 
                                 <p>
@@ -115,7 +206,9 @@ function Navbar() {
                                     <>
                                         <p>
                                             <strong>Customer ID:</strong>{" "}
-                                            {customer?.customerId || customer?.id || "N/A"}
+                                            {customer?.customerId ||
+                                                customer?.id ||
+                                                "N/A"}
                                         </p>
 
                                         <p>
@@ -127,8 +220,8 @@ function Navbar() {
 
                                 <button
                                     className="logout-btn"
-                                    onClick={handleLogout}
                                     type="button"
+                                    onClick={handleLogout}
                                 >
                                     Logout
                                 </button>
@@ -142,21 +235,32 @@ function Navbar() {
                 ) : (
 
                     <Link className="konfiz_login" to="/login">
-                        login
+                        Login
                     </Link>
 
                 )}
 
-                {/* CART */}
-                <a href="#products" className="cart-button">
-                    🛒 Cart
-                </a>
+                {/* LIVE CART */}
+                <Link to="/cart" className="cart-button">
+
+                    {/* <span className="cart-icon">
+                        🛒
+                    </span> */}
+
+                    Cart
+
+                    <span className="cart-count">
+                        {cartCount}
+                    </span>
+
+                </Link>
 
             </div>
 
         </nav>
 
     );
+
 }
 
 export default Navbar;

@@ -1,13 +1,14 @@
 
 import React from "react";
 import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate
+    BrowserRouter,
+    Routes,
+    Route,
+    Navigate
 } from "react-router-dom";
 
-import { CartProvider } from "../src/context/cartcontext";
+import { CartProvider } from "./context/cartcontext";
+import { AuthProvider, useAuth } from "./context/authContext";
 
 import Home from "./pages/home";
 import Product from "./pages/product";
@@ -15,81 +16,147 @@ import Login from "./pages/admin/login";
 import Dashboard from "./pages/admin/dashboard";
 import Cart from "./pages/cart";
 
-// ADMIN PROTECTION
-function ProtectedAdminRoute({ children }) {
-  const isLoggedIn =
-    sessionStorage.getItem("konfizAdminLoggedIn") === "true";
 
-  return isLoggedIn
-    ? children
-    : <Navigate to="/login" replace />;
+// =====================================
+// GLOBAL ROLE-BASED ROUTE PROTECTION
+// =====================================
+
+function ProtectedRoute({ children, allowedRoles }) {
+
+    const { user } = useAuth();
+
+    // USER NOT LOGGED IN
+    if (!user || !user.authenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // VERIFY USER ROLE
+    const userRole = user.role?.toLowerCase();
+
+    // CHECK PERMISSION
+    if (!allowedRoles.includes(userRole)) {
+        return <Navigate to="/" replace />;
+    }
+
+    return children;
 }
 
-// CUSTOMER PROTECTION
-function ProtectedCustomerRoute({ children }) {
-  const customer = JSON.parse(
-    sessionStorage.getItem("konfizCustomer") || "null"
-  );
 
-  return customer?.customerId && customer?.role === "customer"
-    ? children
-    : <Navigate to="/login" replace />;
-}
-
+// =====================================
 // APP ROUTES
+// =====================================
+
 function AppRoutes() {
-  const customer = JSON.parse(
-    sessionStorage.getItem("konfizCustomer") || "null"
-  );
 
-  return (
-    <CartProvider customerId={customer?.customerId}>
-      <Routes>
+    const { user } = useAuth();
 
-        <Route path="/" element={<Home />} />
+    // CUSTOMER / ADMIN CART IDENTIFICATION
+    const cartUserId = user
+        ? (user.customerId || user.id)
+        : null;
 
-        <Route path="/login" element={<Login />} />
+    return (
 
-        <Route
-          path="/products"
-          element={
-            <ProtectedCustomerRoute>
-              <Product />
-            </ProtectedCustomerRoute>
-          }
-        />
+        <CartProvider customerId={cartUserId}>
 
-        <Route
-          path="/cart"
-          element={
-            <ProtectedCustomerRoute>
-              <Cart />
-            </ProtectedCustomerRoute>
-          }
-        />
+            <Routes>
 
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedAdminRoute>
-              <Dashboard />
-            </ProtectedAdminRoute>
-          }
-        />
+                {/* =====================================
+                    PUBLIC PAGES
+                    NO LOGIN REQUIRED
+                ===================================== */}
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+                <Route
+                    path="/"
+                    element={<Home />}
+                />
 
-      </Routes>
-    </CartProvider>
-  );
+                <Route
+                    path="/login"
+                    element={<Login />}
+                />
+
+
+                {/* =====================================
+                    CUSTOMER + ADMIN PAGES
+                ===================================== */}
+
+                <Route
+                    path="/products"
+                    element={
+                        <ProtectedRoute
+                            allowedRoles={["customer", "admin"]}
+                        >
+                            <Product />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/cart"
+                    element={
+                        <ProtectedRoute
+                            allowedRoles={["customer", "admin"]}
+                        >
+                            <Cart />
+                        </ProtectedRoute>
+                    }
+                />
+
+
+                {/* =====================================
+                    ADMIN ONLY PAGES
+                ===================================== */}
+
+                <Route
+                    path="/admin/dashboard"
+                    element={
+                        <ProtectedRoute
+                            allowedRoles={["admin"]}
+                        >
+                            <Dashboard />
+                        </ProtectedRoute>
+                    }
+                />
+
+
+                {/* =====================================
+                    INVALID ROUTES
+                ===================================== */}
+
+                <Route
+                    path="*"
+                    element={<Navigate to="/" replace />}
+                />
+
+            </Routes>
+
+        </CartProvider>
+
+    );
 }
+
+
+// =====================================
+// MAIN APP
+// =====================================
 
 function App() {
-  return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
-  );
+
+    return (
+
+        <AuthProvider>
+
+            <BrowserRouter>
+
+                <AppRoutes />
+
+            </BrowserRouter>
+
+        </AuthProvider>
+
+    );
+
 }
 
 export default App;
