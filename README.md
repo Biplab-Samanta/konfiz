@@ -62,3 +62,7 @@ npm run build
 ## Developer
 
 Developed using React.js with a focus on clean code, practical functionality, and a better user experience.
+
+
+
+

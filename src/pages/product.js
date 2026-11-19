@@ -1,15 +1,94 @@
-
 import React, { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import "../style/product.css";
 import Navbar from "../components/navber";
 import { useCart } from "../context/cartcontext";
 
-function Product() {
+// =====================================
+// COMMON HELPERS
+// =====================================
 
-  // =====================================
-  // CART CONTEXT
-  // =====================================
+const makeSlug = (value = "") =>
+  String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+const getCategoryName = category => {
+  if (!category) return "";
+
+  if (typeof category === "string") {
+    return category;
+  }
+
+  return (
+    category.name ||
+    category.categoryName ||
+    category.title ||
+    ""
+  );
+};
+
+const getCategoryId = category => {
+  if (!category || typeof category !== "object") {
+    return "";
+  }
+
+  return category.id || category.categoryId || "";
+};
+
+const getAddonId = addon =>
+  String(addon.id ?? addon.name ?? "");
+
+const getWeightOptions = product => {
+  const options = product.pricing?.weightOptions;
+
+  if (Array.isArray(options) && options.length > 0) {
+    return options;
+  }
+
+  return [null];
+};
+
+const getUnit = product =>
+  product.pricing?.unit || "ml";
+
+const getBasePrice = (product, weight) => {
+  const pricing = product.pricing;
+
+  if (
+    pricing &&
+    weight !== null &&
+    weight !== undefined &&
+    Number(pricing.baseQuantity) > 0
+  ) {
+    const rate = Number(
+      pricing.pricePerBaseUnit ?? product.price ?? 0
+    );
+
+    return (
+      rate *
+      Number(weight) /
+      Number(pricing.baseQuantity)
+    );
+  }
+
+  return Number(product.price) || 0;
+};
+
+const getProductCategoryName = product =>
+  getCategoryName(product.category) ||
+  product.categoryName ||
+  "";
+
+// =====================================
+// PRODUCT COMPONENT
+// =====================================
+
+function Product() {
+  const { categorySlug } = useParams();
 
   const {
     addToCart: addProductToCart,
@@ -22,131 +101,166 @@ function Product() {
   // STATES
   // =====================================
 
+  const [productData, setProductData] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [storeLoaded, setStoreLoaded] = useState(false);
+
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("default");
 
-  const [productData, setProductData] = useState([]);
-
-  // Store selected weight and addons for each product
   const [selections, setSelections] = useState({});
 
+  const [addonPopup, setAddonPopup] = useState({
+    open: false,
+    product: null,
+    weight: null,
+    quantity: 1,
+    addons: []
+  });
+
   // =====================================
-  // LOAD PRODUCTS FROM LOCAL STORAGE
+  // LOAD PRODUCTS AND CATEGORIES
   // =====================================
 
   useEffect(() => {
-
-    const loadProducts = () => {
+    const loadStoreData = () => {
       try {
         const savedProducts = JSON.parse(
           localStorage.getItem("konfizProducts") || "[]"
         );
 
-        setProductData(
-          Array.isArray(savedProducts) ? savedProducts : []
+        const savedCategories = JSON.parse(
+          localStorage.getItem("konfizCategories") || "[]"
         );
 
+        // Support both array and wrapped object formats
+        const products = Array.isArray(savedProducts)
+          ? savedProducts
+          : Array.isArray(savedProducts?.products)
+            ? savedProducts.products
+            : [];
+
+        const categoryList = Array.isArray(savedCategories)
+          ? savedCategories
+          : Array.isArray(savedCategories?.categories)
+            ? savedCategories.categories
+            : [];
+
+        setProductData(products);
+        setCategories(categoryList);
       } catch (error) {
-        console.error("Product loading error:", error);
+        console.error("KONFiZ store loading error:", error);
+
         setProductData([]);
+        setCategories([]);
+      } finally {
+        setStoreLoaded(true);
       }
     };
 
-    loadProducts();
+    loadStoreData();
 
-    window.addEventListener("storage", loadProducts);
-    window.addEventListener("focus", loadProducts);
+    window.addEventListener("storage", loadStoreData);
+    window.addEventListener("focus", loadStoreData);
+    window.addEventListener("konfizStoreUpdated", loadStoreData);
 
     return () => {
-      window.removeEventListener("storage", loadProducts);
-      window.removeEventListener("focus", loadProducts);
+      window.removeEventListener("storage", loadStoreData);
+      window.removeEventListener("focus", loadStoreData);
+      window.removeEventListener("konfizStoreUpdated", loadStoreData);
     };
-
   }, []);
 
   // =====================================
-  // PRODUCT PRICE FUNCTIONS
+  // NORMALIZE CATEGORIES
   // =====================================
 
-  const getWeightOptions = (product) => {
+  const normalizedCategories = useMemo(() => {
+    return categories
+      .map((item, index) => {
+        const name = getCategoryName(item);
 
-    const options = product.pricing?.weightOptions;
+        if (!name) return null;
 
-    if (Array.isArray(options) && options.length > 0) {
-      return options;
-    }
+        const id =
+          getCategoryId(item) ||
+          `category_${index}`;
 
-    return [null];
-  };
+        const slug = makeSlug(
+          item.slug || name
+        );
 
-  const getDefaultWeight = (product) => {
-
-    const options = getWeightOptions(product);
-
-    if (options[0] === null) return null;
-
-    return options[0];
-  };
-
-  const getUnit = (product) => {
-    return product.pricing?.unit || "ml";
-  };
+        return {
+          id: String(id),
+          name,
+          slug,
+          description:
+            item.description || item.details || ""
+        };
+      })
+      .filter(Boolean)
+      .filter(
+        (item, index, array) =>
+          array.findIndex(
+            category => category.slug === item.slug
+          ) === index
+      );
+  }, [categories]);
 
   // =====================================
-  // BASE PRICE CALCULATION
+  // GET CURRENT CATEGORY FROM URL
   // =====================================
 
-  const getBasePrice = (product, weight) => {
+  const normalizedUrlSlug = makeSlug(categorySlug || "");
 
+  const currentCategory = useMemo(() => {
+    if (!normalizedUrlSlug) return null;
+
+    return (
+      normalizedCategories.find(
+        category => category.slug === normalizedUrlSlug
+      ) || null
+    );
+  }, [normalizedUrlSlug, normalizedCategories]);
+
+  // =====================================
+  // PRODUCT CATEGORY MATCHING
+  // =====================================
+
+  const productMatchesCategory = (
+    product,
+    selectedCategory
+  ) => {
+    if (!selectedCategory) return true;
+
+    const productCategoryName =
+      getProductCategoryName(product);
+
+    const productCategoryId =
+      product.categoryId ||
+      getCategoryId(product.category);
+
+    // First try matching category IDs
     if (
-      product.pricing &&
-      weight !== null &&
-      weight !== undefined &&
-      Number(product.pricing.baseQuantity) > 0
+      productCategoryId &&
+      String(productCategoryId) ===
+        String(selectedCategory.id)
     ) {
+      return true;
+    }
 
-      const rate = Number(
-        product.pricing.pricePerBaseUnit ?? product.price
-      );
-
+    // Then try matching category name or slug.
+    // This also supports older products saved without categoryId.
+    if (productCategoryName) {
       return (
-        (rate * Number(weight)) /
-        Number(product.pricing.baseQuantity)
+        makeSlug(productCategoryName) ===
+          selectedCategory.slug ||
+        productCategoryName.trim().toLowerCase() ===
+          selectedCategory.name.trim().toLowerCase()
       );
     }
 
-    return Number(product.price) || 0;
-  };
-
-  // =====================================
-  // TOTAL PRODUCT PRICE
-  // =====================================
-
-  const getSelectedPrice = (product) => {
-
-    const selected = selections[product.id] || {};
-
-    const weight =
-      selected.weight !== undefined
-        ? selected.weight
-        : getDefaultWeight(product);
-
-    const selectedAddons = selected.addons || [];
-
-    const basePrice = getBasePrice(product, weight);
-
-    const addonPrice = (product.addons || [])
-      .filter((addon) =>
-        selectedAddons.includes(addon.id)
-      )
-      .reduce(
-        (total, addon) =>
-          total + Number(addon.price || 0),
-        0
-      );
-
-    return basePrice + addonPrice;
+    return false;
   };
 
   // =====================================
@@ -154,102 +268,82 @@ function Product() {
   // =====================================
 
   const handleWeightChange = (productId, weight) => {
-
-    setSelections((prev) => ({
-      ...prev,
-
+    setSelections(previous => ({
+      ...previous,
       [productId]: {
-        ...prev[productId],
-
-        weight:
-          weight === "" ? null : Number(weight)
+        ...previous[productId],
+        weight: weight === "" ? null : Number(weight)
       }
     }));
   };
 
   // =====================================
-  // UPDATE ADDONS
+  // UPDATE QUANTITY
   // =====================================
 
-  const handleAddonChange = (
-    productId,
-    addonId,
-    checked
-  ) => {
+  const handleQuantityChange = (productId, quantity) => {
+    setSelections(previous => ({
+      ...previous,
+      [productId]: {
+        ...previous[productId],
+        quantity: Math.max(1, Number(quantity) || 1)
+      }
+    }));
+  };
 
-    setSelections((prev) => {
+  // =====================================
+  // CLOSE ADD-ON POPUP
+  // =====================================
 
-      const current = prev[productId] || {};
-
-      const currentAddons = current.addons || [];
-
-      const updatedAddons = checked
-        ? [...currentAddons, addonId]
-        : currentAddons.filter(
-            (id) => id !== addonId
-          );
-
-      return {
-        ...prev,
-
-        [productId]: {
-          ...current,
-          addons: updatedAddons
-        }
-      };
-
+  const closeAddonPopup = () => {
+    setAddonPopup({
+      open: false,
+      product: null,
+      weight: null,
+      quantity: 1,
+      addons: []
     });
   };
 
   // =====================================
-  // ADD TO CART
+  // FINAL ADD TO CART
   // =====================================
 
-  const handleAddToCart = (product) => {
-
-    const selected = selections[product.id] || {};
-
-    const weight =
-      selected.weight !== undefined
-        ? selected.weight
-        : getDefaultWeight(product);
-
-    const selectedAddons = selected.addons || [];
-
-    // Get selected addon details
+  const completeAddToCart = (
+    product,
+    weight,
+    quantity,
+    selectedAddonIds = []
+  ) => {
     const addons = (product.addons || [])
-      .filter((addon) =>
-        selectedAddons.includes(addon.id)
+      .filter(addon =>
+        selectedAddonIds.includes(getAddonId(addon))
       )
-      .map((addon) => ({
-        id: addon.id,
+      .map(addon => ({
+        id: getAddonId(addon),
         name: addon.name,
-        price: Number(addon.price || 0)
+        price: Number(addon.price) || 0
       }));
 
-    // Calculate base price
     const basePrice = getBasePrice(product, weight);
 
-    // Calculate addon price
     const addonPrice = addons.reduce(
       (total, addon) => total + addon.price,
       0
     );
 
-    // Final price
     const totalPrice = basePrice + addonPrice;
 
-    // Unique combination:
-    // Same product + same weight + same addons
-    // will be treated as the same cart item.
-
+    // Same product, weight and add-ons = same cart item
     const cartItemId = [
-      product.id,
+      product.id || product.name,
       weight ?? "standard",
-      selectedAddons.slice().sort().join("-")
+      addons
+        .map(addon => addon.id)
+        .sort()
+        .join("-")
     ].join("__");
 
-    // Prepare cart product
     const cartProduct = {
       id: cartItemId,
       cartItemId,
@@ -257,7 +351,9 @@ function Product() {
       productId: product.id,
       name: product.name,
       image: product.image,
-      category: product.category,
+
+      category:
+        getProductCategoryName(product),
 
       weight,
       unit: getUnit(product),
@@ -267,57 +363,120 @@ function Product() {
       basePrice,
       addonPrice,
 
+      // Price is per item. CartContext should multiply by quantity.
       price: totalPrice,
-      quantity: 1
+      quantity
     };
 
-    // Add using CartContext
     addProductToCart(cartProduct);
 
-    console.log(
-      "Added to customer cart:",
-      cartProduct
+    closeAddonPopup();
+  };
+
+  // =====================================
+  // OPEN ADD-ON POPUP OR ADD DIRECTLY
+  // =====================================
+
+  const handleAddToCart = product => {
+    const productId = product.id || product.name;
+    const selected = selections[productId] || {};
+
+    const weight =
+      selected.weight !== undefined
+        ? selected.weight
+        : getWeightOptions(product)[0];
+
+    const quantity = Math.max(
+      1,
+      Number(selected.quantity || 1)
+    );
+
+    const hasAddons =
+      Array.isArray(product.addons) &&
+      product.addons.length > 0;
+
+    if (hasAddons) {
+      setAddonPopup({
+        open: true,
+        product,
+        weight,
+        quantity,
+        addons: []
+      });
+
+      return;
+    }
+
+    completeAddToCart(
+      product,
+      weight,
+      quantity,
+      []
     );
   };
 
   // =====================================
   // FILTER PRODUCTS
+  // CATEGORY + SEARCH + SORT
   // =====================================
 
   const filteredProducts = useMemo(() => {
+    // If the URL has a category but it does not exist,
+    // do not accidentally show all products.
+    if (
+      categorySlug &&
+      storeLoaded &&
+      !currentCategory
+    ) {
+      return [];
+    }
 
-    let products = productData.filter((product) => {
+    let products = productData.filter(product => {
+      const productName = String(
+        product.name || ""
+      ).toLowerCase();
+
+      const productDescription = String(
+        product.description || ""
+      ).toLowerCase();
+
+      const productCategory = String(
+        getProductCategoryName(product)
+      ).toLowerCase();
+
+      const searchText = search.trim().toLowerCase();
 
       const matchesSearch =
-        (product.name || "")
-          .toLowerCase()
-          .includes(search.toLowerCase());
+        !searchText ||
+        productName.includes(searchText) ||
+        productDescription.includes(searchText) ||
+        productCategory.includes(searchText);
 
       const matchesCategory =
-        category === "All" ||
-        product.category === category;
+        productMatchesCategory(
+          product,
+          currentCategory
+        );
 
       return matchesSearch && matchesCategory;
     });
 
-    if (sort === "low-high") {
+    // Sort a copy, not the original state array
+    products = [...products];
 
+    if (sort === "low-high") {
       products.sort(
         (a, b) =>
           Number(a.price || 0) -
           Number(b.price || 0)
       );
-
     } else if (sort === "high-low") {
-
       products.sort(
         (a, b) =>
           Number(b.price || 0) -
           Number(a.price || 0)
       );
-
     } else if (sort === "rating") {
-
       products.sort(
         (a, b) =>
           Number(b.rating || 0) -
@@ -326,66 +485,115 @@ function Product() {
     }
 
     return products;
+  }, [
+    productData,
+    search,
+    sort,
+    currentCategory,
+    categorySlug,
+    storeLoaded
+  ]);
 
-  }, [productData, search, category, sort]);
+  // =====================================
+  // INVALID CATEGORY
+  // =====================================
+
+  const invalidCategory =
+    Boolean(categorySlug) &&
+    storeLoaded &&
+    !currentCategory;
+
+  // =====================================
+  // ADD-ON POPUP PRICE
+  // =====================================
+
+  const popupBasePrice = addonPopup.product
+    ? getBasePrice(
+        addonPopup.product,
+        addonPopup.weight
+      )
+    : 0;
+
+  const popupAddonPrice = addonPopup.product
+    ? (addonPopup.product.addons || [])
+        .filter(addon =>
+          addonPopup.addons.includes(getAddonId(addon))
+        )
+        .reduce(
+          (total, addon) =>
+            total + (Number(addon.price) || 0),
+          0
+        )
+    : 0;
+
+  const popupUnitPrice =
+    popupBasePrice + popupAddonPrice;
 
   // =====================================
   // UI
   // =====================================
 
   return (
-
     <div className="product-page">
 
       <Navbar />
 
-      {/* PRODUCT BANNER */}
+      {/* =====================================
+          PRODUCT BANNER
+      ===================================== */}
 
       <section className="product-banner">
-
         <div className="container">
 
-          <h1>Our Ice Cream Collection</h1>
+          <h1>
+            {currentCategory
+              ? currentCategory.name
+              : "Our Ice Cream Collection"}
+          </h1>
 
           <p>
-            Discover your favourite flavour with KONFiZ.
+            {currentCategory?.description ||
+              "Discover your favourite flavour with KONFiZ."}
           </p>
 
         </div>
-
       </section>
 
-      {/* PRODUCT CONTROLS */}
+      {/* =====================================
+          PRODUCT SECTION
+      ===================================== */}
 
       <section className="section">
 
-        <div className="product-toolbar">
+        {/* CATEGORY FILTER LINKS */}
 
-          {/* CATEGORY FILTERS */}
+        <div className="product-toolbar">
 
           <div className="category-filters">
 
-            {[
-              "All",
-              ...new Set(
-                productData
-                  .map((product) => product.category)
-                  .filter(Boolean)
-              )
-            ].map((item) => (
+            <Link
+              to="/products"
+              className={
+                !categorySlug
+                  ? "filter-btn active"
+                  : "filter-btn"
+              }
+            >
+              All Products
+            </Link>
 
-              <button
-                key={item}
+            {normalizedCategories.map(category => (
+              <Link
+                key={category.id}
+                to={`/products/${category.slug}`}
                 className={
-                  category === item
+                  normalizedUrlSlug === category.slug
                     ? "filter-btn active"
                     : "filter-btn"
                 }
-                onClick={() => setCategory(item)}
               >
-                {item}
-              </button>
-
+                {category.name}
+              </Link>
             ))}
 
           </div>
@@ -398,14 +606,17 @@ function Product() {
               type="text"
               placeholder="Search ice cream..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={event =>
+                setSearch(event.target.value)
+              }
             />
 
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value)}
+              onChange={event =>
+                setSort(event.target.value)
+              }
             >
-
               <option value="default">
                 Default Sorting
               </option>
@@ -421,48 +632,56 @@ function Product() {
               <option value="rating">
                 Top Rated
               </option>
-
             </select>
 
           </div>
-
         </div>
 
         {/* PRODUCT COUNT */}
 
         <p className="product-count">
-          Showing {filteredProducts.length} products
+          {invalidCategory
+            ? "Category not found"
+            : `Showing ${filteredProducts.length} products`}
         </p>
 
-        {/* PRODUCT GRID */}
+        {/* =====================================
+            PRODUCT GRID
+        ===================================== */}
 
         <div className="product-grid">
 
           {filteredProducts.length > 0 ? (
 
-            filteredProducts.map((product) => {
+            filteredProducts.map(product => {
+              const productId =
+                product.id || product.name;
 
               const weightOptions =
                 getWeightOptions(product);
 
               const selectedWeight =
-                selections[product.id]?.weight ??
-                getDefaultWeight(product);
+                selections[productId]?.weight !== undefined
+                  ? selections[productId].weight
+                  : weightOptions[0];
 
-              const selectedAddons =
-                selections[product.id]?.addons || [];
+              const quantity =
+                selections[productId]?.quantity || 1;
 
-              const totalPrice =
-                getSelectedPrice(product);
+              const basePrice = getBasePrice(
+                product,
+                selectedWeight
+              );
 
-              const basePrice =
-                getBasePrice(product, selectedWeight);
+              const categoryName =
+                getProductCategoryName(product) ||
+                currentCategory?.name ||
+                "";
 
               return (
-
                 <div
                   className="product-card"
-                  key={product.id}
+                  key={productId}
                 >
 
                   {/* PRODUCT IMAGE */}
@@ -470,17 +689,19 @@ function Product() {
                   <div className="product-image-wrapper">
 
                     <img
-                      src={product.image}
-                      alt={product.name}
+                      src={product.image || "/placeholder.png"}
+                      alt={product.name || "KONFiZ ice cream"}
                     />
 
-                    <span className="product-category">
-                      {product.category}
-                    </span>
+                    {categoryName && (
+                      <span className="product-category">
+                        {categoryName}
+                      </span>
+                    )}
 
                   </div>
 
-                  {/* PRODUCT INFORMATION */}
+                  {/* PRODUCT DETAILS */}
 
                   <div className="product-info">
 
@@ -490,10 +711,9 @@ function Product() {
                       {product.description}
                     </p>
 
-                    {/* PRODUCT RATING */}
-
                     <div className="product-rating">
-                      ⭐ {Number(product.rating || 0).toFixed(1)}
+                      ⭐{" "}
+                      {Number(product.rating || 0).toFixed(1)}
                     </div>
 
                     {/* WEIGHT SELECTION */}
@@ -504,84 +724,74 @@ function Product() {
 
                       <select
                         value={selectedWeight ?? ""}
-                        onChange={(e) =>
+                        onChange={event =>
                           handleWeightChange(
-                            product.id,
-                            e.target.value
+                            productId,
+                            event.target.value
                           )
                         }
                       >
 
                         {weightOptions.map((weight, index) => (
-
                           <option
-                            key={weight ?? index}
+                            key={`${productId}-weight-${index}`}
                             value={weight ?? ""}
                           >
-
                             {weight === null
                               ? "Standard"
                               : `${weight} ${getUnit(product)}`}
-
                           </option>
-
                         ))}
 
                       </select>
 
                     </div>
 
-                    {/* ADDONS SELECTION */}
+                    {/* QUANTITY SELECTION */}
 
-                    {product.addons?.length > 0 && (
+                    <div className="product-quantity-section">
 
-                      <div className="product-addon-section">
+                      <label>Quantity</label>
 
-                        <h4>Customize Your Ice Cream</h4>
+                      <div className="quantity-controls">
 
-                        {product.addons.map((addon) => (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleQuantityChange(
+                              productId,
+                              quantity - 1
+                            )
+                          }
+                        >
+                          −
+                        </button>
 
-                          <label
-                            className="product-addon-option"
-                            key={addon.id}
-                          >
+                        <span>{quantity}</span>
 
-                            <input
-                              type="checkbox"
-                              checked={selectedAddons.includes(
-                                addon.id
-                              )}
-                              onChange={(e) =>
-                                handleAddonChange(
-                                  product.id,
-                                  addon.id,
-                                  e.target.checked
-                                )
-                              }
-                            />
-
-                            <span>{addon.name}</span>
-
-                            <strong>
-                              + ₹
-                              {Number(addon.price || 0).toFixed(2)}
-                            </strong>
-
-                          </label>
-
-                        ))}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleQuantityChange(
+                              productId,
+                              quantity + 1
+                            )
+                          }
+                        >
+                          +
+                        </button>
 
                       </div>
 
-                    )}
+                    </div>
 
-                    {/* PRICE DETAILS */}
+                    {/* PRICE */}
 
                     <div className="product-price-section">
 
                       <div className="price-breakdown">
 
-                        <span>Product Price</span>
+                        <span>Price per item</span>
 
                         <strong>
                           ₹{basePrice.toFixed(2)}
@@ -589,27 +799,14 @@ function Product() {
 
                       </div>
 
-                      {selectedAddons.length > 0 && (
-
-                        <div className="price-breakdown">
-
-                          <span>Add-ons</span>
-
-                          <strong>
-                            + ₹
-                            {(totalPrice - basePrice).toFixed(2)}
-                          </strong>
-
-                        </div>
-
-                      )}
-
                       <div className="total-price">
 
-                        <span>Total Price</span>
+                        <span>Product Total</span>
 
                         <h3>
-                          ₹{totalPrice.toFixed(2)}
+                          ₹{(
+                            basePrice * quantity
+                          ).toFixed(2)}
                         </h3>
 
                       </div>
@@ -619,6 +816,7 @@ function Product() {
                     {/* ADD TO CART */}
 
                     <button
+                      type="button"
                       className="add-cart-btn"
                       onClick={() =>
                         handleAddToCart(product)
@@ -628,32 +826,237 @@ function Product() {
                     </button>
 
                   </div>
-
                 </div>
-
               );
-
             })
 
           ) : (
 
             <div className="empty-products">
 
-              <h3>No products found</h3>
+              <h3>
+                {invalidCategory
+                  ? "Category not found"
+                  : "No products found"}
+              </h3>
 
               <p>
-                Try another search or category.
+                {invalidCategory
+                  ? "This category may have been renamed or deleted."
+                  : "Try another search or select a different category."}
               </p>
+
+              <Link
+                to="/products"
+                className="filter-btn"
+              >
+                View All Products
+              </Link>
 
             </div>
 
           )}
 
         </div>
-
       </section>
 
-      {/* CART SUMMARY */}
+      {/* =====================================
+          ADD-ON POPUP
+      ===================================== */}
+
+      {addonPopup.open && addonPopup.product && (
+
+        <div
+          className="addon-modal-overlay"
+          onClick={closeAddonPopup}
+        >
+
+          <div
+            className="addon-modal"
+            onClick={event => event.stopPropagation()}
+          >
+
+            <button
+              type="button"
+              className="addon-modal-close"
+              onClick={closeAddonPopup}
+            >
+              ×
+            </button>
+
+            <h2>Make It Extra Special! 🍨</h2>
+
+            <p>
+              Choose your favourite toppings or skip this step.
+            </p>
+
+            {/* SELECTED PRODUCT */}
+
+            <div className="addon-modal-product">
+
+              <img
+                src={
+                  addonPopup.product.image ||
+                  "/placeholder.png"
+                }
+                alt={addonPopup.product.name}
+              />
+
+              <div>
+
+                <h3>
+                  {addonPopup.product.name}
+                </h3>
+
+                <p>
+                  {addonPopup.weight !== null &&
+                  addonPopup.weight !== undefined
+                    ? `${addonPopup.weight} ${getUnit(
+                        addonPopup.product
+                      )}`
+                    : "Standard"}
+                </p>
+
+                <p>
+                  Quantity: {addonPopup.quantity}
+                </p>
+
+              </div>
+            </div>
+
+            {/* AVAILABLE ADD-ONS */}
+
+            <h3>Choose Your Add-ons</h3>
+
+            <div className="addon-modal-list">
+
+              {(addonPopup.product.addons || []).map(
+                (addon, index) => {
+                  const addonId = getAddonId(addon);
+
+                  return (
+                    <label
+                      key={`${addonId}-${index}`}
+                      className="addon-modal-option"
+                    >
+
+                      <input
+                        type="checkbox"
+                        checked={addonPopup.addons.includes(
+                          addonId
+                        )}
+                        onChange={event => {
+                          setAddonPopup(previous => ({
+                            ...previous,
+
+                            addons: event.target.checked
+                              ? [
+                                  ...previous.addons,
+                                  addonId
+                                ]
+                              : previous.addons.filter(
+                                  id => id !== addonId
+                                )
+                          }));
+                        }}
+                      />
+
+                      <span>{addon.name}</span>
+
+                      <strong>
+                        + ₹{(
+                          Number(addon.price) || 0
+                        ).toFixed(2)}
+                      </strong>
+
+                    </label>
+                  );
+                }
+              )}
+
+            </div>
+
+            {/* POPUP PRICE SUMMARY */}
+
+            <div className="addon-modal-total">
+
+              <span>Base price per item</span>
+
+              <strong>
+                ₹{popupBasePrice.toFixed(2)}
+              </strong>
+
+              <span>Add-ons per item</span>
+
+              <strong>
+                ₹{popupAddonPrice.toFixed(2)}
+              </strong>
+
+              <span>Price per item</span>
+
+              <strong>
+                ₹{popupUnitPrice.toFixed(2)}
+              </strong>
+
+              <span>Quantity</span>
+
+              <strong>
+                {addonPopup.quantity}
+              </strong>
+
+              <span>Order total</span>
+
+              <strong>
+                ₹{(
+                  popupUnitPrice * addonPopup.quantity
+                ).toFixed(2)}
+              </strong>
+
+            </div>
+
+            {/* POPUP BUTTONS */}
+
+            <div className="addon-modal-actions">
+
+              <button
+                type="button"
+                className="skip-addon-btn"
+                onClick={() =>
+                  completeAddToCart(
+                    addonPopup.product,
+                    addonPopup.weight,
+                    addonPopup.quantity,
+                    []
+                  )
+                }
+              >
+                Skip Add-ons
+              </button>
+
+              <button
+                type="button"
+                className="confirm-addon-btn"
+                onClick={() =>
+                  completeAddToCart(
+                    addonPopup.product,
+                    addonPopup.weight,
+                    addonPopup.quantity,
+                    addonPopup.addons
+                  )
+                }
+              >
+                Add to Cart
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* =====================================
+          CART SUMMARY
+      ===================================== */}
 
       <div className="cart-summary">
 
@@ -668,8 +1071,7 @@ function Product() {
           </p>
 
           <strong>
-            Cart Total: ₹
-            {Number(subTotal || 0).toFixed(2)}
+            Cart Total: ₹{Number(subTotal || 0).toFixed(2)}
           </strong>
 
         </div>
@@ -683,7 +1085,9 @@ function Product() {
 
       </div>
 
-      {/* FOOTER */}
+      {/* =====================================
+          FOOTER
+      ===================================== */}
 
       <footer className="footer">
 
@@ -698,9 +1102,7 @@ function Product() {
       </footer>
 
     </div>
-
   );
-
 }
 
 export default Product;

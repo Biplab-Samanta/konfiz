@@ -1,0 +1,287 @@
+
+.our-story-page {
+    width: 100%;
+    overflow: hidden;
+    color: #33232a;
+    background: #fffaf7;
+}
+
+/* HERO */
+
+.story-hero {
+    min-height: 520px;
+    display: flex;
+    align-items: center;
+    padding: 80px 9%;
+    background:
+        linear-gradient(90deg, rgba(35, 18, 25, 0.82), rgba(35, 18, 25, 0.12)),
+        url("https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=1600")
+        center/cover no-repeat;
+}
+
+.story-hero-overlay {
+    max-width: 650px;
+    color: white;
+}
+
+.story-eyebrow {
+    color: #f47b9b;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+.story-hero h1 {
+    font-size: clamp(42px, 6vw, 76px);
+    line-height: 1.08;
+    margin: 22px 0;
+}
+
+.story-hero h1 span,
+.story-intro h2 span,
+.story-section-heading h2 span,
+.story-promise h2 span {
+    color: #f47b9b;
+}
+
+.story-hero p {
+    max-width: 490px;
+    line-height: 1.8;
+    font-size: 17px;
+    margin-bottom: 30px;
+}
+
+.story-btn {
+    display: inline-block;
+    padding: 14px 27px;
+    border-radius: 30px;
+    background: #f47b9b;
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    transition: 0.3s ease;
+}
+
+.story-btn:hover {
+    background: #e94f7c;
+    transform: translateY(-3px);
+}
+
+/* INTRODUCTION */
+
+.story-intro {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 65px;
+    padding: 100px 9%;
+}
+
+.story-intro-image img {
+    width: 100%;
+    height: 430px;
+    object-fit: cover;
+    border-radius: 25px;
+}
+
+.story-intro-content h2 {
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1.2;
+    margin: 18px 0;
+}
+
+.story-intro-content p {
+    color: #75666b;
+    line-height: 1.9;
+    margin-bottom: 17px;
+}
+
+.story-intro-content strong {
+    color: #e94f7c;
+    display: block;
+    margin-top: 25px;
+}
+
+/* MISSION AND VISION */
+
+.story-mission {
+    padding: 75px 9%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+    background: #fff0f3;
+}
+
+.mission-card {
+    text-align: center;
+    padding: 45px 35px;
+    background: white;
+    border-radius: 22px;
+    transition: 0.3s;
+}
+
+.mission-card:hover,
+.story-value-card:hover {
+    transform: translateY(-7px);
+    box-shadow: 0 15px 35px rgba(80, 35, 50, 0.1);
+}
+
+.mission-card span {
+    font-size: 42px;
+}
+
+.mission-card h2 {
+    margin: 18px 0 12px;
+}
+
+.mission-card p {
+    color: #75666b;
+    line-height: 1.8;
+}
+
+/* VALUES */
+
+.story-values {
+    padding: 100px 9%;
+}
+
+.story-section-heading {
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto 50px;
+}
+
+.story-section-heading h2 {
+    font-size: clamp(30px, 4vw, 45px);
+    margin: 17px 0;
+}
+
+.story-section-heading p {
+    color: #75666b;
+    line-height: 1.8;
+}
+
+.story-values-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.story-value-card {
+    text-align: center;
+    padding: 35px 20px;
+    background: white;
+    border: 1px solid #f5e3e8;
+    border-radius: 20px;
+    transition: 0.3s;
+}
+
+.story-value-card span {
+    font-size: 40px;
+}
+
+.story-value-card h3 {
+    margin: 18px 0 12px;
+}
+
+.story-value-card p {
+    color: #75666b;
+    line-height: 1.7;
+    font-size: 14px;
+}
+
+/* PROMISE */
+
+.story-promise {
+    padding: 100px 9%;
+    text-align: center;
+    background:
+        linear-gradient(rgba(42, 19, 29, 0.76), rgba(42, 19, 29, 0.76)),
+        url("https://images.unsplash.com/photo-1560008581-09826d1de69e?w=1600")
+        center/cover no-repeat;
+    color: #FFF;
+    background-attachment: fixed;
+}
+
+.story-promise h2 {
+    font-size: clamp(36px, 5vw, 58px);
+    line-height: 1.2;
+    margin: 20px 0;
+}
+
+.story-promise p {
+    max-width: 550px;
+    margin: 0 auto 30px;
+    line-height: 1.8;
+}
+
+/* FINAL */
+
+.story-final {
+    padding: 55px 20px;
+    text-align: center;
+    background: #fff0f3;
+}
+
+.story-final h2 {
+    font-size: 45px;
+    color: #e94f7c;
+    letter-spacing: 5px;
+    margin: 0;
+}
+
+.story-final p {
+    font-weight: 800;
+    letter-spacing: 3px;
+    font-size: 12px;
+}
+
+.story-final span {
+    color: #75666b;
+    font-style: italic;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+    .story-values-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .story-intro {
+        gap: 35px;
+    }
+}
+
+@media (max-width: 650px) {
+    .story-hero {
+        min-height: 470px;
+        padding: 65px 7%;
+    }
+
+    .story-intro {
+        grid-template-columns: 1fr;
+        padding: 65px 7%;
+    }
+
+    .story-intro-image img {
+        height: 300px;
+    }
+
+    .story-mission {
+        grid-template-columns: 1fr;
+        padding: 55px 7%;
+    }
+
+    .story-values {
+        padding: 65px 7%;
+    }
+
+    .story-values-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .story-promise {
+        padding: 75px 7%;
+    }
+}

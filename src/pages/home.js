@@ -3,6 +3,10 @@ import React, { useState } from "react";
 // import { Link } from "react-router-dom";
 import Navbar from "../components/navber";
 import { useCart } from "../context/cartcontext";
+import HeroSlider from "../components/heroSlider";
+import DynamicVideo from "../components/DynamicVideo";
+import videoSchema from "../data/videoschema";
+import Footer from "./../components/footer";
 import "../../src/App.css";
 
 
@@ -59,10 +63,7 @@ const products = [
         tag: "Seasonal",
     },
 ];
-// const phoneNumber = "8013267996"; // Country code + number (no '+' or dashes)
-// const message = "Hello! I'd like to inquire about placing a bulk order.";
-// const whatsappLink =
-//     `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
 
 function Home() {
     const [setCart] = useState(0);
@@ -83,12 +84,16 @@ function Home() {
     };
 
     return (
-        <div className="website">
+       
+         
+        <div className="">
+          
             <Navbar />
+      
 
 
             {/* SECTION 1: HERO */}
-            <section className="hero" id="home">
+            {/* <section className="hero" id="home">
                 <div className="hero-content">
                     <span className="eyebrow">
                         MADE FOR YOUR HAPPY MOMENTS
@@ -137,8 +142,13 @@ function Home() {
                 </div>
 
                 <div className="hero-decoration">SWEET</div>
-            </section>
+            </section> */}
+            <HeroSlider />
 
+            {/* HOME VIDEO SECTION */}
+            <DynamicVideo video={videoSchema.home} />
+
+            
             {/* SECTION 2: CATEGORIES */}
             <section className="categories section" id="categories">
                 <div className="section-heading">
@@ -315,8 +325,8 @@ function Home() {
 
                 </div>
             </section>
-
-            <footer className="footer">
+<Footer />
+            {/* <footer className="footer">
                 <div className="footer-main">
                     <div className="footer-brand">
                         <a href="#home" className="logo">
@@ -370,7 +380,7 @@ function Home() {
                     <p>© 2026 KONFiZ. All rights reserved.</p>
                     <p>Made with love and lots of ice cream.</p>
                 </div>
-            </footer>
+            </footer> */}
 
         </div>
     );

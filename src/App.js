@@ -1,5 +1,6 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+
 import {
     BrowserRouter,
     Routes,
@@ -15,13 +16,21 @@ import Product from "./pages/product";
 import Login from "./pages/admin/login";
 import Dashboard from "./pages/admin/dashboard";
 import Cart from "./pages/cart";
+import OurStory from "./pages/ourStory";
+import WeMakeYouSell from "./pages/weMakeYouSell.js";
+import DistinguishedFlavours from "./pages/DistinguishedFlavours";
+import QuickDelivery from "./pages/QuickDelivery.js";
+
+
+
+import Loader from "./components/loader.js";
 
 
 // =====================================
 // GLOBAL ROLE-BASED ROUTE PROTECTION
 // =====================================
 
-function ProtectedRoute({ children, allowedRoles }) {
+function ProtectedRoute({ children, allowedRoles = [] }) {
 
     const { user } = useAuth();
 
@@ -75,21 +84,28 @@ function AppRoutes() {
                     path="/login"
                     element={<Login />}
                 />
-
-
+                <Route path="/our-story" element={<OurStory />} />
+                <Route
+                    path="/we-make-you-sell"
+                    element={<WeMakeYouSell />}
+                />
+                <Route
+                    path="/distinguished-flavours"
+                    element={<DistinguishedFlavours />}
+                />
+                <Route
+                    path="/quick-delivery"
+                    element={<QuickDelivery />}
+                />
                 {/* =====================================
                     CUSTOMER + ADMIN PAGES
                 ===================================== */}
 
-                <Route
-                    path="/products"
-                    element={
-                        <ProtectedRoute
-                            allowedRoles={["customer", "admin"]}
-                        >
-                            <Product />
-                        </ProtectedRoute>
-                    }
+                <Route path="/products" element={
+                    <ProtectedRoute allowedRoles={["customer", "admin"]}>
+                        <Product />
+                    </ProtectedRoute>
+                }
                 />
 
                 <Route
@@ -138,6 +154,32 @@ function AppRoutes() {
 
 
 // =====================================
+// GLOBAL LOADER
+// =====================================
+
+function GlobalLoader() {
+
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 1800);
+
+        return () => clearTimeout(timer);
+
+    }, []);
+
+    if (!loading) {
+        return null;
+    }
+
+    return <Loader />;
+}
+
+
+// =====================================
 // MAIN APP
 // =====================================
 
@@ -149,6 +191,10 @@ function App() {
 
             <BrowserRouter>
 
+                {/* GLOBAL LOADER */}
+                <GlobalLoader />
+
+                {/* ALL APPLICATION ROUTES */}
                 <AppRoutes />
 
             </BrowserRouter>

@@ -1,0 +1,353 @@
+
+/* =====================================
+   KONFiZ - WE MAKE YOU SELL
+===================================== */
+
+.sell-page {
+    overflow: hidden;
+    color: #302033;
+}
+
+.sell-eyebrow {
+    color: #d64d85;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+}
+
+/* HERO */
+
+.sell-hero {
+    padding: 80px 8%;
+    min-height: 560px;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: center;
+    gap: 55px;
+    background: #fff5f8;
+}
+
+.sell-hero-content h1 {
+    font-size: clamp(45px, 6vw, 75px);
+    line-height: 1.1;
+    margin: 20px 0;
+}
+
+.sell-hero-content h1 span,
+.sell-intro h2 span,
+.sell-section-heading h2 span,
+.sell-partnership-content h2 span,
+.sell-cta h2 span {
+    color: #d64d85;
+}
+
+.sell-hero-content > p {
+    font-size: 16px;
+    line-height: 1.9;
+    color: #756878;
+    max-width: 550px;
+}
+
+.sell-hero-buttons,
+.sell-cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.sell-primary-btn,
+.sell-secondary-btn {
+    padding: 15px 25px;
+    border-radius: 7px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.sell-primary-btn {
+    background: #d64d85;
+    color: white;
+}
+
+.sell-primary-btn:hover {
+    background: #b9346c;
+    transform: translateY(-3px);
+}
+
+.sell-secondary-btn {
+    color: #d64d85;
+    border: 1px solid #d64d85;
+    background: white;
+}
+
+.sell-secondary-btn:hover {
+    background: #fff0f5;
+}
+
+.sell-hero-note {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+    font-size: 12px;
+    color: #716374;
+}
+
+.sell-hero-note span {
+    color: #d64d85;
+    font-weight: 800;
+}
+
+.sell-hero-image {
+    position: relative;
+}
+
+.sell-hero-image img {
+    width: 100%;
+    height: 420px;
+    object-fit: cover;
+    border-radius: 25px;
+}
+
+.sell-floating-card {
+    position: absolute;
+    bottom: 25px;
+    left: -25px;
+    background: white;
+    padding: 17px 22px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    box-shadow: 0 10px 35px #00000015;
+}
+
+.sell-floating-card > span {
+    font-size: 30px;
+}
+
+.sell-floating-card strong,
+.sell-floating-card small {
+    display: block;
+}
+
+.sell-floating-card small {
+    color: #8b7c8d;
+    margin-top: 5px;
+}
+
+/* INTRO */
+
+.sell-intro {
+    text-align: center;
+    padding: 90px 15%;
+}
+
+.sell-intro h2,
+.sell-section-heading h2 {
+    font-size: clamp(30px, 4vw, 43px);
+    margin: 15px 0;
+}
+
+.sell-intro p {
+    max-width: 800px;
+    margin: auto;
+    line-height: 1.9;
+    color: #817384;
+}
+
+/* BENEFITS */
+
+.sell-benefits {
+    background: #fff8fa;
+    padding: 80px 8%;
+}
+
+.sell-section-heading {
+    text-align: center;
+    margin-bottom: 45px;
+}
+
+.sell-benefit-grid,
+.sell-business-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+}
+
+.sell-benefit-card,
+.sell-business-card {
+    background: white;
+    padding: 30px 24px;
+    border-radius: 15px;
+    border: 1px solid #f3e5ec;
+    transition: 0.3s;
+}
+
+.sell-benefit-card:hover,
+.sell-business-card:hover {
+    transform: translateY(-7px);
+    box-shadow: 0 15px 35px #d64d8518;
+}
+
+.sell-card-icon {
+    font-size: 38px;
+    margin-bottom: 20px;
+}
+
+.sell-benefit-card h3,
+.sell-business-card h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+.sell-benefit-card p,
+.sell-business-card p {
+    font-size: 14px;
+    color: #827584;
+    line-height: 1.8;
+}
+
+/* PARTNERSHIP */
+
+.sell-partnership {
+    padding: 90px 8%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 65px;
+    align-items: center;
+}
+
+.sell-partnership-image img {
+    width: 100%;
+    height: 470px;
+    object-fit: cover;
+    border-radius: 20px;
+}
+
+.sell-partnership-content h2 {
+    font-size: clamp(30px, 4vw, 43px);
+    line-height: 1.3;
+    margin: 20px 0;
+}
+
+.sell-partnership-content p {
+    color: #817384;
+    line-height: 1.9;
+}
+
+.sell-partnership-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 25px 0;
+}
+
+.sell-partnership-content li {
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #655568;
+}
+
+/* BUSINESS TYPES */
+
+.sell-business-types {
+    padding: 80px 8%;
+    background: #fff5f8;
+}
+
+.sell-business-card {
+    text-align: center;
+}
+
+.sell-business-card > div {
+    font-size: 40px;
+    margin-bottom: 18px;
+}
+
+/* CTA */
+
+.sell-cta {
+    text-align: center;
+    padding: 90px 8%;
+    background: #29192f;
+    color: white;
+}
+
+.sell-cta h2 {
+    font-size: clamp(32px, 5vw, 48px);
+    margin: 18px 0;
+}
+
+.sell-cta p {
+    color: #d0c2d2;
+    line-height: 1.8;
+}
+
+.sell-cta-buttons {
+    justify-content: center;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+    .sell-benefit-grid,
+    .sell-business-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sell-hero {
+        gap: 30px;
+    }
+}
+
+@media (max-width: 700px) {
+    .sell-hero {
+        grid-template-columns: 1fr;
+        padding: 55px 6%;
+    }
+
+    .sell-hero-image img {
+        height: 300px;
+    }
+
+    .sell-floating-card {
+        left: 10px;
+    }
+
+    .sell-intro {
+        padding: 65px 7%;
+    }
+
+    .sell-benefits,
+    .sell-business-types {
+        padding: 60px 6%;
+    }
+
+    .sell-partnership {
+        grid-template-columns: 1fr;
+        padding: 60px 6%;
+        gap: 35px;
+    }
+
+    .sell-partnership-image img {
+        height: 320px;
+    }
+
+    .sell-benefit-grid,
+    .sell-business-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sell-cta {
+        padding: 65px 6%;
+    }
+
+    .sell-hero-note {
+        gap: 10px;
+    }
+}

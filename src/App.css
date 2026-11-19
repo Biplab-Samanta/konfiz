@@ -45,166 +45,231 @@ img {
 
 .website {
   width: 100%;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 /* NAVIGATION */
 /* =====================================
    PRODUCTS MEGA MENU
 ===================================== */
+.topbar {
+  background-color: #292929;
+
+  color: #fff;
+  padding: 10px;
+}
+
+button.navbar-cart-button {
+  background: none;
+  color: #fff;
+}
+
+.cart-button {
+  position: relative;
+
+}
+
+.navbar-cart-count {
+  position: absolute;
+  top: -6px;
+  right: -3px;
+  height: 30px;
+  width: 30px;
+  text-align: center;
+}
 
 .nav-dropdown {
-    position: relative;
-    display: flex;
-    align-items: center;
-    height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .nav-product-link {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .dropdown-arrow {
-    font-size: 16px;
-    transition: transform 0.3s ease;
+  font-size: 16px;
+  transition: transform 0.3s ease;
 }
 
 .nav-dropdown:hover .dropdown-arrow {
-    transform: rotate(180deg);
+  transform: rotate(180deg);
+}
+
+/* =====================================
+   SMART STICKY NAVBAR
+===================================== */
+
+.navbar {
+  height: 82px;
+  padding: 0 7%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: var(--cream);
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+
+  z-index: 9999;
+
+  box-shadow: 0 2px 15px #422c280a;
+
+  transition: transform 0.35s ease-in-out;
+}
+
+/* NAVBAR VISIBLE */
+.website {
+  transform: translateZ(0);
+  overflow: hidden;
+  filter: blur(0);
+  perspective: 1000px;
+}
+
+.navbar-visible {
+  transform: translateY(0);
+}
+
+/* NAVBAR HIDDEN */
+
+.navbar-hidden {
+  transform: translateY(-100%);
 }
 
 /* MEGA MENU CONTAINER */
 
 .mega-menu {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(12px);
+  position: absolute;
+  top: 100%;
+  left: 100%;
+  transform: translateX(-50%) translateY(12px);
 
-    width: min(850px, 90vw);
+  width: min(850px, 90vw);
 
-    background: #fff;
-    border-radius: 16px;
+  background: #fff;
+  border-radius: 16px;
 
-    padding: 25px;
+  padding: 25px;
 
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.13);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.13);
 
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 
-    transition: all 0.3s ease;
-    z-index: 9999;
+  transition: all 0.3s ease;
+  z-index: 9999;
 }
 
 /* OPEN ON HOVER */
 
 .nav-dropdown:hover .mega-menu,
 .nav-dropdown:focus-within .mega-menu {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* HEADING */
 
 .mega-menu-heading {
-    margin-bottom: 22px;
+  margin-bottom: 22px;
 }
 
 .mega-menu-heading span {
-    color: #e87936;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
+  color: #e87936;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
 }
 
 .mega-menu-heading h2 {
-    font-size: 23px;
-    margin: 8px 0;
-    color: #292929;
+  font-size: 23px;
+  margin: 8px 0;
+  color: #292929;
 }
 
 .mega-menu-heading p {
-    color: #777;
-    font-size: 13px;
-    margin: 0;
+  color: #777;
+  font-size: 13px;
+  margin: 0;
 }
 
 /* CATEGORY GRID */
 
 .mega-menu-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
 }
 
 .mega-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    padding: 15px 12px;
-
-    border-radius: 10px;
-    text-decoration: none;
-
-    background: #fffaf5;
-    border: 1px solid #f5eee7;
-
-    transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  background: #fffaf5;
+  border: 1px solid #f5eee7;
+  transition: all 0.25s ease;
 }
 
 .mega-item:hover {
-    background: #fff0df;
-    border-color: #f2c49b;
-    transform: translateY(-3px);
+  background: #fff0df;
+  border-color: #f2c49b;
+  transform: translateY(-3px);
 }
 
-.mega-emoji {
-    font-size: 30px;
-    min-width: 38px;
-    text-align: center;
-}
+/* .mega-emoji {
+  font-size: 30px;
+  min-width: 38px;
+  text-align: center;
+} */
 
 .mega-item h3 {
-    font-size: 13px;
-    margin: 0 0 5px;
-    color: #333;
+  font-size: 13px;
+  margin: 0 0 5px;
+  color: #333;
 }
 
 .mega-item p {
-    font-size: 11px;
-    margin: 0;
-    color: #888;
+  font-size: 11px;
+  margin: 0;
+  color: #888;
 }
 
 /* FOOTER */
 
 .mega-menu-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-    margin-top: 22px;
-    padding-top: 17px;
+  margin-top: 22px;
+  padding-top: 17px;
 
-    border-top: 1px solid #eee;
-    font-size: 12px;
+  border-top: 1px solid #eee;
+  font-size: 12px;
 }
 
 .mega-menu-footer span {
-    color: #777;
+  color: #777;
 }
 
 .mega-menu-footer a {
-    color: #e87936;
-    font-weight: 700;
-    text-decoration: none;
+  color: #e87936;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 /* =====================================
@@ -213,51 +278,52 @@ img {
 
 @media (max-width: 900px) {
 
-    .mega-menu {
-        width: min(650px, 90vw);
-    }
+  .mega-menu {
+    width: min(650px, 90vw);
+  }
 
-    .mega-menu-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .mega-menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
 }
 
 @media (max-width: 600px) {
 
-    .nav-dropdown {
-        display: block;
-        height: auto;
-    }
+  .nav-dropdown {
+    display: block;
+    height: auto;
+  }
 
-    .mega-menu {
-        display: none;
-        position: static;
-        transform: none;
-        width: 100%;
-        box-shadow: none;
-        padding: 15px 5px;
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-    }
+  .mega-menu {
+    display: none;
+    position: static;
+    transform: none;
+    width: 100%;
+    box-shadow: none;
+    padding: 15px 5px;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
 
-    .nav-dropdown:hover .mega-menu,
-    .nav-dropdown:focus-within .mega-menu {
-        transform: none;
-    }
+  .nav-dropdown:hover .mega-menu,
+  .nav-dropdown:focus-within .mega-menu {
+    transform: none;
+  }
 
-    .mega-menu-grid {
-        grid-template-columns: 1fr;
-    }
+  .mega-menu-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .mega-menu-footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-    }
+  .mega-menu-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 
 }
+
 .navbar {
   height: 82px;
   padding: 0 7%;
@@ -295,7 +361,7 @@ img {
 
 .nav-links {
   display: flex;
-  gap: 34px;
+  gap: 16px;
 }
 
 .nav-links a {
@@ -319,11 +385,9 @@ a.konfiz_login {
 
 .cart-button {
   background: var(--brown);
-  color: white;
-  padding: 12px 20px;
+  color: #fff;
+  padding: 18px 20px;
   border-radius: 30px;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .cart-button span {
@@ -331,96 +395,98 @@ a.konfiz_login {
   color: white;
   border-radius: 50%;
   padding: 3px 7px;
-  margin-left: 5px;
+  margin: 0 5px;
 }
+
 /* NAVBAR USER SECTION */
 
 .navbar-user-section {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
 .navbar-profile {
-    position: relative;
+  position: relative;
 }
 
 .profile-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    position: relative;
-    padding: 8px 12px;
-    border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 8px;
 }
 
 .profile-icon {
-    font-size: 24px;
+  font-size: 24px;
 }
 
 .profile-details {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .profile-details strong {
-    font-size: 14px;
+  font-size: 14px;
 }
 
 .profile-details small {
-    font-size: 11px;
-    color: #777;
+  font-size: 11px;
+  color: #777;
 }
 
 /* PROFILE DROPDOWN */
 
 .profile-dropdown {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    width: 260px;
-    background: white;
-    padding: 18px;
-    border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-    z-index: 999;
-    color: #333;
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 260px;
+  background: white;
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  color: #333;
 }
 
 .profile-info:hover .profile-dropdown {
-    display: block;
+  display: block;
 }
 
 .profile-dropdown h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
+  margin-top: 0;
+  margin-bottom: 15px;
 }
 
 .profile-dropdown p {
-    font-size: 13px;
-    margin: 10px 0;
-    word-break: break-word;
+  font-size: 13px;
+  margin: 10px 0;
+  word-break: break-word;
 }
 
 /* LOGOUT */
 
 .logout-btn {
-    width: 100%;
-    padding: 10px;
-    margin-top: 12px;
-    border: none;
-    border-radius: 6px;
-    background: #e74c3c;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
+  width: 100%;
+  padding: 10px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 6px;
+  background: #e74c3c;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .logout-btn:hover {
-    background: #c0392b;
+  background: #c0392b;
 }
+
 /* COMMON */
 
 .section {
@@ -910,11 +976,13 @@ a.konfiz_login {
   line-height: 1.8;
   font-size: 14px;
 }
+
 .buttun_area {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
 }
+
 /* FOOTER */
 
 .footer {
@@ -1037,6 +1105,11 @@ a.konfiz_login {
     height: 72px;
     padding: 0 5%;
   }
+
+  /* .navbar {
+    height: 72px;
+    padding: 0 5%;
+  } */
 
   .logo {
     font-size: 25px;

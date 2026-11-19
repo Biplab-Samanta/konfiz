@@ -1,16 +1,37 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import { useCart } from "../context/cartcontext";
 import { useAuth } from "../context/authContext";
+
+import DynamicIcon from "./dynamicIcon";
+import CartDrawer from "./CartDrawer";
+import Marquee from "react-fast-marquee";
+import DistinguishedFlavours from "../pages/DistinguishedFlavours";
+import QuickDelivery from "../pages/QuickDelivery";
 import "../App.css";
+
+
+
 
 function Navbar() {
 
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
-    const { cartCount } = useCart();
+    // =====================================
+    // CART STATE
+    // =====================================
+
+    const [cartOpen, setCartOpen] = useState(false);
+
+    const {
+        cartCount,
+        totalQuantity
+    } = useCart();
+
+    const displayCartCount = cartCount ?? totalQuantity ?? 0;
 
     // =====================================
     // GLOBAL ADMIN AND CUSTOMER LOGIN
@@ -18,7 +39,7 @@ function Navbar() {
 
     const isAdmin = user?.role?.toLowerCase() === "admin";
 
-    const isLoggedIn = !!user;
+    const isLoggedIn = !!user && !!user.authenticated;
 
     // ADMIN PROFILE
     const adminEmail = isAdmin ? user?.email : "";
@@ -32,232 +53,469 @@ function Navbar() {
 
     const handleLogout = () => {
 
-        // Clear shared authentication
+        // Clear shared authentication session
         logout();
 
-        // Redirect to home page
+        // Close cart if open
+        setCartOpen(false);
+
+        // Redirect to home
         navigate("/");
 
     };
 
+    // =====================================
+    // CART DRAWER
+    // =====================================
+
+    const openCart = () => {
+        setCartOpen(true);
+    };
+
+    const closeCart = () => {
+        setCartOpen(false);
+    };
+    const [showNavbar, setShowNavbar] = useState(true);
+
+    useEffect(() => {
+
+        let lastScrollY = window.scrollY;
+
+        const handleScroll = () => {
+
+            const currentScrollY = window.scrollY;
+
+            // Always show navbar at page top
+            if (currentScrollY <= 80) {
+                setShowNavbar(true);
+            }
+
+            // Scrolling down: hide navbar
+            else if (currentScrollY > lastScrollY) {
+                setShowNavbar(false);
+            }
+
+            // Scrolling up: show navbar
+            else if (currentScrollY < lastScrollY) {
+                setShowNavbar(true);
+            }
+
+            lastScrollY = currentScrollY;
+        };
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+        };
+
+    }, []);
+
     return (
 
-        <nav className="navbar">
-            <div>
-                
+        <>
+            <div className="topbar">
+                <Marquee speed={50} pauseOnHover={true} gradient={false}>
+                    <span style={{ marginRight: "2rem" }}>Scoop Into Happiness!</span>
+                    <span style={{ marginRight: "2rem" }}> Taste the Magic, Feel the Joy!</span>
+                    <span style={{ marginRight: "2rem" }}>Every Scoop Tells a Sweet Story!</span>
+                </Marquee>
             </div>
-            {/* LOGO */}
-            <Link to="/" className="logo">
-                KONFiZ
-                <small>ICE CREAM</small>
-            </Link>
+            <nav className="navbar">
 
-            {/* NAVIGATION */}
-            <div className="nav-links">
+                {/* LOGO */}
+                <Link to="/" className="logo">
+                    KONFiZ
+                    <small>ICE CREAM</small>
+                </Link>
 
-                <Link to="/">Home</Link>
 
-                {/* PRODUCTS MEGA MENU */}
-                <div className="nav-dropdown">
+                {/* =====================================
+                    NAVIGATION
+                ===================================== */}
 
-                    <Link to="/products" className="nav-product-link">
-                        Products <span className="dropdown-arrow">v</span>
+                <div className="nav-links">
+
+                    <Link to="/">
+                        Home
                     </Link>
 
-                    <div className="mega-menu">
 
-                        <div className="mega-menu-content">
+                    {/* PRODUCTS MEGA MENU */}
+                    <div className="nav-dropdown">
 
-                            <div className="mega-menu-heading">
-                                <span>EXPLORE OUR PRODUCTS</span>
-                                <h2>Find Your Favourite Treat!</h2>
-                                <p>Discover something delicious for every mood.</p>
-                            </div>
+                        <Link
+                            to="/products"
+                            className="nav-product-link"
+                        >
+                            Products
 
-                            <div className="mega-menu-grid">
+                            <span className="dropdown-arrow">
+                                <DynamicIcon
+                                    name="dropdown"
+                                    size={20}
+                                />
+                            </span>
 
-                                <Link to="/products?category=cones" className="mega-item">
-                                    <span className="mega-emoji">🍦</span>
-                                    <div>
-                                        <h3>Ice Cream Cones</h3>
-                                        <p>Classic and premium cones</p>
-                                    </div>
-                                </Link>
+                        </Link>
 
-                                <Link to="/products?category=tubs" className="mega-item">
-                                    <span className="mega-emoji">🍨</span>
-                                    <div>
-                                        <h3>Ice Cream Tubs</h3>
-                                        <p>Delicious tubs in every flavour</p>
-                                    </div>
-                                </Link>
 
-                                <Link to="/products?category=family-packs" className="mega-item">
-                                    <span className="mega-emoji">👨‍👩‍👧‍👦</span>
-                                    <div>
-                                        <h3>Family Packs</h3>
-                                        <p>More happiness to share</p>
-                                    </div>
-                                </Link>
+                        <div className="mega-menu">
 
-                                <Link to="/products?category=sundaes" className="mega-item">
-                                    <span className="mega-emoji">🍧</span>
-                                    <div>
-                                        <h3>Sundaes</h3>
-                                        <p>Loaded dessert combinations</p>
-                                    </div>
-                                </Link>
+                            <div className="mega-menu-content">
 
-                                <Link to="/products?category=sticks" className="mega-item">
-                                    <span className="mega-emoji">🍫</span>
-                                    <div>
-                                        <h3>Ice Cream Sticks</h3>
-                                        <p>Chocolate-coated treats</p>
-                                    </div>
-                                </Link>
+                                <div className="mega-menu-heading">
 
-                                <Link to="/products?category=milkshakes" className="mega-item">
-                                    <span className="mega-emoji">🥤</span>
-                                    <div>
-                                        <h3>Milkshakes</h3>
-                                        <p>Thick and creamy shakes</p>
-                                    </div>
-                                </Link>
+                                    <span>
+                                        EXPLORE OUR PRODUCTS
+                                    </span>
 
-                            </div>
+                                    <h2>
+                                        Find Your Favourite Treat!
+                                    </h2>
 
-                            <div className="mega-menu-footer">
-                                <span>🍦 A little scoop of happiness in every bite!</span>
-                                <Link to="/products">View All Products →</Link>
+                                    <p>
+                                        Discover something delicious
+                                        for every mood.
+                                    </p>
+
+                                </div>
+
+
+                                <div className="mega-menu-grid">
+
+                                    <Link
+                                        to="/products?category=cones"
+                                        className="mega-item"
+                                    >
+                                        <div>
+                                            <h3>Gelato</h3>
+                                            <p>Cup · Cone · Stick</p>
+                                        </div>
+                                    </Link>
+
+
+                                    <Link
+                                        to="/products?category=tubs"
+                                        className="mega-item"
+                                    >
+                                        <div>
+                                            <h3>Kulfi</h3>
+                                            <p>Rajasthani · Punjabi · Matka</p>
+                                        </div>
+                                    </Link>
+
+
+                                    <Link
+                                        to="/products?category=family-packs"
+                                        className="mega-item"
+                                    >
+
+
+                                        <div>
+                                            <h3>Sorbet</h3>
+                                            <p>Cup</p>
+                                        </div>
+                                    </Link>
+
+
+                                    <Link
+                                        to="/products?category=sundaes"
+                                        className="mega-item"
+                                    >
+
+
+                                        <div>
+                                            <h3>Popsicles</h3>
+                                            <p>Mini · Big · Real Fruit</p>
+                                        </div>
+                                    </Link>
+
+
+                                    <Link
+                                        to="/products?category=sticks"
+                                        className="mega-item"
+                                    >
+
+
+                                        <div>
+                                            <h3>Chocolate</h3>
+                                            <p>All Chocolate Products</p>
+                                        </div>
+                                    </Link>
+
+
+                                    <Link
+                                        to="/products?category=milkshakes"
+                                        className="mega-item"
+                                    >
+
+
+                                        <div>
+                                            <h3>Breads & Buns</h3>
+                                            <p>All Bakery Products</p>
+                                        </div>
+                                    </Link>
+                                    <Link
+                                        to="/products?category=milkshakes"
+                                        className="mega-item"
+                                    >
+
+
+                                        <div>
+                                            <h3>Cookies</h3>
+                                            <p>All Cookie Products</p>
+                                        </div>
+                                    </Link>
+                                    <Link
+                                        to="/products?category=milkshakes"
+                                        className="mega-item"
+                                    >
+
+
+                                        <div>
+                                            <h3>Dips & Spreads</h3>
+                                            <p>Hummus · Pesto · Hazelnut · Biskia · Magnum Spread</p>
+                                        </div>
+                                    </Link>
+                                </div>
+
+
+                                <div className="mega-menu-footer">
+
+                                    <span>
+                                        🍦 A little scoop of happiness
+                                        in every bite!
+                                    </span>
+
+                                    <Link to="/products">
+                                        View All Products →
+                                    </Link>
+
+                                </div>
+
                             </div>
 
                         </div>
 
                     </div>
+
+
+                   <Link to="/quick-delivery">
+                        30 Minute Delivery in Kolkata
+                   </Link>
+
+                    <Link to="/distinguished-flavours">
+                        Our Distinguished Flavours
+                    </Link>
+
+                    <Link to="/we-make-you-sell">
+                        We Make You Sell
+                    </Link>
+
+                    <Link to="/our-story">Our Story</Link>
 
                 </div>
 
-                <a href="/#categories">Categories</a>
 
-                <a href="/#products">Our Flavours</a>
+                {/* =====================================
+                    USER AND CART SECTION
+                ===================================== */}
 
-                <a href="/#story">Our Story</a>
+                <div className="navbar-user-section">
 
-            </div>
 
-            {/* USER AND CART */}
-            <div className="navbar-user-section">
+                    {/* =====================================
+                        LOGIN / PROFILE
+                    ===================================== */}
 
-                {/* LOGIN / PROFILE */}
-                {isLoggedIn ? (
+                    {isLoggedIn ? (
 
-                    <div className="navbar-profile">
+                        <div className="navbar-profile">
 
-                        <div className="profile-info">
+                            <div className="profile-info">
 
-                            <span className="profile-icon">
-                                👤
-                            </span>
+                                <span className="profile-icon">
+                                    <DynamicIcon
+                                        name="profile"
+                                        size={21}
+                                    />
+                                </span>
 
-                            <div className="profile-details">
 
-                                <strong>
-                                    {isAdmin
-                                        ? "Administrator"
-                                        : customer?.name || "Customer"}
-                                </strong>
+                                <div className="profile-details">
 
-                                <small>
-                                    {isAdmin
-                                        ? "Admin"
-                                        : customer?.customerId ||
-                                        customer?.id ||
-                                        "Customer"}
-                                </small>
+                                    <strong>
+                                        {isAdmin
+                                            ? "Administrator"
+                                            : customer?.name || "Customer"}
+                                    </strong>
 
-                            </div>
+                                    <small>
+                                        {isAdmin
+                                            ? "Admin"
+                                            : customer?.customerId ||
+                                            customer?.id ||
+                                            "Customer"}
+                                    </small>
 
-                            <div className="profile-dropdown">
+                                </div>
 
-                                <h3>Profile Information</h3>
 
-                                <p>
-                                    <strong>Name:</strong>{" "}
-                                    {isAdmin
-                                        ? "Administrator"
-                                        : customer?.name || "Customer"}
-                                </p>
+                                {/* PROFILE DROPDOWN */}
+                                <div className="profile-dropdown">
 
-                                <p>
-                                    <strong>Role:</strong>{" "}
-                                    {isAdmin
-                                        ? "Admin"
-                                        : customer?.role || "Customer"}
-                                </p>
+                                    <h3>
+                                        Profile Information
+                                    </h3>
 
-                                <p>
-                                    <strong>Email:</strong>{" "}
-                                    {isAdmin
-                                        ? adminEmail
-                                        : customer?.email || "N/A"}
-                                </p>
 
-                                {!isAdmin && (
-                                    <>
-                                        <p>
-                                            <strong>Customer ID:</strong>{" "}
-                                            {customer?.customerId ||
-                                                customer?.id ||
-                                                "N/A"}
-                                        </p>
+                                    <p>
+                                        <strong>Name:</strong>{" "}
 
-                                        <p>
-                                            <strong>Mobile:</strong>{" "}
-                                            {customer?.mobile || "N/A"}
-                                        </p>
-                                    </>
-                                )}
+                                        {isAdmin
+                                            ? "Administrator"
+                                            : customer?.name || "Customer"}
+                                    </p>
 
-                                <button
-                                    className="logout-btn"
-                                    type="button"
-                                    onClick={handleLogout}
-                                >
-                                    Logout
-                                </button>
+
+                                    <p>
+                                        <strong>Role:</strong>{" "}
+
+                                        {isAdmin
+                                            ? "Admin"
+                                            : customer?.role || "Customer"}
+                                    </p>
+
+
+                                    <p>
+                                        <strong>Email:</strong>{" "}
+
+                                        {isAdmin
+                                            ? adminEmail
+                                            : customer?.email || "N/A"}
+                                    </p>
+
+
+                                    {!isAdmin && (
+
+                                        <>
+
+                                            <p>
+                                                <strong>Customer ID:</strong>{" "}
+
+                                                {customer?.customerId ||
+                                                    customer?.id ||
+                                                    "N/A"}
+                                            </p>
+
+
+                                            <p>
+                                                <strong>Mobile:</strong>{" "}
+
+                                                {customer?.mobile || "N/A"}
+                                            </p>
+
+                                        </>
+
+                                    )}
+
+
+                                    {/* ADMIN DASHBOARD LINK */}
+                                    {isAdmin && (
+
+                                        <Link
+                                            to="/admin/dashboard"
+                                            className="profile-dashboard-link"
+                                        >
+                                            <DynamicIcon
+                                                name="dashboard"
+                                                size={17}
+                                            />
+
+                                            Admin Dashboard
+                                        </Link>
+
+                                    )}
+
+
+                                    {/* LOGOUT */}
+                                    <button
+                                        className="logout-btn"
+                                        type="button"
+                                        onClick={handleLogout}
+                                    >
+
+                                        <DynamicIcon
+                                            name="logout"
+                                            size={17}
+                                        />
+
+                                        Logout
+
+                                    </button>
+
+                                </div>
 
                             </div>
 
                         </div>
 
+                    ) : (
+
+                        <Link
+                            className="konfiz_login"
+                            to="/login"
+                        >
+                            Login
+                        </Link>
+
+                    )}
+
+
+                    {/* =====================================
+                        STICKY CART BUTTON
+                    ===================================== */}
+
+
+
+                    <div className="cart-button" onClick={openCart}
+                        aria-label="Open shopping cart"
+                        aria-expanded={cartOpen}>
+
+                        <button
+                            type="button"
+                            className="navbar-cart-button"
+                        >
+
+                            <DynamicIcon
+                                name="cart"
+                                size={23}
+                            />
+                        </button>
+                        <span className="navbar-cart-count">
+                            {displayCartCount}
+                        </span>
+
+
+
+
                     </div>
+                </div>
 
-                ) : (
+            </nav>
 
-                    <Link className="konfiz_login" to="/login">
-                        Login
-                    </Link>
 
-                )}
+            {/* =====================================
+                GLOBAL OFF-CANVAS CART DRAWER
+            ===================================== */}
 
-                {/* LIVE CART */}
-                <Link to="/cart" className="cart-button">
+            <CartDrawer
+                isOpen={cartOpen}
+                onClose={closeCart}
+            />
 
-                    {/* <span className="cart-icon">
-                        🛒
-                    </span> */}
-
-                    Cart
-
-                    <span className="cart-count">
-                        {cartCount}
-                    </span>
-
-                </Link>
-
-            </div>
-
-        </nav>
+        </>
 
     );
 
