@@ -153,7 +153,7 @@ function Navbar() {
                             <span className="dropdown-arrow">
                                 <DynamicIcon
                                     name="dropdown"
-                                    size={20}
+                                    size={14}
                                 />
                             </span>
 

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import "../style/hero.css";
+import Icecream from "../images/banner/sundae-a-la-creme-glacee-maison-.jpg";
 
 function HeroSlider() {
 
@@ -11,7 +12,7 @@ function HeroSlider() {
             highlight: "Of Happiness.",
             description:
                 "Life is better with ice cream. Discover your favourite flavours and make every moment delicious.",
-            image: "https://images.unsplash.com/photo-1560008581-09826d1de69e?w=1000",
+            image: Icecream,
             note: "Fresh flavours. Endless happiness.",
             badge: "100% Happiness",
             badgeText: "In every scoop"
@@ -22,7 +23,7 @@ function HeroSlider() {
             highlight: "Made Special.",
             description:
                 "From creamy classics to exciting new flavours, find the perfect scoop for every occasion.",
-            image: "https://images.unsplash.com/photo-1501446529957-6226bd447c46?w=1000",
+             image: Icecream,
             note: "Every flavour tells a story.",
             badge: "Fresh & Creamy",
             badgeText: "Made with love"
@@ -33,7 +34,7 @@ function HeroSlider() {
             highlight: "Favourite Flavour.",
             description:
                 "Treat yourself to delicious ice cream and turn ordinary days into extraordinary memories.",
-            image: "https://images.unsplash.com/photo-1488900128323-21503983a07e?w=1000",
+            image: Icecream,
             note: "Scoop more. Smile more.",
             badge: "Pure Delight",
             badgeText: "A taste of joy"

@@ -1,14 +1,14 @@
 
-import React, { useState } from "react";
-// import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
 import Navbar from "../components/navber";
-import { useCart } from "../context/cartcontext";
 import HeroSlider from "../components/heroSlider";
 import DynamicVideo from "../components/DynamicVideo";
 import videoSchema from "../data/videoschema";
-import Footer from "./../components/footer";
-import "../../src/App.css";
+import Footer from "../components/footer";
 
+import "../../src/App.css";
 
 const categories = [
     { name: "Ice Cream Cones", count: "12 Flavours", emoji: "🍦" },
@@ -17,234 +17,270 @@ const categories = [
     { name: "Sundaes", count: "10 Products", emoji: "🍧" },
 ];
 
-const products = [
-    {
-        id: 1,
-        name: "Belgian Chocolate",
-        category: "Tubs",
-        price: 249,
-        oldPrice: 299,
-        rating: "4.9",
-        image:
-            "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=600",
-        tag: "Bestseller",
-    },
-    {
-        id: 2,
-        name: "Strawberry Bliss",
-        category: "Tubs",
-        price: 199,
-        oldPrice: 249,
-        rating: "4.8",
-        image:
-            "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600",
-        tag: "Popular",
-    },
-    {
-        id: 3,
-        name: "Vanilla Dream",
-        category: "Cones",
-        price: 149,
-        oldPrice: 179,
-        rating: "4.7",
-        image:
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJGFc_i_JH35DZpkCrb-WYUksSR9hdT1ls9JT6n0UR8mJyA_z9IFLYwCTYlQVwsCaE97Xz9jiLUtDfGscaq7AQ0vn3GMPy7aukSD1iiis&s=10",
-        tag: "New",
-    },
-    {
-        id: 4,
-        name: "Mango Magic",
-        category: "Tubs",
-        price: 229,
-        oldPrice: 279,
-        rating: "4.9",
-        image:
-            "https://images.unsplash.com/photo-1488900128323-21503983a07e?w=600",
-        tag: "Seasonal",
-    },
-];
-
-
 function Home() {
-    const [setCart] = useState(0);
+
+    const [popularProducts, setPopularProducts] = useState([]);
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
 
-    // const addToCart = () => {
-    //     setCart((previous) => previous + 1);
-    // };
-    const { addToCart, cartCount } = useCart();
+
+    // LOAD ACTUAL PRODUCTS
+    
+
+    useEffect(() => {
+
+        const loadProducts = () => {
+
+            try {
+
+                const savedProducts = JSON.parse(
+                    localStorage.getItem("konfizProducts") || "[]"
+                );
+
+                if (!Array.isArray(savedProducts)) {
+                    setPopularProducts([]);
+                    return;
+                }
+
+                const activeProducts = savedProducts.filter(
+                    product => product.status !== "inactive"
+                );
+
+                const featuredProducts = activeProducts.filter(
+                    product =>
+                        product.isPopular === true ||
+                        product.featured === true
+                );
+
+                const productsToShow =
+                    featuredProducts.length > 0
+                        ? featuredProducts
+                        : activeProducts;
+
+                setPopularProducts(productsToShow.slice(0, 4));
+
+            } catch (error) {
+
+                console.error("Product loading error:", error);
+                setPopularProducts([]);
+
+            }
+
+        };
+
+        loadProducts();
+
+        window.addEventListener("storage", loadProducts);
+        window.addEventListener("konfizProductsUpdated", loadProducts);
+
+        return () => {
+            window.removeEventListener("storage", loadProducts);
+            window.removeEventListener("konfizProductsUpdated", loadProducts);
+        };
+
+    }, []);
+
+    // NEWSLETTER
+
+
     const subscribe = (e) => {
+
         e.preventDefault();
 
         if (!email.trim()) return;
 
         setMessage("Thank you! You're on our sweet list with love.");
         setEmail("");
+
     };
 
     return (
-       
-         
-        <div className="">
-          
+
+        <div className="home-page">
+
             <Navbar />
-      
 
+            {/* HERO SECTION */}
 
-            {/* SECTION 1: HERO */}
-            {/* <section className="hero" id="home">
-                <div className="hero-content">
-                    <span className="eyebrow">
-                        MADE FOR YOUR HAPPY MOMENTS
-                    </span>
-
-                    <h1>
-                        A Little Scoop
-                        <br />
-                        Of <span>Happiness.</span>
-                    </h1>
-
-                    <p>
-                        Life is better with ice cream. Discover your favourite
-                        flavours and make every moment delicious.
-                    </p>
-
-                    <div className="hero-buttons">
-                        <a href="#products" className="primary-btn">
-                            Shop Now <span>→</span>
-                        </a>
-
-                        <a href="#categories" className="secondary-btn">
-                            Explore Flavours
-                        </a>
-                    </div>
-
-                    <div className="hero-note">
-
-                        Fresh flavours. Endless happiness.
-                    </div>
-                </div>
-
-                <div className="hero-image">
-                    <img
-                        src="https://images.unsplash.com/photo-1560008581-09826d1de69e?w=1000"
-                        alt="Delicious ice cream"
-                    />
-
-                    <div className="floating-card">
-
-                        <div>
-                            <strong>100% Happiness</strong>
-                            <small>In every scoop</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="hero-decoration">SWEET</div>
-            </section> */}
             <HeroSlider />
 
-            {/* HOME VIDEO SECTION */}
+            {/* VIDEO SECTION */}
+
             <DynamicVideo video={videoSchema.home} />
 
-            
-            {/* SECTION 2: CATEGORIES */}
+            {/*  CATEGORIES SECTION  */}
+
             <section className="categories section" id="categories">
+
                 <div className="section-heading">
-                    <span className="eyebrow">FIND YOUR FAVOURITE</span>
-                    <h2>Something for <span>Everyone.</span></h2>
-                    <p>Explore our delicious world of ice cream.</p>
+
+                    <span className="eyebrow">
+                        FIND YOUR FAVOURITE
+                    </span>
+
+                    <h2>
+                        Something for <span>Everyone.</span>
+                    </h2>
+
+                    <p>
+                        Explore our delicious world of ice cream.
+                    </p>
+
                 </div>
 
                 <div className="category-grid">
+
                     {categories.map((category) => (
-                        <a
-                            href="#products"
+
+                        <Link
+                            to={`/products?category=${encodeURIComponent(category.name)}`}
                             className="category-card"
                             key={category.name}
                         >
+
                             <div className="category-emoji">
                                 {category.emoji}
                             </div>
 
                             <h3>{category.name}</h3>
+
                             <p>{category.count}</p>
+
                             <span className="category-arrow">→</span>
-                        </a>
+
+                        </Link>
+
                     ))}
+
                 </div>
+
             </section>
 
-            {/* SECTION 3: BEST SELLERS */}
-            <section className="products section" id="products">
+            {/*  POPULAR PRODUCTS*/}
+
+            <section className="popular-products" id="products">
+
                 <div className="section-heading">
-                    <span className="eyebrow">CUSTOMER FAVOURITES</span>
-                    <h2>Our Best <span>Sellers.</span></h2>
-                    <p>The flavours everyone keeps coming back for.</p>
+
+                    <span className="eyebrow">
+                        OUR BEST COLLECTION
+                    </span>
+
+                    <h2>
+                        Popular <span>Products.</span>
+                    </h2>
+
+                    <p>
+                        Discover the flavours everyone loves.
+                    </p>
+
                 </div>
 
+                {popularProducts.length > 0 ? (
 
-                <div className="product-grid">
-                    {products.slice(0, 4).map((product) => (
-                        <article className="product-card" key={product.id}>
-                            <div className="product-image">
-                                <img src={product.image} alt={product.name} />
-                                <span className="product-tag">{product.tag}</span>
-                                <button
-                                    className="add-btn"
-                                    onClick={() => addToCart(product)}
-                                >
-                                    Add +
-                                </button>
-                            </div>
+                    <div className="product-grid">
 
-                            <div className="product-info">
-                                <div className="product-rating">
-                                    ⭐ {product.rating}
+                        {popularProducts.map((product) => (
+
+                            <Link
+                                to={`/product/${product.id}`}
+                                className="product-card"
+                                key={product.id}
+                            >
+
+                                <div className="product-image">
+
+                                    <img
+                                        src={product.image}
+                                        alt={product.name}
+                                        loading="lazy"
+                                    />
+
+                                    {(product.tag || product.isPopular) && (
+
+                                        <span className="product-tag">
+                                            {product.tag || "Popular"}
+                                        </span>
+
+                                    )}
+
                                 </div>
 
-                                <h3>{product.name}</h3>
+                                <div className="product-info">
 
-                                <div className="product-bottom">
-                                    <div className="price">
-                                        ₹{product.price}
-                                        <del>₹{product.oldPrice}</del>
+                                    <h3>{product.name}</h3>
+
+                                    <p>
+                                        {product.description ||
+                                            "Deliciously made with love, just for you."}
+                                    </p>
+
+                                    <div className="product-card-bottom">
+
+                                        <span className="product-price">
+                                            ₹{product.price}
+                                        </span>
+
+                                        <span className="product-view-link">
+                                            View Product →
+                                        </span>
+
                                     </div>
 
-                                    <button
-                                        className="add-btn"
-                                        onClick={addToCart}
-                                    >
-                                        Add +
-                                    </button>
                                 </div>
-                            </div>
-                        </article>
-                    ))}
+
+                            </Link>
+
+                        ))}
+
+                    </div>
+
+                ) : (
+
+                    <div className="no-products">
+
+                        <h3>Our delicious collection is coming soon!</h3>
+
+                        <p>
+                            We are preparing something special for you.
+                        </p>
+
+                    </div>
+
+                )}
+
+                <div className="view-all-products">
+
+                    <Link to="/products" className="primary-btn">
+                        Explore All Products →
+                    </Link>
+
                 </div>
 
-                <div className="center-button">
-                    <button className="outline-btn">
-                        Explore All Flavours →
-                    </button>
-                </div>
             </section>
 
-            {/* SECTION 4: BRAND STORY */}
+            {/* BRAND STORY*/}
+
             <section className="story" id="story">
+
                 <div className="story-image">
+
                     <img
                         src="https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=900"
                         alt="Freshly served ice cream"
                     />
+
                     <div className="story-sticker">
                         MADE WITH LOVE
                     </div>
+
                 </div>
 
                 <div className="story-content">
-                    <span className="eyebrow">THE KONFiZ EXPERIENCE</span>
+
+                    <span className="eyebrow">
+                        THE KONFiZ EXPERIENCE
+                    </span>
 
                     <h2>
                         Made with Love.
@@ -259,41 +295,47 @@ function Home() {
                     </p>
 
                     <div className="story-features">
-                        <div>
 
-                            <div>
-                                <strong>Delicious Flavours</strong>
-                                <small>Something special in every bite.</small>
-                            </div>
+                        <div>
+                            <strong>Delicious Flavours</strong>
+                            <small>
+                                Something special in every bite.
+                            </small>
                         </div>
 
                         <div>
-
-                            <div>
-                                <strong>Quality Ingredients</strong>
-                                <small>Carefully selected ingredients.</small>
-                            </div>
+                            <strong>Quality Ingredients</strong>
+                            <small>
+                                Carefully selected ingredients.
+                            </small>
                         </div>
 
                         <div>
-
-                            <div>
-                                <strong>Made for Happiness</strong>
-                                <small>Sweet memories start here.</small>
-                            </div>
+                            <strong>Made for Happiness</strong>
+                            <small>
+                                Sweet memories start here.
+                            </small>
                         </div>
+
                     </div>
 
-                    <a href="#products" className="primary-btn">
-                        Discover Our Flavours →
-                    </a>
+                    <Link to="/our-story" className="primary-btn">
+                        Discover Our Story →
+                    </Link>
+
                 </div>
+
             </section>
 
-            {/* SECTION 5: PROMOTION + FOOTER */}
+            {/* PROMOTION */}
+
             <section className="promotion">
+
                 <div className="promotion-content">
-                    <span className="eyebrow">A LITTLE EXTRA SWEETNESS</span>
+
+                    <span className="eyebrow">
+                        A LITTLE EXTRA SWEETNESS
+                    </span>
 
                     <h2>
                         Happiness is
@@ -305,13 +347,17 @@ function Home() {
                         Find your favourite flavour and make today
                         a little more delicious.
                     </p>
+
                     <div className="buttun_area">
-                        <a href="#products" className="primary-btn">
+
+                        <Link to="/products" className="primary-btn">
                             Order Your Happiness →
-                        </a>
+                        </Link>
 
                         <a
-                            href={`https://wa.me/?text=${encodeURIComponent("Hello! I'd like to inquire about placing a bulk order.")}`}
+                            href={`https://wa.me/?text=${encodeURIComponent(
+                                "Hello! I'd like to inquire about placing a bulk order."
+                            )}`}
                             className="outline-btn"
                             target="_blank"
                             rel="noopener noreferrer"
@@ -319,71 +365,20 @@ function Home() {
                             Bulk Order →
                         </a>
 
-
-
                     </div>
 
                 </div>
+
             </section>
-<Footer />
-            {/* <footer className="footer">
-                <div className="footer-main">
-                    <div className="footer-brand">
-                        <a href="#home" className="logo">
-                            KONFiZ
-                            <small>ICE CREAM </small>
-                        </a>
 
-                        <p>
-                            Spreading smiles, one scoop at a time.
-                            Welcome to the sweeter side of life.
-                        </p>
-                    </div>
+           
 
-                    <div className="footer-links">
-                        <h3>Explore</h3>
-                        <a href="#home">Home</a>
-                        <a href="#categories">Categories</a>
-                        <a href="#products">Shop</a>
-                        <a href="#story">Our Story</a>
-                    </div>
-
-                    <div className="footer-links">
-                        <h3>Customer Care</h3>
-                        <a href="#footer">Contact Us</a>
-                        <a href="#footer">Privacy Policy</a>
-                        <a href="#footer">Terms & Conditions</a>
-                        <a href="#footer">Delivery Information</a>
-                    </div>
-
-                    <div className="newsletter" id="footer">
-                        <h3>Stay in the Sweet Loop!</h3>
-                        <p>Get updates on new flavours and special offers.</p>
-
-                        <form onSubmit={subscribe}>
-                            <input
-                                type="email"
-                                placeholder="Your email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-
-                            <button type="submit">→</button>
-                        </form>
-
-                        {message && <small className="success-message">{message}</small>}
-                    </div>
-                </div>
-
-                <div className="footer-bottom">
-                    <p>© 2026 KONFiZ. All rights reserved.</p>
-                    <p>Made with love and lots of ice cream.</p>
-                </div>
-            </footer> */}
+            <Footer />
 
         </div>
+
     );
+
 }
 
 export default Home;

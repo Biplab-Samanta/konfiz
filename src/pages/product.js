@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import "../style/product.css";
@@ -5,55 +6,43 @@ import Navbar from "../components/navber";
 import { useCart } from "../context/cartcontext";
 
 // =====================================
-// COMMON HELPERS
+// HELPERS
 // =====================================
 
 const makeSlug = (value = "") =>
-  String(value)
-    .toLowerCase()
-    .trim()
+  String(value).toLowerCase().trim()
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
 const getCategoryName = category => {
   if (!category) return "";
+  if (typeof category === "string") return category;
 
-  if (typeof category === "string") {
-    return category;
-  }
-
-  return (
-    category.name ||
+  return category.name ||
     category.categoryName ||
-    category.title ||
-    ""
-  );
+    category.title || "";
 };
 
 const getCategoryId = category => {
-  if (!category || typeof category !== "object") {
-    return "";
-  }
-
+  if (!category || typeof category !== "object") return "";
   return category.id || category.categoryId || "";
 };
+
+const getProductCategoryName = product =>
+  getCategoryName(product.category) ||
+  product.categoryName || "";
 
 const getAddonId = addon =>
   String(addon.id ?? addon.name ?? "");
 
 const getWeightOptions = product => {
   const options = product.pricing?.weightOptions;
-
-  if (Array.isArray(options) && options.length > 0) {
-    return options;
-  }
-
-  return [null];
+  return Array.isArray(options) && options.length
+    ? options : [null];
 };
 
-const getUnit = product =>
-  product.pricing?.unit || "ml";
+const getUnit = product => product.pricing?.unit || "ml";
 
 const getBasePrice = (product, weight) => {
   const pricing = product.pricing;
@@ -68,20 +57,25 @@ const getBasePrice = (product, weight) => {
       pricing.pricePerBaseUnit ?? product.price ?? 0
     );
 
-    return (
-      rate *
-      Number(weight) /
-      Number(pricing.baseQuantity)
-    );
+    return rate * Number(weight) / Number(pricing.baseQuantity);
   }
 
   return Number(product.price) || 0;
 };
 
-const getProductCategoryName = product =>
-  getCategoryName(product.category) ||
-  product.categoryName ||
+const getFlavour = product =>
+  product.flavour ||
+  product.flavor ||
+  product.taste ||
   "";
+
+const getStock = product => {
+  if (product.inStock !== undefined) return Boolean(product.inStock);
+  if (product.available !== undefined) return Boolean(product.available);
+  if (product.stock !== undefined) return Number(product.stock) > 0;
+  if (product.quantity !== undefined) return Number(product.quantity) > 0;
+  return true;
+};
 
 // =====================================
 // PRODUCT COMPONENT
@@ -97,19 +91,26 @@ function Product() {
     subTotal
   } = useCart();
 
-  // =====================================
-  // STATES
-  // =====================================
-
+  // STORE DATA
   const [productData, setProductData] = useState([]);
   const [categories, setCategories] = useState([]);
   const [storeLoaded, setStoreLoaded] = useState(false);
 
+  // SEARCH AND FILTERS
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("default");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedFlavour, setSelectedFlavour] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
+  // PRODUCT SELECTION
   const [selections, setSelections] = useState({});
 
+  // ADD-ON POPUP
   const [addonPopup, setAddonPopup] = useState({
     open: false,
     product: null,
@@ -119,7 +120,7 @@ function Product() {
   });
 
   // =====================================
-  // LOAD PRODUCTS AND CATEGORIES
+  // LOAD LOCAL STORAGE
   // =====================================
 
   useEffect(() => {
@@ -133,24 +134,19 @@ function Product() {
           localStorage.getItem("konfizCategories") || "[]"
         );
 
-        // Support both array and wrapped object formats
-        const products = Array.isArray(savedProducts)
-          ? savedProducts
-          : Array.isArray(savedProducts?.products)
-            ? savedProducts.products
-            : [];
+        setProductData(
+          Array.isArray(savedProducts)
+            ? savedProducts
+            : savedProducts?.products || []
+        );
 
-        const categoryList = Array.isArray(savedCategories)
-          ? savedCategories
-          : Array.isArray(savedCategories?.categories)
-            ? savedCategories.categories
-            : [];
-
-        setProductData(products);
-        setCategories(categoryList);
+        setCategories(
+          Array.isArray(savedCategories)
+            ? savedCategories
+            : savedCategories?.categories || []
+        );
       } catch (error) {
-        console.error("KONFiZ store loading error:", error);
-
+        console.error("KONFiZ loading error:", error);
         setProductData([]);
         setCategories([]);
       } finally {
@@ -176,95 +172,102 @@ function Product() {
   // =====================================
 
   const normalizedCategories = useMemo(() => {
-    return categories
-      .map((item, index) => {
-        const name = getCategoryName(item);
+    return categories.map((item, index) => {
+      const name = getCategoryName(item);
+      if (!name) return null;
 
-        if (!name) return null;
-
-        const id =
-          getCategoryId(item) ||
-          `category_${index}`;
-
-        const slug = makeSlug(
-          item.slug || name
-        );
-
-        return {
-          id: String(id),
-          name,
-          slug,
-          description:
-            item.description || item.details || ""
-        };
-      })
-      .filter(Boolean)
-      .filter(
-        (item, index, array) =>
-          array.findIndex(
-            category => category.slug === item.slug
-          ) === index
-      );
+      return {
+        id: String(getCategoryId(item) || `category_${index}`),
+        name,
+        slug: makeSlug(item.slug || name),
+        description: item.description || item.details || ""
+      };
+    }).filter(Boolean);
   }, [categories]);
-
-  // =====================================
-  // GET CURRENT CATEGORY FROM URL
-  // =====================================
 
   const normalizedUrlSlug = makeSlug(categorySlug || "");
 
   const currentCategory = useMemo(() => {
     if (!normalizedUrlSlug) return null;
 
-    return (
-      normalizedCategories.find(
-        category => category.slug === normalizedUrlSlug
-      ) || null
-    );
-  }, [normalizedUrlSlug, normalizedCategories]);
+    return normalizedCategories.find(
+      category => category.slug === normalizedUrlSlug
+    ) || null;
+  }, [normalizedCategories, normalizedUrlSlug]);
 
   // =====================================
-  // PRODUCT CATEGORY MATCHING
+  // CATEGORY MATCHING
   // =====================================
 
-  const productMatchesCategory = (
-    product,
-    selectedCategory
-  ) => {
-    if (!selectedCategory) return true;
+  const productMatchesCategory = (product, category) => {
+    if (!category) return true;
 
-    const productCategoryName =
-      getProductCategoryName(product);
+    const name = getProductCategoryName(product);
+    const id = product.categoryId || getCategoryId(product.category);
 
-    const productCategoryId =
-      product.categoryId ||
-      getCategoryId(product.category);
+    if (id && String(id) === String(category.id)) return true;
 
-    // First try matching category IDs
-    if (
-      productCategoryId &&
-      String(productCategoryId) ===
-        String(selectedCategory.id)
-    ) {
-      return true;
-    }
-
-    // Then try matching category name or slug.
-    // This also supports older products saved without categoryId.
-    if (productCategoryName) {
-      return (
-        makeSlug(productCategoryName) ===
-          selectedCategory.slug ||
-        productCategoryName.trim().toLowerCase() ===
-          selectedCategory.name.trim().toLowerCase()
-      );
-    }
-
-    return false;
+    return makeSlug(name) === category.slug;
   };
 
   // =====================================
-  // UPDATE WEIGHT
+  // DYNAMIC FLAVOURS AND SIZES
+  // =====================================
+
+  const availableFlavours = useMemo(() => {
+    return [...new Set(
+      productData.map(getFlavour).filter(Boolean)
+    )].sort();
+  }, [productData]);
+
+  const availableSizes = useMemo(() => {
+    return [...new Set(
+      productData.flatMap(product =>
+        getWeightOptions(product)
+          .filter(weight => weight !== null && weight !== undefined)
+          .map(weight => `${weight} ${getUnit(product)}`)
+      )
+    )].sort();
+  }, [productData]);
+
+  // =====================================
+  // PRODUCT PRICE RANGE
+  // =====================================
+
+  const priceLimits = useMemo(() => {
+    const prices = productData.map(p => Number(p.price) || 0);
+    return {
+      min: prices.length ? Math.floor(Math.min(...prices)) : 0,
+      max: prices.length ? Math.ceil(Math.max(...prices)) : 500
+    };
+  }, [productData]);
+
+  // =====================================
+  // FILTER RESET
+  // =====================================
+
+  const clearFilters = () => {
+    setSearch("");
+    setSelectedCategory("");
+    setSelectedFlavour("");
+    setSelectedSize("");
+    setMinPrice("");
+    setMaxPrice("");
+    setInStockOnly(false);
+    setSort("default");
+  };
+
+  const activeFilterCount = [
+    selectedCategory,
+    selectedFlavour,
+    selectedSize,
+    minPrice,
+    maxPrice,
+    inStockOnly
+  ].filter(Boolean).length;
+
+  // =====================================
+  // WEIGHT AND QUANTITY
   // =====================================
 
   const handleWeightChange = (productId, weight) => {
@@ -277,10 +280,6 @@ function Product() {
     }));
   };
 
-  // =====================================
-  // UPDATE QUANTITY
-  // =====================================
-
   const handleQuantityChange = (productId, quantity) => {
     setSelections(previous => ({
       ...previous,
@@ -292,7 +291,7 @@ function Product() {
   };
 
   // =====================================
-  // CLOSE ADD-ON POPUP
+  // ADD TO CART
   // =====================================
 
   const closeAddonPopup = () => {
@@ -305,10 +304,6 @@ function Product() {
     });
   };
 
-  // =====================================
-  // FINAL ADD TO CART
-  // =====================================
-
   const completeAddToCart = (
     product,
     weight,
@@ -316,9 +311,7 @@ function Product() {
     selectedAddonIds = []
   ) => {
     const addons = (product.addons || [])
-      .filter(addon =>
-        selectedAddonIds.includes(getAddonId(addon))
-      )
+      .filter(addon => selectedAddonIds.includes(getAddonId(addon)))
       .map(addon => ({
         id: getAddonId(addon),
         name: addon.name,
@@ -328,74 +321,48 @@ function Product() {
     const basePrice = getBasePrice(product, weight);
 
     const addonPrice = addons.reduce(
-      (total, addon) => total + addon.price,
-      0
+      (total, addon) => total + addon.price, 0
     );
 
     const totalPrice = basePrice + addonPrice;
 
-    // Same product, weight and add-ons = same cart item
     const cartItemId = [
       product.id || product.name,
       weight ?? "standard",
-      addons
-        .map(addon => addon.id)
-        .sort()
-        .join("-")
+      addons.map(a => a.id).sort().join("-")
     ].join("__");
 
-    const cartProduct = {
+    addProductToCart({
       id: cartItemId,
       cartItemId,
-
       productId: product.id,
       name: product.name,
-      image: product.image,
-
-      category:
-        getProductCategoryName(product),
-
+      image: product.image || null,
+      category: getProductCategoryName(product),
       weight,
       unit: getUnit(product),
-
       addons,
-
       basePrice,
       addonPrice,
-
-      // Price is per item. CartContext should multiply by quantity.
       price: totalPrice,
       quantity
-    };
-
-    addProductToCart(cartProduct);
+    });
 
     closeAddonPopup();
   };
 
-  // =====================================
-  // OPEN ADD-ON POPUP OR ADD DIRECTLY
-  // =====================================
-
   const handleAddToCart = product => {
     const productId = product.id || product.name;
     const selected = selections[productId] || {};
+    const options = getWeightOptions(product);
 
-    const weight =
-      selected.weight !== undefined
-        ? selected.weight
-        : getWeightOptions(product)[0];
+    const weight = selected.weight !== undefined
+      ? selected.weight
+      : options[0];
 
-    const quantity = Math.max(
-      1,
-      Number(selected.quantity || 1)
-    );
+    const quantity = Math.max(1, Number(selected.quantity || 1));
 
-    const hasAddons =
-      Array.isArray(product.addons) &&
-      product.addons.length > 0;
-
-    if (hasAddons) {
+    if (Array.isArray(product.addons) && product.addons.length > 0) {
       setAddonPopup({
         open: true,
         product,
@@ -403,115 +370,104 @@ function Product() {
         quantity,
         addons: []
       });
-
       return;
     }
 
-    completeAddToCart(
-      product,
-      weight,
-      quantity,
-      []
-    );
+    completeAddToCart(product, weight, quantity, []);
   };
 
   // =====================================
-  // FILTER PRODUCTS
-  // CATEGORY + SEARCH + SORT
+  // FILTER AND SORT PRODUCTS
   // =====================================
 
   const filteredProducts = useMemo(() => {
-    // If the URL has a category but it does not exist,
-    // do not accidentally show all products.
-    if (
-      categorySlug &&
-      storeLoaded &&
-      !currentCategory
-    ) {
-      return [];
-    }
+    if (categorySlug && storeLoaded && !currentCategory) return [];
 
-    let products = productData.filter(product => {
-      const productName = String(
-        product.name || ""
-      ).toLowerCase();
-
-      const productDescription = String(
-        product.description || ""
-      ).toLowerCase();
-
-      const productCategory = String(
-        getProductCategoryName(product)
-      ).toLowerCase();
-
-      const searchText = search.trim().toLowerCase();
+    let result = productData.filter(product => {
+      const name = String(product.name || "").toLowerCase();
+      const description = String(product.description || "").toLowerCase();
+      const category = getProductCategoryName(product);
+      const flavour = getFlavour(product);
 
       const matchesSearch =
-        !searchText ||
-        productName.includes(searchText) ||
-        productDescription.includes(searchText) ||
-        productCategory.includes(searchText);
+        !search.trim() ||
+        name.includes(search.toLowerCase()) ||
+        description.toLowerCase().includes(search.toLowerCase()) ||
+        category.toLowerCase().includes(search.toLowerCase()) ||
+        flavour.toLowerCase().includes(search.toLowerCase());
 
-      const matchesCategory =
-        productMatchesCategory(
-          product,
-          currentCategory
+      const matchesUrlCategory =
+        productMatchesCategory(product, currentCategory);
+
+      const matchesSelectedCategory =
+        !selectedCategory ||
+        makeSlug(category) === selectedCategory;
+
+      const matchesFlavour =
+        !selectedFlavour ||
+        flavour.toLowerCase() === selectedFlavour.toLowerCase();
+
+      const matchesPrice =
+        (!minPrice || Number(product.price) >= Number(minPrice)) &&
+        (!maxPrice || Number(product.price) <= Number(maxPrice));
+
+      const matchesSize =
+        !selectedSize ||
+        getWeightOptions(product).some(weight =>
+          `${weight} ${getUnit(product)}` === selectedSize
         );
 
-      return matchesSearch && matchesCategory;
+      const matchesStock =
+        !inStockOnly || getStock(product);
+
+      return (
+        matchesSearch &&
+        matchesUrlCategory &&
+        matchesSelectedCategory &&
+        matchesFlavour &&
+        matchesPrice &&
+        matchesSize &&
+        matchesStock
+      );
     });
 
-    // Sort a copy, not the original state array
-    products = [...products];
+    result = [...result];
 
     if (sort === "low-high") {
-      products.sort(
-        (a, b) =>
-          Number(a.price || 0) -
-          Number(b.price || 0)
-      );
+      result.sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sort === "high-low") {
-      products.sort(
-        (a, b) =>
-          Number(b.price || 0) -
-          Number(a.price || 0)
-      );
+      result.sort((a, b) => Number(b.price) - Number(a.price));
     } else if (sort === "rating") {
-      products.sort(
-        (a, b) =>
-          Number(b.rating || 0) -
-          Number(a.rating || 0)
-      );
+      result.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
+    } else if (sort === "name") {
+      result.sort((a, b) => String(a.name).localeCompare(String(b.name)));
     }
 
-    return products;
+    return result;
   }, [
     productData,
     search,
     sort,
     currentCategory,
     categorySlug,
-    storeLoaded
+    storeLoaded,
+    selectedCategory,
+    selectedFlavour,
+    selectedSize,
+    minPrice,
+    maxPrice,
+    inStockOnly
   ]);
 
-  // =====================================
-  // INVALID CATEGORY
-  // =====================================
-
   const invalidCategory =
-    Boolean(categorySlug) &&
-    storeLoaded &&
-    !currentCategory;
+    Boolean(categorySlug) && storeLoaded && !currentCategory;
 
   // =====================================
-  // ADD-ON POPUP PRICE
+  // ADD-ON POPUP TOTALS
   // =====================================
 
   const popupBasePrice = addonPopup.product
-    ? getBasePrice(
-        addonPopup.product,
-        addonPopup.weight
-      )
+    ? getBasePrice(addonPopup.product, addonPopup.weight)
     : 0;
 
   const popupAddonPrice = addonPopup.product
@@ -519,15 +475,111 @@ function Product() {
         .filter(addon =>
           addonPopup.addons.includes(getAddonId(addon))
         )
-        .reduce(
-          (total, addon) =>
-            total + (Number(addon.price) || 0),
-          0
-        )
+        .reduce((total, addon) =>
+          total + (Number(addon.price) || 0), 0)
     : 0;
 
-  const popupUnitPrice =
-    popupBasePrice + popupAddonPrice;
+  const popupUnitPrice = popupBasePrice + popupAddonPrice;
+
+  // =====================================
+  // FILTER SIDEBAR
+  // =====================================
+
+  const FilterContent = () => (
+    <>
+      <div className="filter-heading">
+        <h3>Filters</h3>
+        <button type="button" onClick={clearFilters}>Clear All</button>
+      </div>
+
+      <div className="filter-group">
+        <h4>Category</h4>
+        {normalizedCategories.map(category => (
+          <label className="filter-option" key={category.id}>
+            <input
+              type="radio"
+              name="filter-category"
+              checked={selectedCategory === category.slug}
+              onChange={() => setSelectedCategory(
+                selectedCategory === category.slug ? "" : category.slug
+              )}
+            />
+            <span>{category.name}</span>
+          </label>
+        ))}
+      </div>
+
+      <div className="filter-group">
+        <h4>Flavour</h4>
+        {availableFlavours.length ? availableFlavours.map(flavour => (
+          <label className="filter-option" key={flavour}>
+            <input
+              type="radio"
+              name="filter-flavour"
+              checked={selectedFlavour === flavour}
+              onChange={() => setSelectedFlavour(
+                selectedFlavour === flavour ? "" : flavour
+              )}
+            />
+            <span>{flavour}</span>
+          </label>
+        )) : <p className="filter-hint">Add flavour details in admin.</p>}
+      </div>
+
+      <div className="filter-group">
+        <h4>Price Range (₹)</h4>
+        <div className="price-inputs">
+          <input
+            type="number"
+            min="0"
+            placeholder="Min"
+            value={minPrice}
+            onChange={e => setMinPrice(e.target.value)}
+          />
+          <span>–</span>
+          <input
+            type="number"
+            min="0"
+            placeholder="Max"
+            value={maxPrice}
+            onChange={e => setMaxPrice(e.target.value)}
+          />
+        </div>
+        <p className="filter-hint">
+          Available range: ₹{priceLimits.min} – ₹{priceLimits.max}
+        </p>
+      </div>
+
+      <div className="filter-group">
+        <h4>Size</h4>
+        {availableSizes.map(size => (
+          <label className="filter-option" key={size}>
+            <input
+              type="radio"
+              name="filter-size"
+              checked={selectedSize === size}
+              onChange={() => setSelectedSize(
+                selectedSize === size ? "" : size
+              )}
+            />
+            <span>{size}</span>
+          </label>
+        ))}
+      </div>
+
+      <div className="filter-group">
+        <h4>Availability</h4>
+        <label className="filter-option">
+          <input
+            type="checkbox"
+            checked={inStockOnly}
+            onChange={e => setInStockOnly(e.target.checked)}
+          />
+          <span>In Stock Only</span>
+        </label>
+      </div>
+    </>
+  );
 
   // =====================================
   // UI
@@ -535,572 +587,503 @@ function Product() {
 
   return (
     <div className="product-page">
-
       <Navbar />
 
-      {/* =====================================
-          PRODUCT BANNER
-      ===================================== */}
-
+      {/* PAGE BANNER */}
       <section className="product-banner">
-        <div className="container">
-
+        <div className="product-container">
+          <span className="banner-eyebrow">A LITTLE SCOOP OF HAPPINESS</span>
           <h1>
             {currentCategory
               ? currentCategory.name
-              : "Our Ice Cream Collection"}
+              : "Explore Our Ice Creams"}
           </h1>
-
           <p>
             {currentCategory?.description ||
-              "Discover your favourite flavour with KONFiZ."}
+              "Discover delicious flavours made to make every moment sweeter."}
           </p>
-
         </div>
       </section>
 
-      {/* =====================================
-          PRODUCT SECTION
-      ===================================== */}
+      <main className="product-container product-main">
 
-      <section className="section">
+        {/* CATEGORY CARDS */}
+        <section className="category-section">
+          <div className="section-heading">
+            <div>
+              <span className="section-eyebrow">EXPLORE</span>
+              <h2>Shop By Category</h2>
+            </div>
+            <Link to="/products">View All Products →</Link>
+          </div>
 
-        {/* CATEGORY FILTER LINKS */}
-
-        <div className="product-toolbar">
-
-          <div className="category-filters">
-
-            <Link
-              to="/products"
-              className={
-                !categorySlug
-                  ? "filter-btn active"
-                  : "filter-btn"
-              }
-            >
-              All Products
-            </Link>
-
+          {/* <div className="category-card-list">
             {normalizedCategories.map(category => (
               <Link
                 key={category.id}
                 to={`/products/${category.slug}`}
-                className={
-                  normalizedUrlSlug === category.slug
-                    ? "filter-btn active"
-                    : "filter-btn"
-                }
+                className={`category-card ${
+                  normalizedUrlSlug === category.slug ? "active" : ""
+                }`}
               >
-                {category.name}
+                <div className="category-card-icon">
+                  <span>🍨</span>
+                </div>
+                <h3>{category.name}</h3>
+                <span>Explore Collection →</span>
               </Link>
             ))}
+          </div> */}
+        </section>
 
-          </div>
-
-          {/* SEARCH AND SORT */}
-
-          <div className="product-controls">
-
+        {/* SEARCH */}
+        <section className="product-search-section">
+          <div className="search-box">
+            <span>⌕</span>
             <input
-              type="text"
-              placeholder="Search ice cream..."
+              type="search"
+              placeholder="Search ice cream, flavours..."
               value={search}
-              onChange={event =>
-                setSearch(event.target.value)
-              }
+              onChange={e => setSearch(e.target.value)}
             />
-
-            <select
-              value={sort}
-              onChange={event =>
-                setSort(event.target.value)
-              }
-            >
-              <option value="default">
-                Default Sorting
-              </option>
-
-              <option value="low-high">
-                Price: Low to High
-              </option>
-
-              <option value="high-low">
-                Price: High to Low
-              </option>
-
-              <option value="rating">
-                Top Rated
-              </option>
-            </select>
-
+            {search && (
+              <button type="button" onClick={() => setSearch("")}>×</button>
+            )}
           </div>
-        </div>
-
-        {/* PRODUCT COUNT */}
-
-        <p className="product-count">
-          {invalidCategory
-            ? "Category not found"
-            : `Showing ${filteredProducts.length} products`}
-        </p>
-
-        {/* =====================================
-            PRODUCT GRID
-        ===================================== */}
-
-        <div className="product-grid">
-
-          {filteredProducts.length > 0 ? (
-
-            filteredProducts.map(product => {
-              const productId =
-                product.id || product.name;
-
-              const weightOptions =
-                getWeightOptions(product);
-
-              const selectedWeight =
-                selections[productId]?.weight !== undefined
-                  ? selections[productId].weight
-                  : weightOptions[0];
-
-              const quantity =
-                selections[productId]?.quantity || 1;
-
-              const basePrice = getBasePrice(
-                product,
-                selectedWeight
-              );
-
-              const categoryName =
-                getProductCategoryName(product) ||
-                currentCategory?.name ||
-                "";
-
-              return (
-                <div
-                  className="product-card"
-                  key={productId}
-                >
-
-                  {/* PRODUCT IMAGE */}
-
-                  <div className="product-image-wrapper">
-
-                    <img
-                      src={product.image || "/placeholder.png"}
-                      alt={product.name || "KONFiZ ice cream"}
-                    />
-
-                    {categoryName && (
-                      <span className="product-category">
-                        {categoryName}
-                      </span>
-                    )}
-
-                  </div>
-
-                  {/* PRODUCT DETAILS */}
-
-                  <div className="product-info">
-
-                    <h3>{product.name}</h3>
-
-                    <p className="product-description">
-                      {product.description}
-                    </p>
-
-                    <div className="product-rating">
-                      ⭐{" "}
-                      {Number(product.rating || 0).toFixed(1)}
-                    </div>
-
-                    {/* WEIGHT SELECTION */}
-
-                    <div className="product-weight-section">
-
-                      <label>Select Weight</label>
-
-                      <select
-                        value={selectedWeight ?? ""}
-                        onChange={event =>
-                          handleWeightChange(
-                            productId,
-                            event.target.value
-                          )
-                        }
-                      >
-
-                        {weightOptions.map((weight, index) => (
-                          <option
-                            key={`${productId}-weight-${index}`}
-                            value={weight ?? ""}
-                          >
-                            {weight === null
-                              ? "Standard"
-                              : `${weight} ${getUnit(product)}`}
-                          </option>
-                        ))}
-
-                      </select>
-
-                    </div>
-
-                    {/* QUANTITY SELECTION */}
-
-                    <div className="product-quantity-section">
-
-                      <label>Quantity</label>
-
-                      <div className="quantity-controls">
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleQuantityChange(
-                              productId,
-                              quantity - 1
-                            )
-                          }
-                        >
-                          −
-                        </button>
-
-                        <span>{quantity}</span>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleQuantityChange(
-                              productId,
-                              quantity + 1
-                            )
-                          }
-                        >
-                          +
-                        </button>
-
-                      </div>
-
-                    </div>
-
-                    {/* PRICE */}
-
-                    <div className="product-price-section">
-
-                      <div className="price-breakdown">
-
-                        <span>Price per item</span>
-
-                        <strong>
-                          ₹{basePrice.toFixed(2)}
-                        </strong>
-
-                      </div>
-
-                      <div className="total-price">
-
-                        <span>Product Total</span>
-
-                        <h3>
-                          ₹{(
-                            basePrice * quantity
-                          ).toFixed(2)}
-                        </h3>
-
-                      </div>
-
-                    </div>
-
-                    {/* ADD TO CART */}
-
-                    <button
-                      type="button"
-                      className="add-cart-btn"
-                      onClick={() =>
-                        handleAddToCart(product)
-                      }
-                    >
-                      + Add to Cart
-                    </button>
-
-                  </div>
-                </div>
-              );
-            })
-
-          ) : (
-
-            <div className="empty-products">
-
-              <h3>
-                {invalidCategory
-                  ? "Category not found"
-                  : "No products found"}
-              </h3>
-
-              <p>
-                {invalidCategory
-                  ? "This category may have been renamed or deleted."
-                  : "Try another search or select a different category."}
-              </p>
-
-              <Link
-                to="/products"
-                className="filter-btn"
-              >
-                View All Products
-              </Link>
-
-            </div>
-
-          )}
-
-        </div>
-      </section>
-
-      {/* =====================================
-          ADD-ON POPUP
-      ===================================== */}
-
-      {addonPopup.open && addonPopup.product && (
-
-        <div
-          className="addon-modal-overlay"
-          onClick={closeAddonPopup}
-        >
-
-          <div
-            className="addon-modal"
-            onClick={event => event.stopPropagation()}
-          >
-
+        </section>
+
+        {/* QUICK FILTERS */}
+        <section className="quick-filter-section">
+          <span>Popular:</span>
+          {["Chocolate", "Vanilla", "Strawberry"].filter(flavour =>
+            availableFlavours.some(
+              item => item.toLowerCase() === flavour.toLowerCase()
+            )
+          ).map(flavour => (
             <button
               type="button"
-              className="addon-modal-close"
-              onClick={closeAddonPopup}
+              key={flavour}
+              className={`quick-filter ${
+                selectedFlavour === flavour ? "active" : ""
+              }`}
+              onClick={() => setSelectedFlavour(
+                selectedFlavour === flavour ? "" : flavour
+              )}
             >
-              ×
+              {flavour}
             </button>
+          ))}
+          <button
+            type="button"
+            className={`quick-filter ${inStockOnly ? "active" : ""}`}
+            onClick={() => setInStockOnly(!inStockOnly)}
+          >
+            In Stock
+          </button>
+        </section>
 
-            <h2>Make It Extra Special! 🍨</h2>
+        {/* PRODUCTS AND SIDEBAR */}
+        <section className="shop-layout">
 
-            <p>
-              Choose your favourite toppings or skip this step.
-            </p>
+          {/* DESKTOP SIDEBAR */}
+          <aside className="product-filter-sidebar">
+            <FilterContent />
+          </aside>
 
-            {/* SELECTED PRODUCT */}
+          <div className="product-results">
 
-            <div className="addon-modal-product">
-
-              <img
-                src={
-                  addonPopup.product.image ||
-                  "/placeholder.png"
-                }
-                alt={addonPopup.product.name}
-              />
-
+            {/* TOOLBAR */}
+            <div className="results-toolbar">
               <div>
-
-                <h3>
-                  {addonPopup.product.name}
-                </h3>
-
+                <h2>
+                  {currentCategory?.name || "All Ice Creams"}
+                </h2>
                 <p>
-                  {addonPopup.weight !== null &&
-                  addonPopup.weight !== undefined
-                    ? `${addonPopup.weight} ${getUnit(
-                        addonPopup.product
-                      )}`
-                    : "Standard"}
+                  Showing {filteredProducts.length} products
                 </p>
+              </div>
 
-                <p>
-                  Quantity: {addonPopup.quantity}
-                </p>
+              <div className="results-actions">
+                <button
+                  type="button"
+                  className="mobile-filter-button"
+                  onClick={() => setMobileFilterOpen(true)}
+                >
+                  ☷ Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
+                </button>
 
+                <label className="sort-control">
+                  <span>Sort By</span>
+                  <select
+                    value={sort}
+                    onChange={e => setSort(e.target.value)}
+                  >
+                    <option value="default">Recommended</option>
+                    <option value="low-high">Price: Low to High</option>
+                    <option value="high-low">Price: High to Low</option>
+                    <option value="rating">Top Rated</option>
+                    <option value="name">Name: A to Z</option>
+                  </select>
+                </label>
               </div>
             </div>
 
-            {/* AVAILABLE ADD-ONS */}
+            {/* ACTIVE FILTER CHIPS */}
+            {(selectedCategory || selectedFlavour || selectedSize ||
+              minPrice || maxPrice || inStockOnly) && (
+              <div className="active-filter-list">
+                {selectedCategory && (
+                  <button onClick={() => setSelectedCategory("")}>
+                    {normalizedCategories.find(c =>
+                      c.slug === selectedCategory
+                    )?.name || selectedCategory} ×
+                  </button>
+                )}
+                {selectedFlavour && (
+                  <button onClick={() => setSelectedFlavour("")}>
+                    {selectedFlavour} ×
+                  </button>
+                )}
+                {selectedSize && (
+                  <button onClick={() => setSelectedSize("")}>
+                    {selectedSize} ×
+                  </button>
+                )}
+                {(minPrice || maxPrice) && (
+                  <button onClick={() => {
+                    setMinPrice("");
+                    setMaxPrice("");
+                  }}>
+                    Price ×
+                  </button>
+                )}
+                {inStockOnly && (
+                  <button onClick={() => setInStockOnly(false)}>
+                    In Stock ×
+                  </button>
+                )}
+                <button className="clear-active" onClick={clearFilters}>
+                  Clear All
+                </button>
+              </div>
+            )}
 
-            <h3>Choose Your Add-ons</h3>
+            {/* PRODUCT GRID */}
+            <div className="product-grid">
+              {filteredProducts.map(product => {
+                const productId = product.id || product.name;
+                const weightOptions = getWeightOptions(product);
 
-            <div className="addon-modal-list">
+                const selectedWeight =
+                  selections[productId]?.weight !== undefined
+                    ? selections[productId].weight
+                    : weightOptions[0];
 
-              {(addonPopup.product.addons || []).map(
-                (addon, index) => {
-                  const addonId = getAddonId(addon);
+                const quantity =
+                  selections[productId]?.quantity || 1;
 
-                  return (
-                    <label
-                      key={`${addonId}-${index}`}
-                      className="addon-modal-option"
-                    >
+                const basePrice = getBasePrice(product, selectedWeight);
+                const categoryName = getProductCategoryName(product);
 
-                      <input
-                        type="checkbox"
-                        checked={addonPopup.addons.includes(
-                          addonId
+                return (
+                  <article className="product-card" key={productId}>
+                    <div className="product-image-wrapper">
+                      {product.image ? (
+                        <img
+                          src={product.image}
+                          alt={product.name || "KONFiZ ice cream"}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="product-image-placeholder">
+                          🍨
+                        </div>
+                      )}
+
+                      {categoryName && (
+                        <span className="product-category">
+                          {categoryName}
+                        </span>
+                      )}
+
+                      {product.isNew && (
+                        <span className="product-badge">New</span>
+                      )}
+                    </div>
+
+                    <div className="product-info">
+                      <div className="product-title-row">
+                        <h3>{product.name}</h3>
+                        {Number(product.rating) > 0 && (
+                          <span className="product-rating">
+                            ★ {Number(product.rating).toFixed(1)}
+                          </span>
                         )}
-                        onChange={event => {
-                          setAddonPopup(previous => ({
-                            ...previous,
+                      </div>
 
-                            addons: event.target.checked
-                              ? [
-                                  ...previous.addons,
-                                  addonId
-                                ]
-                              : previous.addons.filter(
-                                  id => id !== addonId
-                                )
-                          }));
-                        }}
-                      />
+                      <p className="product-description">
+                        {product.description || "A delicious KONFiZ treat."}
+                      </p>
 
-                      <span>{addon.name}</span>
+                      <div className="product-selection">
+                        <label>Select Size</label>
+                        <select
+                          value={selectedWeight ?? ""}
+                          onChange={e => handleWeightChange(
+                            productId, e.target.value
+                          )}
+                        >
+                          {weightOptions.map((weight, index) => (
+                            <option
+                              key={`${productId}-${index}`}
+                              value={weight ?? ""}
+                            >
+                              {weight === null
+                                ? "Standard"
+                                : `${weight} ${getUnit(product)}`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                      <strong>
-                        + ₹{(
-                          Number(addon.price) || 0
-                        ).toFixed(2)}
-                      </strong>
+                      <div className="product-card-bottom">
+                        <div className="product-price">
+                          <span>Starting price</span>
+                          <strong>₹{basePrice.toFixed(2)}</strong>
+                        </div>
 
-                    </label>
-                  );
-                }
-              )}
+                        <div className="quantity-controls">
+                          <button
+                            type="button"
+                            aria-label="Decrease quantity"
+                            onClick={() => handleQuantityChange(
+                              productId, quantity - 1
+                            )}
+                          >−</button>
+                          <span>{quantity}</span>
+                          <button
+                            type="button"
+                            aria-label="Increase quantity"
+                            onClick={() => handleQuantityChange(
+                              productId, quantity + 1
+                            )}
+                          >+</button>
+                        </div>
+                      </div>
 
+                      <div className="product-total">
+                        Total: <strong>
+                          ₹{(basePrice * quantity).toFixed(2)}
+                        </strong>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="add-cart-btn"
+                        disabled={!getStock(product)}
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        {!getStock(product)
+                          ? "Out of Stock"
+                          : "+ Add to Cart"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
 
-            {/* POPUP PRICE SUMMARY */}
+            {/* EMPTY STATE */}
+            {filteredProducts.length === 0 && (
+              <div className="empty-products">
+                <div>🍦</div>
+                <h3>
+                  {invalidCategory
+                    ? "Category Not Found"
+                    : "No Ice Creams Found"}
+                </h3>
+                <p>
+                  Try changing your search or filters to discover more flavours.
+                </p>
+                <button type="button" onClick={clearFilters}>
+                  Clear Filters
+                </button>
+                {invalidCategory && (
+                  <Link to="/products">View All Products</Link>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
 
-            <div className="addon-modal-total">
-
-              <span>Base price per item</span>
-
-              <strong>
-                ₹{popupBasePrice.toFixed(2)}
-              </strong>
-
-              <span>Add-ons per item</span>
-
-              <strong>
-                ₹{popupAddonPrice.toFixed(2)}
-              </strong>
-
-              <span>Price per item</span>
-
-              <strong>
-                ₹{popupUnitPrice.toFixed(2)}
-              </strong>
-
-              <span>Quantity</span>
-
-              <strong>
-                {addonPopup.quantity}
-              </strong>
-
-              <span>Order total</span>
-
-              <strong>
-                ₹{(
-                  popupUnitPrice * addonPopup.quantity
-                ).toFixed(2)}
-              </strong>
-
-            </div>
-
-            {/* POPUP BUTTONS */}
-
-            <div className="addon-modal-actions">
-
+      {/* MOBILE FILTER DRAWER */}
+      {mobileFilterOpen && (
+        <div
+          className="filter-drawer-overlay"
+          onClick={() => setMobileFilterOpen(false)}
+        >
+          <div
+            className="filter-drawer"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="filter-drawer-header">
+              <h2>Filter Products</h2>
               <button
                 type="button"
-                className="skip-addon-btn"
-                onClick={() =>
-                  completeAddToCart(
-                    addonPopup.product,
-                    addonPopup.weight,
-                    addonPopup.quantity,
-                    []
-                  )
-                }
-              >
-                Skip Add-ons
-              </button>
-
-              <button
-                type="button"
-                className="confirm-addon-btn"
-                onClick={() =>
-                  completeAddToCart(
-                    addonPopup.product,
-                    addonPopup.weight,
-                    addonPopup.quantity,
-                    addonPopup.addons
-                  )
-                }
-              >
-                Add to Cart
-              </button>
-
+                onClick={() => setMobileFilterOpen(false)}
+              >×</button>
             </div>
 
+            <div className="filter-drawer-content">
+              <FilterContent />
+            </div>
+
+            <div className="filter-drawer-footer">
+              <button
+                type="button"
+                className="drawer-clear"
+                onClick={clearFilters}
+              >
+                Clear All
+              </button>
+              <button
+                type="button"
+                className="drawer-apply"
+                onClick={() => setMobileFilterOpen(false)}
+              >
+                Show {filteredProducts.length} Products
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* =====================================
-          CART SUMMARY
-      ===================================== */}
+      {/* ADD-ON POPUP */}
+      {addonPopup.open && addonPopup.product && (
+        <div className="addon-modal-overlay" onClick={closeAddonPopup}>
+          <div
+            className="addon-modal"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="addon-modal-close"
+              onClick={closeAddonPopup}
+            >×</button>
 
-      <div className="cart-summary">
+            <h2>Make It Extra Special! 🍨</h2>
+            <p>Choose your favourite toppings.</p>
 
-        <div>
+            <div className="addon-modal-product">
+              {addonPopup.product.image && (
+                <img
+                  src={addonPopup.product.image}
+                  alt={addonPopup.product.name}
+                />
+              )}
+              <div>
+                <h3>{addonPopup.product.name}</h3>
+                <p>
+                  {addonPopup.weight != null
+                    ? `${addonPopup.weight} ${getUnit(addonPopup.product)}`
+                    : "Standard"}
+                </p>
+                <p>Quantity: {addonPopup.quantity}</p>
+              </div>
+            </div>
 
-          <p>
-            Different Items: {cartCount}
-          </p>
+            <h3>Choose Your Add-ons</h3>
 
-          <p>
-            Total Quantity: {totalQuantity}
-          </p>
+            <div className="addon-modal-list">
+              {(addonPopup.product.addons || []).map((addon, index) => {
+                const addonId = getAddonId(addon);
 
-          <strong>
-            Cart Total: ₹{Number(subTotal || 0).toFixed(2)}
-          </strong>
+                return (
+                  <label
+                    key={`${addonId}-${index}`}
+                    className="addon-modal-option"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={addonPopup.addons.includes(addonId)}
+                      onChange={e => {
+                        setAddonPopup(previous => ({
+                          ...previous,
+                          addons: e.target.checked
+                            ? [...previous.addons, addonId]
+                            : previous.addons.filter(id => id !== addonId)
+                        }));
+                      }}
+                    />
+                    <span>{addon.name}</span>
+                    <strong>+ ₹{Number(addon.price || 0).toFixed(2)}</strong>
+                  </label>
+                );
+              })}
+            </div>
 
+            <div className="addon-modal-total">
+              <span>Base price</span>
+              <strong>₹{popupBasePrice.toFixed(2)}</strong>
+              <span>Add-ons</span>
+              <strong>₹{popupAddonPrice.toFixed(2)}</strong>
+              <span>Quantity</span>
+              <strong>{addonPopup.quantity}</strong>
+              <span>Order Total</span>
+              <strong>
+                ₹{(popupUnitPrice * addonPopup.quantity).toFixed(2)}
+              </strong>
+            </div>
+
+            <div className="addon-modal-actions">
+              <button
+                type="button"
+                className="skip-addon-btn"
+                onClick={() => completeAddToCart(
+                  addonPopup.product,
+                  addonPopup.weight,
+                  addonPopup.quantity,
+                  []
+                )}
+              >
+                Skip Add-ons
+              </button>
+              <button
+                type="button"
+                className="confirm-addon-btn"
+                onClick={() => completeAddToCart(
+                  addonPopup.product,
+                  addonPopup.weight,
+                  addonPopup.quantity,
+                  addonPopup.addons
+                )}
+              >
+                Add to Cart
+              </button>
+            </div>
+          </div>
         </div>
+      )}
 
-        <Link
-          to="/cart"
-          className="view-cart-btn"
-        >
+      {/* CART SUMMARY */}
+      <div className="cart-summary">
+        <div>
+          <p>Different Items: {cartCount}</p>
+          <p>Total Quantity: {totalQuantity}</p>
+          <strong>Cart Total: ₹{Number(subTotal || 0).toFixed(2)}</strong>
+        </div>
+        <Link to="/cart" className="view-cart-btn">
           View Cart ({totalQuantity})
         </Link>
-
       </div>
 
-      {/* =====================================
-          FOOTER
-      ===================================== */}
-
-      <footer className="footer">
-
+      {/* FOOTER */}
+      <footer className="product-footer">
         <h2>KONFiZ</h2>
-
-        <p>Taste the Happiness!</p>
-
-        <p>
-          © 2026 KONFiZ. All rights reserved.
-        </p>
-
+        <p>ICE CREAM & HAPPINESS</p>
+        <p>© 2026 KONFiZ. All rights reserved.</p>
       </footer>
-
     </div>
   );
 }
