@@ -17,6 +17,7 @@ import hero3 from "../assets/images/hero/hero-3.jpg";
 // BANNER IMAGES
 import offerBanner from "../assets/images/banners/offer-banner.jpg";
 import summerBanner from "../assets/images/banners/summer-banner.jpg";
+import icecream from "../images/banner/sundae-a-la-creme-glacee-maison-.jpg";
 
 // CATEGORY IMAGES
 import cones from "../assets/images/categories/cones.jpg";
@@ -30,6 +31,7 @@ import ourStory from "../assets/images/about/our-story.jpg";
 // GENERAL IMAGES
 import delivery from "../assets/images/general/delivery.jpg";
 import quality from "../assets/images/general/quality.jpg";
+
 
 
 const imageSchema = {

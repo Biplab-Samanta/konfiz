@@ -8,17 +8,27 @@ import { useAuth } from "../context/authContext";
 import DynamicIcon from "./dynamicIcon";
 import CartDrawer from "./CartDrawer";
 import Marquee from "react-fast-marquee";
-import DistinguishedFlavours from "../pages/DistinguishedFlavours";
-import QuickDelivery from "../pages/QuickDelivery";
+
 import "../App.css";
 
-
-
-
 function Navbar() {
+    // =====================================
+    // AUTHENTICATION
+    // =====================================
 
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+
+    // Normalize role to avoid uppercase/lowercase issues
+    const userRole = String(user?.role || "").toLowerCase().trim();
+
+    const isAdmin = userRole === "admin";
+    const isCustomer = userRole === "customer";
+
+    const isLoggedIn = !!user && user.authenticated !== false;
+
+    const customer = isCustomer ? user : null;
+    const adminEmail = isAdmin ? user?.email : "";
 
     // =====================================
     // CART STATE
@@ -34,34 +44,45 @@ function Navbar() {
     const displayCartCount = cartCount ?? totalQuantity ?? 0;
 
     // =====================================
-    // GLOBAL ADMIN AND CUSTOMER LOGIN
+    // NAVBAR SCROLL STATE
     // =====================================
 
-    const isAdmin = user?.role?.toLowerCase() === "admin";
+    const [showNavbar, setShowNavbar] = useState(true);
 
-    const isLoggedIn = !!user && !!user.authenticated;
+    useEffect(() => {
+        let lastScrollY = window.scrollY;
 
-    // ADMIN PROFILE
-    const adminEmail = isAdmin ? user?.email : "";
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
 
-    // CUSTOMER PROFILE
-    const customer = isAdmin ? null : user;
+            if (currentScrollY <= 80) {
+                setShowNavbar(true);
+            } else if (currentScrollY > lastScrollY) {
+                setShowNavbar(false);
+            } else if (currentScrollY < lastScrollY) {
+                setShowNavbar(true);
+            }
+
+            lastScrollY = currentScrollY;
+        };
+
+        window.addEventListener("scroll", handleScroll, {
+            passive: true
+        });
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+        };
+    }, []);
 
     // =====================================
     // LOGOUT
     // =====================================
 
     const handleLogout = () => {
-
-        // Clear shared authentication session
-        logout();
-
-        // Close cart if open
         setCartOpen(false);
-
-        // Redirect to home
+        logout();
         navigate("/");
-
     };
 
     // =====================================
@@ -75,63 +96,56 @@ function Navbar() {
     const closeCart = () => {
         setCartOpen(false);
     };
-    const [showNavbar, setShowNavbar] = useState(true);
 
-    useEffect(() => {
+    // =====================================
+    // DASHBOARD NAVIGATION
+    // =====================================
 
-        let lastScrollY = window.scrollY;
-
-        const handleScroll = () => {
-
-            const currentScrollY = window.scrollY;
-
-            // Always show navbar at page top
-            if (currentScrollY <= 80) {
-                setShowNavbar(true);
-            }
-
-            // Scrolling down: hide navbar
-            else if (currentScrollY > lastScrollY) {
-                setShowNavbar(false);
-            }
-
-            // Scrolling up: show navbar
-            else if (currentScrollY < lastScrollY) {
-                setShowNavbar(true);
-            }
-
-            lastScrollY = currentScrollY;
-        };
-
-        window.addEventListener("scroll", handleScroll, { passive: true });
-
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
-
-    }, []);
+    const dashboardPath = isAdmin
+        ? "/admin/dashboard"
+        : "/customer/dashboard";
 
     return (
-
         <>
+            {/* =====================================
+                TOP OFFER BAR
+            ===================================== */}
+
             <div className="topbar">
-                <Marquee speed={50} pauseOnHover={true} gradient={false}>
-                    <span style={{ marginRight: "2rem" }}>Scoop Into Happiness!</span>
-                    <span style={{ marginRight: "2rem" }}> Taste the Magic, Feel the Joy!</span>
-                    <span style={{ marginRight: "2rem" }}>Every Scoop Tells a Sweet Story!</span>
+                <Marquee
+                    speed={50}
+                    pauseOnHover={true}
+                    gradient={false}
+                >
+                    <span style={{ marginRight: "2rem" }}>
+                        Scoop Into Happiness!
+                    </span>
+
+                    <span style={{ marginRight: "2rem" }}>
+                        Taste the Magic, Feel the Joy!
+                    </span>
+
+                    <span style={{ marginRight: "2rem" }}>
+                        Every Scoop Tells a Sweet Story!
+                    </span>
                 </Marquee>
             </div>
-            <nav className="navbar">
+
+            {/* =====================================
+                MAIN NAVBAR
+            ===================================== */}
+
+            <nav className={`navbar ${showNavbar ? "" : "navbar-hidden"}`}>
 
                 {/* LOGO */}
+
                 <Link to="/" className="logo">
                     KONFiZ
                     <small>ICE CREAM</small>
                 </Link>
 
-
                 {/* =====================================
-                    NAVIGATION
+                    MAIN NAVIGATION
                 ===================================== */}
 
                 <div className="nav-links">
@@ -140,8 +154,8 @@ function Navbar() {
                         Home
                     </Link>
 
-
                     {/* PRODUCTS MEGA MENU */}
+
                     <div className="nav-dropdown">
 
                         <Link
@@ -156,9 +170,7 @@ function Navbar() {
                                     size={14}
                                 />
                             </span>
-
                         </Link>
-
 
                         <div className="mega-menu">
 
@@ -181,7 +193,6 @@ function Navbar() {
 
                                 </div>
 
-
                                 <div className="mega-menu-grid">
 
                                     <Link
@@ -194,7 +205,6 @@ function Navbar() {
                                         </div>
                                     </Link>
 
-
                                     <Link
                                         to="/products?category=tubs"
                                         className="mega-item"
@@ -205,81 +215,70 @@ function Navbar() {
                                         </div>
                                     </Link>
 
-
                                     <Link
                                         to="/products?category=family-packs"
                                         className="mega-item"
                                     >
-
-
                                         <div>
                                             <h3>Sorbet</h3>
                                             <p>Cup</p>
                                         </div>
                                     </Link>
 
-
                                     <Link
                                         to="/products?category=sundaes"
                                         className="mega-item"
                                     >
-
-
                                         <div>
                                             <h3>Popsicles</h3>
                                             <p>Mini · Big · Real Fruit</p>
                                         </div>
                                     </Link>
 
-
                                     <Link
                                         to="/products?category=sticks"
                                         className="mega-item"
                                     >
-
-
                                         <div>
                                             <h3>Chocolate</h3>
                                             <p>All Chocolate Products</p>
                                         </div>
                                     </Link>
 
-
                                     <Link
                                         to="/products?category=milkshakes"
                                         className="mega-item"
                                     >
-
-
                                         <div>
                                             <h3>Breads & Buns</h3>
                                             <p>All Bakery Products</p>
                                         </div>
                                     </Link>
+
                                     <Link
-                                        to="/products?category=milkshakes"
+                                        to="/products?category=cookies"
                                         className="mega-item"
                                     >
-
-
                                         <div>
                                             <h3>Cookies</h3>
                                             <p>All Cookie Products</p>
                                         </div>
                                     </Link>
+
                                     <Link
-                                        to="/products?category=milkshakes"
+                                        to="/products?category=dips-spreads"
                                         className="mega-item"
                                     >
-
-
                                         <div>
                                             <h3>Dips & Spreads</h3>
-                                            <p>Hummus · Pesto · Hazelnut · Biskia · Magnum Spread</p>
+                                            <p>
+                                                Hummus · Pesto · Hazelnut ·
+                                                Biskia · Magnum Spread
+                                            </p>
                                         </div>
                                     </Link>
-                                </div>
 
+                                </div>
 
                                 <div className="mega-menu-footer">
 
@@ -295,15 +294,12 @@ function Navbar() {
                                 </div>
 
                             </div>
-
                         </div>
-
                     </div>
 
-
-                   <Link to="/quick-delivery">
+                    <Link to="/quick-delivery">
                         30 Minute Delivery in Kolkata
-                   </Link>
+                    </Link>
 
                     <Link to="/distinguished-flavours">
                         Our Distinguished Flavours
@@ -313,10 +309,11 @@ function Navbar() {
                         We Make You Sell
                     </Link>
 
-                    <Link to="/our-story">Our Story</Link>
+                    <Link to="/our-story">
+                        Our Story
+                    </Link>
 
                 </div>
-
 
                 {/* =====================================
                     USER AND CART SECTION
@@ -324,9 +321,8 @@ function Navbar() {
 
                 <div className="navbar-user-section">
 
-
                     {/* =====================================
-                        LOGIN / PROFILE
+                        LOGIN / CUSTOMER / ADMIN PROFILE
                     ===================================== */}
 
                     {isLoggedIn ? (
@@ -342,88 +338,82 @@ function Navbar() {
                                     />
                                 </span>
 
-
                                 <div className="profile-details">
 
                                     <strong>
                                         {isAdmin
                                             ? "Administrator"
-                                            : customer?.name || "Customer"}
+                                            : customer?.name ||
+                                              customer?.fullName ||
+                                              "Customer"}
                                     </strong>
 
                                     <small>
                                         {isAdmin
                                             ? "Admin"
                                             : customer?.customerId ||
-                                            customer?.id ||
-                                            "Customer"}
+                                              customer?.id ||
+                                              "Customer"}
                                     </small>
 
                                 </div>
 
+                                {/* =====================================
+                                    PROFILE DROPDOWN
+                                ===================================== */}
 
-                                {/* PROFILE DROPDOWN */}
                                 <div className="profile-dropdown">
 
                                     <h3>
                                         Profile Information
                                     </h3>
 
-
                                     <p>
                                         <strong>Name:</strong>{" "}
-
                                         {isAdmin
-                                            ? "Administrator"
-                                            : customer?.name || "Customer"}
+                                            ? user?.name || "Administrator"
+                                            : customer?.name ||
+                                              customer?.fullName ||
+                                              "Customer"}
                                     </p>
-
 
                                     <p>
                                         <strong>Role:</strong>{" "}
-
-                                        {isAdmin
-                                            ? "Admin"
-                                            : customer?.role || "Customer"}
+                                        {isAdmin ? "Admin" : "Customer"}
                                     </p>
-
 
                                     <p>
                                         <strong>Email:</strong>{" "}
-
                                         {isAdmin
-                                            ? adminEmail
+                                            ? adminEmail || "N/A"
                                             : customer?.email || "N/A"}
                                     </p>
 
+                                    {/* CUSTOMER INFORMATION */}
 
-                                    {!isAdmin && (
-
+                                    {isCustomer && (
                                         <>
-
                                             <p>
                                                 <strong>Customer ID:</strong>{" "}
-
                                                 {customer?.customerId ||
                                                     customer?.id ||
                                                     "N/A"}
                                             </p>
 
-
                                             <p>
                                                 <strong>Mobile:</strong>{" "}
-
-                                                {customer?.mobile || "N/A"}
+                                                {customer?.mobile ||
+                                                    customer?.phone ||
+                                                    "N/A"}
                                             </p>
-
                                         </>
-
                                     )}
 
+                                    {/* =====================================
+                                        ADMIN DASHBOARD
+                                    ===================================== */}
 
-                                    {/* ADMIN DASHBOARD LINK */}
                                     {isAdmin && (
-
                                         <Link
                                             to="/admin/dashboard"
                                             className="profile-dashboard-link"
@@ -435,33 +425,50 @@ function Navbar() {
 
                                             Admin Dashboard
                                         </Link>
-
                                     )}
 
+                                    {/* =====================================
+                                        CUSTOMER DASHBOARD
+                                    ===================================== */}
 
-                                    {/* LOGOUT */}
+                                    {isCustomer && (
+                                        <Link
+                                            to="/customer/dashboard"
+                                            className="profile-dashboard-link"
+                                        >
+                                            <DynamicIcon
+                                                name="dashboard"
+                                                size={17}
+                                            />
+
+                                            My Account
+                                        </Link>
+                                    )}
+
+                                    {/* =====================================
+                                        LOGOUT
+                                    ===================================== */}
+
                                     <button
                                         className="logout-btn"
                                         type="button"
                                         onClick={handleLogout}
                                     >
-
                                         <DynamicIcon
                                             name="logout"
                                             size={17}
                                         />
 
                                         Logout
-
                                     </button>
 
                                 </div>
-
                             </div>
-
                         </div>
 
                     ) : (
+
+                        /* LOGGED OUT */
 
                         <Link
                             className="konfiz_login"
@@ -472,39 +479,37 @@ function Navbar() {
 
                     )}
 
-
                     {/* =====================================
                         STICKY CART BUTTON
                     ===================================== */}
 
-
-
-                    <div className="cart-button" onClick={openCart}
+                    <div
+                        className="cart-button"
+                        onClick={openCart}
                         aria-label="Open shopping cart"
-                        aria-expanded={cartOpen}>
+                        aria-expanded={cartOpen}
+                    >
 
                         <button
                             type="button"
                             className="navbar-cart-button"
+                            aria-label="Open cart"
                         >
-
                             <DynamicIcon
                                 name="cart"
                                 size={23}
                             />
                         </button>
+
                         <span className="navbar-cart-count">
                             {displayCartCount}
                         </span>
 
-
-
-
                     </div>
+
                 </div>
 
             </nav>
-
 
             {/* =====================================
                 GLOBAL OFF-CANVAS CART DRAWER
@@ -516,9 +521,7 @@ function Navbar() {
             />
 
         </>
-
     );
-
 }
 
 export default Navbar;

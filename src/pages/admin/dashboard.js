@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/authContext";
 import "../../style/dashboard.css";
 import AddProduct from "./addproduct";
@@ -604,93 +604,418 @@ function Dashboard({ onLogout }) {
     // =====================================
     // MANAGE PRODUCTS
     // =====================================
+const [productSearch, setProductSearch] = useState("");
+const [productCategoryFilter, setProductCategoryFilter] = useState("All");
+const [productStockFilter, setProductStockFilter] = useState("All");
+const [productSort, setProductSort] = useState("newest");
+ const renderManageProducts = () => {
+    const categoriesList = [
+        ...new Set(
+            products
+                .map((product) => product.category)
+                .filter(Boolean)
+        ),
+    ];
 
-    const renderManageProducts = () => (
-        <div className="manage-products">
-            {pageHeader(
-                "Manage Products",
-                "View, edit and remove your store products."
-            )}
+    const filteredProducts = products
+        .filter((product) => {
+            const search = productSearch.toLowerCase();
 
-            {products.length === 0 ? (
-                <div className="empty-state">
-                    <div className="empty-icon">🍦</div>
-                    <strong>No products added yet.</strong>
+            const matchesSearch =
+                String(product.name || "").toLowerCase().includes(search) ||
+                String(product.category || "").toLowerCase().includes(search) ||
+                String(product.id || "").toLowerCase().includes(search);
 
-                    <button
-                        className="primary-btn"
-                        onClick={() => selectPage("Add Product")}
+            const matchesCategory =
+                productCategoryFilter === "All" ||
+                product.category === productCategoryFilter;
+
+            const stock = Number(product.stock ?? 0);
+
+            const matchesStock =
+                productStockFilter === "All" ||
+                (productStockFilter === "In Stock" && stock > 5) ||
+                (productStockFilter === "Low Stock" && stock > 0 && stock <= 5) ||
+                (productStockFilter === "Out of Stock" && stock === 0);
+
+            return matchesSearch && matchesCategory && matchesStock;
+        })
+        .sort((a, b) => {
+            if (productSort === "price-low") {
+                return Number(a.price || 0) - Number(b.price || 0);
+            }
+
+            if (productSort === "price-high") {
+                return Number(b.price || 0) - Number(a.price || 0);
+            }
+
+            if (productSort === "name") {
+                return String(a.name || "").localeCompare(String(b.name || ""));
+            }
+
+            return 0;
+        });
+
+    const totalProducts = products.length;
+    const inStockProducts = products.filter(
+        (product) => Number(product.stock ?? 0) > 5
+    ).length;
+    const lowStockProductsCount = products.filter((product) => {
+        const stock = Number(product.stock ?? 0);
+        return stock > 0 && stock <= 5;
+    }).length;
+    const outOfStockProducts = products.filter(
+        (product) => Number(product.stock ?? 0) === 0
+    ).length;
+
+    return (
+        <div className="manage-products-page">
+
+            {/* PAGE HEADER */}
+            <div className="manage-products-header">
+                <div>
+                    <span className="manage-products-eyebrow">
+                        KONFiZ STORE / CATALOGUE
+                    </span>
+
+                    <h2>Manage Products</h2>
+
+                    <p>
+                        Organise your ice cream collection, update product
+                        details and manage your catalogue.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    className="manage-add-product-btn"
+                    onClick={() => selectPage("Add Product")}
+                >
+                    <span>＋</span>
+                    Add New Product
+                </button>
+            </div>
+
+            {/* OVERVIEW CARDS */}
+            <div className="manage-product-stats">
+
+                <div className="manage-product-stat">
+                    <div className="manage-stat-icon pink">🍦</div>
+                    <div>
+                        <span>Total Products</span>
+                        <h3>{totalProducts}</h3>
+                    </div>
+                </div>
+
+                <div className="manage-product-stat">
+                    <div className="manage-stat-icon green">✓</div>
+                    <div>
+                        <span>In Stock</span>
+                        <h3>{inStockProducts}</h3>
+                    </div>
+                </div>
+
+                <div className="manage-product-stat">
+                    <div className="manage-stat-icon orange">⚠</div>
+                    <div>
+                        <span>Low Stock</span>
+                        <h3>{lowStockProductsCount}</h3>
+                    </div>
+                </div>
+
+                <div className="manage-product-stat">
+                    <div className="manage-stat-icon red">×</div>
+                    <div>
+                        <span>Out of Stock</span>
+                        <h3>{outOfStockProducts}</h3>
+                    </div>
+                </div>
+
+            </div>
+
+            {/* PRODUCT CATALOGUE */}
+            <div className="manage-catalogue-card">
+
+                <div className="manage-catalogue-heading">
+                    <div>
+                        <h3>Product Catalogue</h3>
+                        <p>
+                            View and manage all products available in your store.
+                        </p>
+                    </div>
+
+                    <span className="manage-product-count">
+                        {filteredProducts.length} Products
+                    </span>
+                </div>
+
+                {/* TOOLBAR */}
+                <div className="manage-product-toolbar">
+
+                    <div className="manage-product-search">
+                        <span>⌕</span>
+                        <input
+                            type="text"
+                            placeholder="Search by product name or ID..."
+                            value={productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                        />
+                    </div>
+
+                    <select
+                        value={productCategoryFilter}
+                        onChange={(e) => setProductCategoryFilter(e.target.value)}
                     >
-                        Add Your First Product
-                    </button>
+                        <option value="All">All Categories</option>
+
+                        {categoriesList.map((category) => (
+                            <option key={category} value={category}>
+                                {category}
+                            </option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={productStockFilter}
+                        onChange={(e) => setProductStockFilter(e.target.value)}
+                    >
+                        <option value="All">All Stock Status</option>
+                        <option value="In Stock">In Stock</option>
+                        <option value="Low Stock">Low Stock</option>
+                        <option value="Out of Stock">Out of Stock</option>
+                    </select>
+
+                    <select
+                        value={productSort}
+                        onChange={(e) => setProductSort(e.target.value)}
+                    >
+                        <option value="newest">Default Order</option>
+                        <option value="name">Name: A to Z</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                    </select>
+
                 </div>
-            ) : (
-                <div className="products-grid">
-                    {products.map((product) => (
-                        <div key={product.id} className="product-card">
-                            {product.image && (
-                                <img
-                                    src={product.image}
-                                    alt={product.name}
-                                />
-                            )}
 
-                            <h3>{product.name}</h3>
-                            <p>{product.category}</p>
-                            <p>{product.description}</p>
+                {/* PRODUCT GRID */}
+                {products.length === 0 ? (
 
-                            <strong>
-                                {formatCurrency(product.price)}
-                            </strong>
+                    <div className="manage-products-empty">
+                        <div className="manage-empty-icon">🍨</div>
+                        <h3>Your catalogue is empty</h3>
+                        <p>
+                            Start adding delicious flavours to your KONFiZ store.
+                        </p>
 
-                            <p>⭐ {product.rating || "N/A"}</p>
-                            <p>Stock: {product.stock ?? 0}</p>
+                        <button
+                            type="button"
+                            onClick={() => selectPage("Add Product")}
+                        >
+                            Add Your First Product
+                        </button>
+                    </div>
 
-                            <div style={{
-                                display: "flex",
-                                gap: 8,
-                                flexWrap: "wrap"
-                            }}>
-                                <button
-                                    type="button"
-                                    onClick={() => handleEditProduct(product)}
+                ) : filteredProducts.length === 0 ? (
+
+                    <div className="manage-products-empty">
+                        <div className="manage-empty-icon">🔍</div>
+                        <h3>No matching products</h3>
+                        <p>Try changing your search or filters.</p>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setProductSearch("");
+                                setProductCategoryFilter("All");
+                                setProductStockFilter("All");
+                                setProductSort("newest");
+                            }}
+                        >
+                            Clear Filters
+                        </button>
+                    </div>
+
+                ) : (
+
+                    <div className="manage-products-grid">
+
+                        {filteredProducts.map((product) => {
+                            const stock = Number(product.stock ?? 0);
+
+                            const stockStatus =
+                                stock === 0
+                                    ? "out"
+                                    : stock <= 5
+                                        ? "low"
+                                        : "available";
+
+                            return (
+                                <div
+                                    className="manage-product-card"
+                                    key={product.id}
                                 >
-                                    Edit
-                                </button>
 
-                                <button
-                                    type="button"
-                                    onClick={() => handleDeleteProduct(product.id)}
-                                >
-                                    Remove
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+                                    {/* IMAGE */}
+                                    <div className="manage-product-image">
+
+                                        {product.image ? (
+                                            <img
+                                                src={product.image}
+                                                alt={product.name}
+                                            />
+                                        ) : (
+                                            <div className="manage-product-placeholder">
+                                                🍦
+                                            </div>
+                                        )}
+
+                                        <span
+                                            className={`manage-stock-badge ${stockStatus}`}
+                                        >
+                                            {stockStatus === "out"
+                                                ? "Out of Stock"
+                                                : stockStatus === "low"
+                                                    ? "Low Stock"
+                                                    : "In Stock"}
+                                        </span>
+
+                                        <span className="manage-product-category">
+                                            {product.category || "Uncategorized"}
+                                        </span>
+
+                                    </div>
+
+                                    {/* DETAILS */}
+                                    <div className="manage-product-details">
+
+                                        <div className="manage-product-title-row">
+                                            <h3>{product.name}</h3>
+                                            <span className="manage-product-rating">
+                                                ⭐ {product.rating || "N/A"}
+                                            </span>
+                                        </div>
+
+                                        <p className="manage-product-description">
+                                            {product.description ||
+                                                "A delicious KONFiZ ice cream flavour."}
+                                        </p>
+
+                                        <div className="manage-product-meta">
+                                            <span>
+                                                Product ID
+                                                <strong>{product.id}</strong>
+                                            </span>
+
+                                            <span>
+                                                Available Stock
+                                                <strong>{stock} units</strong>
+                                            </span>
+                                        </div>
+
+                                        <div className="manage-product-card-footer">
+
+                                            <div className="manage-product-price">
+                                                <small>Starting from</small>
+                                                <strong>
+                                                    {formatCurrency(product.price)}
+                                                </strong>
+                                            </div>
+
+                                            <div className="manage-product-actions">
+
+                                                <button
+                                                    type="button"
+                                                    className="manage-edit-btn"
+                                                    title="Edit product"
+                                                    onClick={() =>
+                                                        handleEditProduct(product)
+                                                    }
+                                                >
+                                                    ✎
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    className="manage-delete-btn"
+                                                    title="Remove product"
+                                                    onClick={() =>
+                                                        handleDeleteProduct(product.id)
+                                                    }
+                                                >
+                                                    🗑
+                                                </button>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            );
+                        })}
+
+                    </div>
+
+                )}
+
+                {/* FOOTER */}
+                {products.length > 0 && (
+                    <div className="manage-products-footer">
+                        Showing {filteredProducts.length} of {products.length} products
+                    </div>
+                )}
+
+            </div>
+
         </div>
     );
+};
 
     // =====================================
     // CATEGORIES
     // =====================================
 
-    const renderCategories = () => (
-        <div className="manage-products">
-            {pageHeader(
-                "Categories",
-                "Create and manage your ice cream categories."
-            )}
+   
+const renderCategories = () => (
+    <div className="category-management">
 
-            <div className="dashboard-panel">
-                <div className="login-group">
-                    <label>New Category</label>
+        <div className="category-page-header">
+            <div>
+                <span className="category-eyebrow">KONFIZ STORE</span>
+                <h2>Category Management</h2>
+                <p>Organize and manage your ice cream categories.</p>
+            </div>
 
+            <button
+                type="button"
+                className="category-add-btn"
+                onClick={() => {
+                    const input = document.querySelector(".category-name-input");
+                    if (input) input.focus();
+                }}
+            >
+                + Add Category
+            </button>
+        </div>
+
+        {/* ADD CATEGORY */}
+        <div className="category-form-card">
+            <div className="category-form-heading">
+                <div className="category-form-icon">🍦</div>
+                <div>
+                    <h3>Create New Category</h3>
+                    <p>Add a new category to your KONFIZ store.</p>
+                </div>
+            </div>
+
+            <div className="category-form-row">
+                <div className="category-input-group">
+                    <label>Category Name</label>
                     <input
                         type="text"
-                        className="login-input"
-                        placeholder="Enter category name"
+                        className="category-name-input"
+                        placeholder="e.g. Ice Cream Tubs"
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value)}
                         onKeyDown={(e) => {
@@ -704,287 +1029,952 @@ function Dashboard({ onLogout }) {
 
                 <button
                     type="button"
-                    className="primary-btn"
+                    className="category-submit-btn"
                     onClick={addCategory}
                 >
-                    + Add Category
+                    + Create Category
                 </button>
             </div>
+        </div>
 
-            <div className="dashboard-panel" style={{ marginTop: 20 }}>
-                <h3>Category List</h3>
+        {/* CATEGORY TABLE */}
+        <div className="category-list-card">
 
-                {categories.length === 0 ? (
-                    <p>No categories created yet.</p>
-                ) : (
-                    <div className="admin-table-wrapper">
-                        <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                    <th>Products</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
+            <div className="category-list-header">
+                <div>
+                    <h3>Category List</h3>
+                    <p>All your store categories in one place.</p>
+                </div>
 
-                            <tbody>
-                                {categories.map((category, index) => {
-                                    const name =
-                                        typeof category === "string"
-                                            ? category
-                                            : category.name;
+                <div className="category-total">
+                    {categories.length} Categories
+                </div>
+            </div>
 
-                                    const id =
-                                        typeof category === "string"
-                                            ? category
-                                            : category.id;
+            {categories.length === 0 ? (
+                <div className="category-empty">
+                    <div>🍨</div>
+                    <h3>No Categories Found</h3>
+                    <p>Create your first category to organize products.</p>
+                </div>
+            ) : (
+                <div className="category-table-wrapper">
+                    <table className="category-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Category Name</th>
+                                <th>Products</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
 
-                                    const count = products.filter(
-                                        (product) =>
-                                            String(product.category || "").toLowerCase() ===
-                                            String(name || "").toLowerCase()
-                                    ).length;
+                        <tbody>
+                            {categories.map((category, index) => {
+                                const name =
+                                    typeof category === "string"
+                                        ? category
+                                        : category.name;
 
-                                    return (
-                                        <tr key={id || index}>
-                                            <td>{name}</td>
-                                            <td>{count}</td>
-                                            <td>
+                                const id =
+                                    typeof category === "string"
+                                        ? category
+                                        : category.id;
+
+                                const count = products.filter(
+                                    (product) =>
+                                        String(product.category || "").toLowerCase() ===
+                                        String(name || "").toLowerCase()
+                                ).length;
+
+                                return (
+                                    <tr key={id || index}>
+                                        <td>
+                                            <span className="category-id">
+                                                {String(index + 1).padStart(2, "0")}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <div className="category-name-cell">
+                                              
+                                                <strong>{name}</strong>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <span className="category-product-count">
+                                                {count} Products
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <span className={
+                                                count > 0
+                                                    ? "category-status active"
+                                                    : "category-status empty"
+                                            }>
+                                                {count > 0 ? "Active" : "Empty"}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <div className="category-action-buttons">
+
+                                                <button
+                                                    type="button"
+                                                    className="category-edit-btn"
+                                                    onClick={() => {
+                                                        const updatedName = window.prompt(
+                                                            "Enter new category name:",
+                                                            name
+                                                        );
+
+                                                        if (
+                                                            updatedName === null ||
+                                                            !updatedName.trim()
+                                                        ) return;
+
+                                                        const duplicate = categories.some(
+                                                            (item) => {
+                                                                const itemName =
+                                                                    typeof item === "string"
+                                                                        ? item
+                                                                        : item.name;
+
+                                                                return (
+                                                                    itemName.toLowerCase() ===
+                                                                    updatedName.trim().toLowerCase() &&
+                                                                    itemName.toLowerCase() !==
+                                                                    name.toLowerCase()
+                                                                );
+                                                            }
+                                                        );
+
+                                                        if (duplicate) {
+                                                            alert("Category already exists.");
+                                                            return;
+                                                        }
+
+                                                        setCategories((previous) =>
+                                                            previous.map((item) => {
+                                                                const itemName =
+                                                                    typeof item === "string"
+                                                                        ? item
+                                                                        : item.name;
+
+                                                                if (
+                                                                    itemName.toLowerCase() !==
+                                                                    name.toLowerCase()
+                                                                ) return item;
+
+                                                                if (typeof item === "string") {
+                                                                    return updatedName.trim();
+                                                                }
+
+                                                                return {
+                                                                    ...item,
+                                                                    name: updatedName.trim()
+                                                                };
+                                                            })
+                                                        );
+
+                                                        // Update products using the old category name
+                                                        setProducts((previous) =>
+                                                            previous.map((product) =>
+                                                                String(product.category || "").toLowerCase() ===
+                                                                name.toLowerCase()
+                                                                    ? {
+                                                                        ...product,
+                                                                        category: updatedName.trim()
+                                                                    }
+                                                                    : product
+                                                            )
+                                                        );
+                                                    }}
+                                                >
+                                                    Edit
+                                                </button>
+
                                                 {typeof category === "string" ? (
-                                                    <span>Existing category</span>
+                                                    <button
+                                                        type="button"
+                                                        className="category-delete-btn"
+                                                        onClick={() => {
+                                                            alert(
+                                                                "This is an existing category. Please migrate it to a managed category before deleting."
+                                                            );
+                                                        }}
+                                                    >
+                                                        Delete
+                                                    </button>
                                                 ) : (
                                                     <button
                                                         type="button"
+                                                        className="category-delete-btn"
                                                         onClick={() => deleteCategory(id)}
                                                     >
                                                         Delete
                                                     </button>
                                                 )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
+
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
-    );
+
+    </div>
+);
+
 
     // =====================================
     // INVENTORY
     // =====================================
 
-    const renderInventory = () => (
-        <div className="manage-products">
-            {pageHeader(
-                "Inventory Management",
-                "Monitor and update your product stock."
-            )}
+const [inventorySearch, setInventorySearch] = useState("");
+const [inventoryCategory, setInventoryCategory] = useState("All");
+const [inventoryFilter, setInventoryFilter] = useState("All");
 
-            <div className="dashboard-panel">
-                <h3>Inventory Summary</h3>
-                <p>Total Products: {products.length}</p>
-                <p>Low Stock: {lowStockProducts.length}</p>
+   
+const renderInventory = () => {
 
-                <p>
-                    Out of Stock: {
-                        products.filter(
-                            (product) => Number(product.stock || 0) === 0
-                        ).length
-                    }
-                </p>
+    const outOfStockProducts = products.filter(
+        (product) => Number(product.stock || 0) === 0
+    );
+
+    const totalStock = products.reduce(
+        (total, product) => total + Number(product.stock || 0),
+        0
+    );
+
+    const inventoryValue = products.reduce(
+        (total, product) =>
+            total + (
+                Number(product.price || 0) *
+                Number(product.stock || 0)
+            ),
+        0
+    );
+
+    const filteredProducts = products.filter((product) => {
+
+        const matchesSearch =
+            String(product.name || "")
+                .toLowerCase()
+                .includes(inventorySearch.toLowerCase());
+
+        const matchesCategory =
+            inventoryCategory === "All" ||
+            String(product.category || "").toLowerCase() ===
+            inventoryCategory.toLowerCase();
+
+        const stock = Number(product.stock || 0);
+
+        const matchesStatus =
+            inventoryFilter === "All" ||
+            (inventoryFilter === "In Stock" && stock > 5) ||
+            (inventoryFilter === "Low Stock" && stock > 0 && stock <= 5) ||
+            (inventoryFilter === "Out of Stock" && stock === 0);
+
+        return matchesSearch && matchesCategory && matchesStatus;
+    });
+
+    const getStockStatus = (stock) => {
+        if (stock === 0) {
+            return {
+                label: "Out of Stock",
+                className: "out-stock"
+            };
+        }
+
+        if (stock <= 5) {
+            return {
+                label: "Low Stock",
+                className: "low-stock"
+            };
+        }
+
+        return {
+            label: "In Stock",
+            className: "in-stock"
+        };
+    };
+
+    return (
+        <div className="inventory-page">
+
+            {/* PAGE HEADER */}
+
+            <div className="inventory-header">
+                <div>
+                    <span className="inventory-eyebrow">
+                        KONFIZ STORE MANAGEMENT
+                    </span>
+
+                    <h2>Inventory Overview</h2>
+
+                    <p>
+                        Track your ice cream products, monitor stock
+                        levels and manage inventory.
+                    </p>
+                </div>
+
+                <div className="inventory-header-icon">
+                    📦
+                </div>
             </div>
 
-            <div className="dashboard-panel" style={{ marginTop: 20 }}>
-                <div className="admin-table-wrapper">
-                    <table className="admin-table">
+            {/* SUMMARY CARDS */}
+
+            <div className="inventory-stats-grid">
+
+                <div className="inventory-stat-card">
+                    <div className="inventory-stat-top">
+                        <div className="inventory-stat-icon purple">
+                            📦
+                        </div>
+                        <span className="inventory-stat-tag">
+                            All Products
+                        </span>
+                    </div>
+
+                    <h3>{products.length}</h3>
+                    <p>Total Products</p>
+                </div>
+
+                <div className="inventory-stat-card">
+                    <div className="inventory-stat-top">
+                        <div className="inventory-stat-icon blue">
+                            🏬
+                        </div>
+                        <span className="inventory-stat-tag">
+                            Units
+                        </span>
+                    </div>
+
+                    <h3>{totalStock.toLocaleString("en-IN")}</h3>
+                    <p>Total Stock Units</p>
+                </div>
+
+                <div className="inventory-stat-card">
+                    <div className="inventory-stat-top">
+                        <div className="inventory-stat-icon orange">
+                            ⚠️
+                        </div>
+                        <span className="inventory-stat-tag warning">
+                            Attention
+                        </span>
+                    </div>
+
+                    <h3>{lowStockProducts.length}</h3>
+                    <p>Low Stock Products</p>
+                </div>
+
+                <div className="inventory-stat-card">
+                    <div className="inventory-stat-top">
+                        <div className="inventory-stat-icon red">
+                            🚫
+                        </div>
+                        <span className="inventory-stat-tag danger">
+                            Critical
+                        </span>
+                    </div>
+
+                    <h3>{outOfStockProducts.length}</h3>
+                    <p>Out of Stock</p>
+                </div>
+
+            </div>
+
+            {/* INVENTORY VALUE */}
+
+            <div className="inventory-value-card">
+                <div>
+                    <span>Estimated Inventory Value</span>
+                    <h2>{formatCurrency(inventoryValue)}</h2>
+                    <p>Based on current product price × available stock</p>
+                </div>
+
+                <div className="inventory-value-icon">
+                    ₹
+                </div>
+            </div>
+
+            {/* INVENTORY TABLE */}
+
+            <div className="inventory-table-card">
+
+                <div className="inventory-table-heading">
+                    <div>
+                        <h3>Product Inventory</h3>
+                        <p>Manage product quantities and stock status.</p>
+                    </div>
+
+                    <span className="inventory-total-badge">
+                        {filteredProducts.length} Products
+                    </span>
+                </div>
+
+                {/* SEARCH AND FILTER */}
+
+                <div className="inventory-toolbar">
+
+                    <div className="inventory-search">
+                        <span>⌕</span>
+
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={inventorySearch}
+                            onChange={(e) =>
+                                setInventorySearch(e.target.value)
+                            }
+                        />
+                    </div>
+
+                    <select
+                        value={inventoryCategory}
+                        onChange={(e) =>
+                            setInventoryCategory(e.target.value)
+                        }
+                    >
+                        <option value="All">All Categories</option>
+
+                        {[...new Set(
+                            products
+                                .map((product) => product.category)
+                                .filter(Boolean)
+                        )].map((category) => (
+                            <option key={category} value={category}>
+                                {category}
+                            </option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={inventoryFilter}
+                        onChange={(e) =>
+                            setInventoryFilter(e.target.value)
+                        }
+                    >
+                        <option value="All">All Status</option>
+                        <option value="In Stock">In Stock</option>
+                        <option value="Low Stock">Low Stock</option>
+                        <option value="Out of Stock">Out of Stock</option>
+                    </select>
+
+                </div>
+
+                {/* STATUS FILTERS */}
+
+                <div className="inventory-status-filters">
+
+                    {["All", "In Stock", "Low Stock", "Out of Stock"].map(
+                        (status) => (
+                            <button
+                                type="button"
+                                key={status}
+                                className={
+                                    inventoryFilter === status
+                                        ? "inventory-filter-btn active"
+                                        : "inventory-filter-btn"
+                                }
+                                onClick={() => setInventoryFilter(status)}
+                            >
+                                {status}
+                            </button>
+                        )
+                    )}
+
+                </div>
+
+                {/* TABLE */}
+
+                <div className="inventory-table-wrapper">
+
+                    <table className="inventory-table">
+
                         <thead>
                             <tr>
                                 <th>Product</th>
                                 <th>Category</th>
-                                <th>Current Stock</th>
-                                <th>Update Stock</th>
+                                <th>Unit Price</th>
+                                <th>Available Stock</th>
+                                <th>Stock Level</th>
                                 <th>Status</th>
+                                <th>Update Stock</th>
                             </tr>
                         </thead>
 
                         <tbody>
-                            {products.map((product) => (
-                                <tr key={product.id}>
-                                    <td>{product.name}</td>
-                                    <td>{product.category || "N/A"}</td>
-                                    <td>{product.stock ?? 0}</td>
 
-                                    <td>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            defaultValue={product.stock ?? 0}
-                                            onBlur={(e) => {
-                                                if (e.target.value !== "") {
-                                                    updateStock(product, e.target.value);
-                                                }
-                                            }}
-                                        />
-                                    </td>
+                            {filteredProducts.length === 0 ? (
 
-                                    <td>
-                                        {Number(product.stock || 0) === 0
-                                            ? "Out of Stock"
-                                            : Number(product.stock || 0) <= 5
-                                                ? "Low Stock"
-                                                : "Available"}
+                                <tr>
+                                    <td colSpan="7">
+                                        <div className="inventory-empty">
+                                            <span>📦</span>
+                                            <h3>No Products Found</h3>
+                                            <p>
+                                                Try changing your search
+                                                or filters.
+                                            </p>
+                                        </div>
                                     </td>
                                 </tr>
-                            ))}
+
+                            ) : (
+
+                                filteredProducts.map((product) => {
+
+                                    const stock = Number(product.stock || 0);
+                                    const status = getStockStatus(stock);
+
+                                    // Display scale only; no stock capacity
+                                    // is assumed by this visualization.
+                                    const progress = Math.min(stock, 100);
+
+                                    return (
+                                        <tr key={product.id}>
+
+                                            <td>
+                                                <div className="inventory-product">
+
+                                                    {product.image ? (
+                                                        <img
+                                                            src={product.image}
+                                                            alt={product.name}
+                                                        />
+                                                    ) : (
+                                                        <div className="inventory-product-placeholder">
+                                                            🍦
+                                                        </div>
+                                                    )}
+
+                                                    <div>
+                                                        <strong>
+                                                            {product.name}
+                                                        </strong>
+
+                                                        <small>
+                                                            {product.id}
+                                                        </small>
+                                                    </div>
+
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <span className="inventory-category">
+                                                    {product.category || "Uncategorized"}
+                                                </span>
+                                            </td>
+
+                                            <td className="inventory-price">
+                                                {formatCurrency(product.price)}
+                                            </td>
+
+                                            <td>
+                                                <strong className="inventory-stock-number">
+                                                    {stock}
+                                                </strong>
+                                                <small className="inventory-unit">
+                                                    units
+                                                </small>
+                                            </td>
+
+                                            <td>
+                                                <div className="inventory-progress">
+                                                    <div className="inventory-progress-track">
+                                                        <div
+                                                            className={`inventory-progress-fill ${status.className}`}
+                                                            style={{
+                                                                width: `${progress}%`
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    <small>
+                                                        {stock} units
+                                                    </small>
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <span className={`inventory-status ${status.className}`}>
+                                                    {status.label}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <div className="inventory-update-control">
+
+                                                    <input
+                                                        key={`${product.id}-${stock}`}
+                                                        type="number"
+                                                        min="0"
+                                                        defaultValue={stock}
+                                                        onBlur={(e) => {
+                                                            if (e.target.value === "") {
+                                                                e.target.value = stock;
+                                                                return;
+                                                            }
+
+                                                            updateStock(
+                                                                product,
+                                                                e.target.value
+                                                            );
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Enter") {
+                                                                e.currentTarget.blur();
+                                                            }
+                                                        }}
+                                                    />
+
+                                                    <span>Units</span>
+
+                                                </div>
+                                            </td>
+
+                                        </tr>
+                                    );
+                                })
+                            )}
+
                         </tbody>
+
                     </table>
+
                 </div>
+
+                {/* TABLE FOOTER */}
+
+                <div className="inventory-table-footer">
+                    Showing {filteredProducts.length} of {products.length} products
+                </div>
+
             </div>
+
         </div>
     );
+};
 
     // =====================================
     // ORDERS
     // =====================================
 
-    const renderOrders = () => (
-        <div className="manage-products">
-            {pageHeader(
-                "Orders Management",
-                "View customer orders and update their status."
-            )}
+   const [orderSearch, setOrderSearch] = useState("");
 
-            <div className="dashboard-panel">
-                <h3>Total Orders: {orders.length}</h3>
+const renderOrders = () => {
+    const filteredOrders = orders.filter((order) =>
+        String(order.orderId || order.id || "")
+            .toLowerCase()
+            .includes(orderSearch.toLowerCase().trim())
+    );
 
-                {orders.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-icon">🛒</div>
-                        <strong>No orders received yet.</strong>
-                    </div>
-                ) : (
-                    <div className="admin-table-wrapper">
-                        <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Customer</th>
-                                    <th>Date</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
+    return (
+        <div className="orders-section">
 
-                            <tbody>
-                                {orders.map((order, index) => {
-                                    const id = order.id || order.orderId || index;
+            <div className="orders-header">
+                <div>
+                    <h2>Manage Orders</h2>
+                    <p>Search and manage customer orders</p>
+                </div>
 
-                                    return (
-                                        <tr key={id}>
-                                            <td>
-                                                {order.orderId || order.id || `Order ${index + 1}`}
-                                            </td>
+                <div className="order-search">
+                    <span>🔍</span>
+                    <input
+                        type="text"
+                        placeholder="Search by Order ID..."
+                        value={orderSearch}
+                        onChange={(e) => setOrderSearch(e.target.value)}
+                    />
 
-                                            <td>{getOrderCustomer(order)}</td>
-
-                                            <td>
-                                                {order.orderDate || order.date
-                                                    ? new Date(
-                                                        order.orderDate || order.date
-                                                    ).toLocaleDateString("en-IN")
-                                                    : "N/A"}
-                                            </td>
-
-                                            <td>
-                                                {formatCurrency(getOrderAmount(order))}
-                                            </td>
-
-                                            <td>
-                                                <select
-                                                    value={order.status || "Pending"}
-                                                    onChange={(e) =>
-                                                        updateOrderStatus(
-                                                            id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                >
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="Confirmed">Confirmed</option>
-                                                    <option value="Processing">Processing</option>
-                                                    <option value="Shipped">Shipped</option>
-                                                    <option value="Delivered">Delivered</option>
-                                                    <option value="Completed">Completed</option>
-                                                    <option value="Cancelled">Cancelled</option>
-                                                </select>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                    {orderSearch && (
+                        <button
+                            type="button"
+                            onClick={() => setOrderSearch("")}
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
             </div>
+
+            <div className="orders-table-wrapper">
+                <table className="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer Name</th>
+                            <th>Phone Number</th>
+                            <th>Order Date</th>
+                            <th>Bill / Delivery Address</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {filteredOrders.length > 0 ? (
+                            filteredOrders.map((order, index) => {
+                                const customer = order.customer || {};
+
+                                const orderId = order.orderId || order.id || "N/A";
+                                const name = customer.name || order.customerName || "Guest";
+                                const phone = customer.mobile || customer.phone || order.mobile || order.phone || "N/A";
+
+                                const address = [
+                                    customer.address || order.address || order.billingAddress,
+                                    customer.city || order.city,
+                                    customer.state || order.state,
+                                    customer.pincode || order.pincode
+                                ].filter(Boolean).join(", ");
+
+                                const status = order.status || order.orderStatus || "Pending";
+
+                                return (
+                                    <tr key={orderId}>
+                                        <td>{orderId}</td>
+                                        <td>{name}</td>
+                                        <td>{phone}</td>
+                                        <td>
+                                            {order.orderDate
+                                                ? new Date(order.orderDate).toLocaleDateString()
+                                                : "N/A"}
+                                        </td>
+                                        <td>{address || "N/A"}</td>
+                                        <td>₹{Number(order.total || order.grandTotal || 0).toFixed(2)}</td>
+                                        <td>
+                                            <select
+                                                value={status}
+                                                onChange={(e) =>
+                                                    updateOrderStatus(orderId, e.target.value)
+                                                }
+                                            >
+                                                <option value="Pending">Pending</option>
+                                                <option value="Confirmed">Confirmed</option>
+                                                <option value="Processing">Processing</option>
+                                                <option value="Shipped">Shipped</option>
+                                                <option value="Delivered">Delivered</option>
+                                                <option value="Completed">Completed</option>
+                                                <option value="Cancelled">Cancelled</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                );
+                            })
+                        ) : (
+                            <tr>
+                                <td colSpan="7" className="no-orders">
+                                    {orderSearch
+                                        ? `No order found with ID "${orderSearch}"`
+                                        : "No orders available"}
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     );
+};
+
+
+
 
     // =====================================
     // CUSTOMERS
     // =====================================
 
-    const renderCustomers = () => (
-        <div className="manage-products">
+  
+const [customerSearch, setCustomerSearch] = useState("");
+
+const renderCustomers = () => {
+    const filteredCustomers = customers.filter((customer) => {
+        const search = customerSearch.toLowerCase().trim();
+
+        return (
+            String(customer.customerId || customer.id || "")
+                .toLowerCase().includes(search) ||
+            String(customer.name || "")
+                .toLowerCase().includes(search) ||
+            String(customer.mobile || customer.phone || "")
+                .toLowerCase().includes(search)
+        );
+    });
+
+    return (
+        <div className="manage-products customer-management">
+
             {pageHeader(
                 "Customer Management",
-                "View registered customer information."
+                "Manage registered customers and their contact information."
             )}
 
-            <div className="dashboard-panel">
-                <h3>Total Customers: {customers.length}</h3>
+            <div className="customer-summary">
+                <div className="customer-summary-info">
+                    <span className="customer-summary-icon">♙</span>
+                    <div>
+                        <small>Total Registered Customers</small>
+                        <h2>{customers.length}</h2>
+                    </div>
+                </div>
+
+                <div className="customer-summary-note">
+                    Customer records
+                </div>
+            </div>
+
+            <div className="dashboard-panel customer-panel">
+
+                <div className="customer-panel-header">
+                    <div>
+                        <h3>All Customers</h3>
+                        <p>View customer details and contact information</p>
+                    </div>
+
+                    <div className="customer-search">
+                        <span>⌕</span>
+
+                        <input
+                            type="text"
+                            placeholder="Search ID, name or phone..."
+                            value={customerSearch}
+                            onChange={(e) => setCustomerSearch(e.target.value)}
+                        />
+
+                        {customerSearch && (
+                            <button
+                                type="button"
+                                onClick={() => setCustomerSearch("")}
+                            >
+                                ×
+                            </button>
+                        )}
+                    </div>
+                </div>
 
                 {customers.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-icon">♙</div>
-                        <strong>No registered customer records found.</strong>
+                        <strong>No registered customers found.</strong>
                         <span>
-                            Connect your customer registration system to
-                            konfizRegisteredCustomers.
+                            Customer records will appear here after registration.
                         </span>
+                    </div>
+                ) : filteredCustomers.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-icon">⌕</div>
+                        <strong>No matching customers found.</strong>
+                        <span>Try searching with another customer ID or phone number.</span>
                     </div>
                 ) : (
                     <div className="admin-table-wrapper">
-                        <table className="admin-table">
+                        <table className="admin-table customer-table">
+
                             <thead>
                                 <tr>
                                     <th>Customer ID</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Mobile</th>
+                                    <th>Customer Name</th>
+                                    <th>Phone Number</th>
+                                    <th>Email Address</th>
+                                    <th>Registration Date</th>
                                 </tr>
                             </thead>
 
                             <tbody>
-                                {customers.map((customer, index) => (
-                                    <tr key={customer.id || customer.customerId || index}>
-                                        <td>
-                                            {customer.customerId || customer.id || "N/A"}
-                                        </td>
-                                        <td>{customer.name || "N/A"}</td>
-                                        <td>{customer.email || "N/A"}</td>
-                                        <td>{customer.mobile || "N/A"}</td>
-                                    </tr>
-                                ))}
+                                {filteredCustomers.map((customer, index) => {
+                                    const customerId =
+                                        customer.customerId || customer.id || "N/A";
+
+                                    const phone =
+                                        customer.mobile || customer.phone || "N/A";
+
+                                    const email = customer.email || "";
+
+                                    const registrationDate =
+                                        customer.createdAt ||
+                                        customer.registrationDate ||
+                                        customer.registeredAt;
+
+                                    return (
+                                        <tr key={customerId === "N/A" ? index : customerId}>
+
+                                            <td>
+                                                <span className="customer-id">
+                                                    {customerId}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <div className="customer-name-cell">
+                                                    <div className="customer-avatar">
+                                                        {(customer.name || "C")
+                                                            .charAt(0)
+                                                            .toUpperCase()}
+                                                    </div>
+
+                                                    <strong>
+                                                        {customer.name || "N/A"}
+                                                    </strong>
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <span className="customer-phone">
+                                                    {phone}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                {email ? (
+                                                    <span className="customer-email">
+                                                        {email}
+                                                    </span>
+                                                ) : (
+                                                    <span className="email-optional">
+                                                        Not provided
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                <span className="customer-date">
+                                                    {registrationDate
+                                                        ? new Date(registrationDate)
+                                                            .toLocaleDateString("en-IN")
+                                                        : "N/A"}
+                                                </span>
+                                            </td>
+
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
+
                         </table>
                     </div>
                 )}
+
+                <div className="customer-table-footer">
+                    Showing {filteredCustomers.length} of {customers.length} customers
+                </div>
+
             </div>
         </div>
     );
+};
+
 
     // =====================================
     // SETTINGS
@@ -1124,9 +2114,11 @@ function Dashboard({ onLogout }) {
             <aside
                 className={`admin-sidebar ${sidebarOpen ? "open" : ""}`}
             >
-                <div className="admin-brand">
-                    KONFIZ<span>.</span>
-                </div>
+                <Link to="/" className="admin-brand-link">
+                    <div className="admin-brand">
+                        KONFIZ<span>.</span>
+                    </div>
+                </Link>
 
                 <div className="admin-brand-sub">
                     MASTER ADMIN PANEL
@@ -1141,9 +2133,8 @@ function Dashboard({ onLogout }) {
                         <button
                             key={item.name}
                             type="button"
-                            className={`sidebar-item ${
-                                activePage === item.name ? "active" : ""
-                            }`}
+                            className={`sidebar-item ${activePage === item.name ? "active" : ""
+                                }`}
                             onClick={() => selectPage(item.name)}
                         >
                             <span className="sidebar-icon">

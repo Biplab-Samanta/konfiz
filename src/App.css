@@ -64,6 +64,32 @@ button.navbar-cart-button {
   color: #fff;
 }
 
+.profile-dashboard-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    margin: 12px 0;
+    background: #fff0e7;
+    color: #39251e;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.profile-dashboard-link:hover {
+    background: #39251e;
+    color: #fff;
+}
+
+.profile-dropdown .logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
 .cart-button {
   position: relative;
 

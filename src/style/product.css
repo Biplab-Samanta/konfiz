@@ -1161,3 +1161,36 @@
     gap: 4px;
   }
 }
+.product-image-wrapper {
+    position: relative;
+}
+
+.wishlist-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    color: #555;
+    font-size: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+    transition: all 0.25s ease;
+    z-index: 2;
+}
+
+.wishlist-btn:hover {
+    transform: scale(1.12);
+    color: #e05270;
+}
+
+.wishlist-btn.active {
+    color: #e05270;
+    background: #fff0f3;
+}

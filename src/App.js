@@ -20,10 +20,40 @@ import OurStory from "./pages/ourStory";
 import WeMakeYouSell from "./pages/weMakeYouSell.js";
 import DistinguishedFlavours from "./pages/DistinguishedFlavours";
 import QuickDelivery from "./pages/QuickDelivery.js";
-
-
+import Checkout from "./pages/checkout";
+import CustomerDashboard from "./pages/CustomerDashboard.js";
+import NotFound from "./pages/NotFound";
 
 import Loader from "./components/loader.js";
+
+
+// =====================================
+// LOGIN ROUTE PROTECTION
+// =====================================
+
+function LoginRoute() {
+
+    const { user } = useAuth();
+
+    // Already logged in
+    if (user && user.authenticated) {
+
+        const userRole = user.role?.toLowerCase();
+
+        if (userRole === "admin") {
+            return <Navigate to="/admin/dashboard" replace />;
+        }
+
+        if (userRole === "customer") {
+            return <Navigate to="/customer/dashboard" replace />;
+        }
+
+        return <Navigate to="/" replace />;
+    }
+
+    // Not logged in
+    return <Login />;
+}
 
 
 // =====================================
@@ -61,7 +91,7 @@ function AppRoutes() {
 
     // CUSTOMER / ADMIN CART IDENTIFICATION
     const cartUserId = user
-        ? (user.customerId || user.id)
+        ? (user.customerId || user.id || user._id)
         : null;
 
     return (
@@ -72,7 +102,6 @@ function AppRoutes() {
 
                 {/* =====================================
                     PUBLIC PAGES
-                    NO LOGIN REQUIRED
                 ===================================== */}
 
                 <Route
@@ -80,41 +109,76 @@ function AppRoutes() {
                     element={<Home />}
                 />
 
+                {/* Login automatically redirects
+                    already logged-in users */}
+
                 <Route
                     path="/login"
-                    element={<Login />}
+                    element={<LoginRoute />}
                 />
-                <Route path="/our-story" element={<OurStory />} />
+
+                <Route
+                    path="/our-story"
+                    element={<OurStory />}
+                />
+
                 <Route
                     path="/we-make-you-sell"
                     element={<WeMakeYouSell />}
                 />
+
                 <Route
                     path="/distinguished-flavours"
                     element={<DistinguishedFlavours />}
                 />
+
                 <Route
                     path="/quick-delivery"
                     element={<QuickDelivery />}
                 />
+
+
                 {/* =====================================
                     CUSTOMER + ADMIN PAGES
                 ===================================== */}
 
-                <Route path="/products" element={
-                    <ProtectedRoute allowedRoles={["customer", "admin"]}>
-                        <Product />
-                    </ProtectedRoute>
-                }
+                <Route
+                    path="/products"
+                    element={
+                        <ProtectedRoute allowedRoles={["customer", "admin"]}>
+                            <Product />
+                        </ProtectedRoute>
+                    }
                 />
 
                 <Route
                     path="/cart"
                     element={
-                        <ProtectedRoute
-                            allowedRoles={["customer", "admin"]}
-                        >
+                        <ProtectedRoute allowedRoles={["customer", "admin"]}>
                             <Cart />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/checkout"
+                    element={
+                        <ProtectedRoute allowedRoles={["customer", "admin"]}>
+                            <Checkout />
+                        </ProtectedRoute>
+                    }
+                />
+
+
+                {/* =====================================
+                    CUSTOMER ONLY PAGES
+                ===================================== */}
+
+                <Route
+                    path="/customer/dashboard"
+                    element={
+                        <ProtectedRoute allowedRoles={["customer"]}>
+                            <CustomerDashboard />
                         </ProtectedRoute>
                     }
                 />
@@ -127,9 +191,7 @@ function AppRoutes() {
                 <Route
                     path="/admin/dashboard"
                     element={
-                        <ProtectedRoute
-                            allowedRoles={["admin"]}
-                        >
+                        <ProtectedRoute allowedRoles={["admin"]}>
                             <Dashboard />
                         </ProtectedRoute>
                     }
@@ -142,7 +204,7 @@ function AppRoutes() {
 
                 <Route
                     path="*"
-                    element={<Navigate to="/" replace />}
+                    element={<NotFound />}
                 />
 
             </Routes>
