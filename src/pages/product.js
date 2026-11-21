@@ -21,9 +21,14 @@ const makeSlug = (value = "") =>
 const getProductId = (product) =>
     String(product?.id ?? product?._id ?? product?.name ?? "");
 
+// CATEGORY HELPERS
+
 const getCategoryName = (category) => {
     if (!category) return "";
-    if (typeof category === "string") return category;
+
+    if (typeof category === "string") {
+        return category;
+    }
 
     return (
         category.name ||
@@ -34,7 +39,9 @@ const getCategoryName = (category) => {
 };
 
 const getCategoryId = (category) => {
-    if (!category || typeof category !== "object") return "";
+    if (!category || typeof category !== "object") {
+        return "";
+    }
 
     return String(
         category.id ??
@@ -49,8 +56,54 @@ const getProductCategoryName = (product) =>
     product?.categoryName ||
     "";
 
+// SUBCATEGORY HELPERS
+
+const getSubcategoryName = (subcategory) => {
+    if (!subcategory) return "";
+
+    if (typeof subcategory === "string") {
+        return subcategory;
+    }
+
+    return (
+        subcategory.name ||
+        subcategory.subcategoryName ||
+        subcategory.title ||
+        ""
+    );
+};
+
+const getSubcategoryId = (subcategory) => {
+    if (!subcategory || typeof subcategory !== "object") {
+        return "";
+    }
+
+    return String(
+        subcategory.id ??
+        subcategory._id ??
+        subcategory.subcategoryId ??
+        ""
+    );
+};
+
+const getProductSubcategoryName = (product) =>
+    getSubcategoryName(product?.subcategory) ||
+    product?.subcategoryName ||
+    "";
+
+const getProductSubcategoryId = (product) =>
+    String(
+        product?.subcategoryId ??
+        getSubcategoryId(product?.subcategory) ??
+        ""
+    );
+
+// ADD-ON HELPERS
+
 const getAddonId = (addon) =>
     String(addon?.id ?? addon?._id ?? addon?.name ?? "");
+
+// WEIGHT HELPERS
 
 const getWeightOptions = (product) => {
     const options = product?.pricing?.weightOptions;
@@ -88,11 +141,15 @@ const getBasePrice = (product, weight) => {
     return Number(product?.price) || 0;
 };
 
+// FLAVOUR HELPERS
+
 const getFlavour = (product) =>
     product?.flavour ||
     product?.flavor ||
     product?.taste ||
     "";
+
+// STOCK HELPERS
 
 const getStock = (product) => {
     if (product?.inStock !== undefined) {
@@ -114,12 +171,28 @@ const getStock = (product) => {
     return true;
 };
 
+// STORAGE HELPERS
+
 const safeParse = (value, fallback = []) => {
     try {
-        return JSON.parse(value || JSON.stringify(fallback));
+        return JSON.parse(
+            value || JSON.stringify(fallback)
+        );
     } catch {
         return fallback;
     }
+};
+
+const normalizeList = (data, property) => {
+    if (Array.isArray(data)) {
+        return data;
+    }
+
+    if (Array.isArray(data?.[property])) {
+        return data[property];
+    }
+
+    return [];
 };
 
 // =====================================
@@ -164,19 +237,26 @@ function Product() {
                 []
             );
 
-            setWishlist(Array.isArray(saved) ? saved : []);
+            setWishlist(
+                Array.isArray(saved) ? saved : []
+            );
         };
 
         loadWishlist();
 
         window.addEventListener("storage", loadWishlist);
+
         window.addEventListener(
             "konfiz-wishlist-updated",
             loadWishlist
         );
 
         return () => {
-            window.removeEventListener("storage", loadWishlist);
+            window.removeEventListener(
+                "storage",
+                loadWishlist
+            );
+
             window.removeEventListener(
                 "konfiz-wishlist-updated",
                 loadWishlist
@@ -190,6 +270,8 @@ function Product() {
 
     const [productData, setProductData] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [subcategories, setSubcategories] = useState([]);
+
     const [storeLoaded, setStoreLoaded] = useState(false);
 
     // =====================================
@@ -200,6 +282,7 @@ function Product() {
     const [sort, setSort] = useState("default");
 
     const [selectedCategory, setSelectedCategory] = useState("");
+    const [selectedSubcategory, setSelectedSubcategory] = useState("");
     const [selectedFlavour, setSelectedFlavour] = useState("");
     const [selectedSize, setSelectedSize] = useState("");
 
@@ -243,16 +326,24 @@ function Product() {
                 []
             );
 
+            const savedSubcategories = safeParse(
+                localStorage.getItem("konfizSubcategories"),
+                []
+            );
+
             setProductData(
-                Array.isArray(savedProducts)
-                    ? savedProducts
-                    : savedProducts?.products || []
+                normalizeList(savedProducts, "products")
             );
 
             setCategories(
-                Array.isArray(savedCategories)
-                    ? savedCategories
-                    : savedCategories?.categories || []
+                normalizeList(savedCategories, "categories")
+            );
+
+            setSubcategories(
+                normalizeList(
+                    savedSubcategories,
+                    "subcategories"
+                )
             );
 
             setStoreLoaded(true);
@@ -262,16 +353,35 @@ function Product() {
 
         window.addEventListener("storage", loadStoreData);
         window.addEventListener("focus", loadStoreData);
+
         window.addEventListener(
             "konfizStoreUpdated",
             loadStoreData
         );
 
+        window.addEventListener(
+            "konfizSubcategoriesUpdated",
+            loadStoreData
+        );
+
         return () => {
-            window.removeEventListener("storage", loadStoreData);
-            window.removeEventListener("focus", loadStoreData);
+            window.removeEventListener(
+                "storage",
+                loadStoreData
+            );
+
+            window.removeEventListener(
+                "focus",
+                loadStoreData
+            );
+
             window.removeEventListener(
                 "konfizStoreUpdated",
+                loadStoreData
+            );
+
+            window.removeEventListener(
+                "konfizSubcategoriesUpdated",
                 loadStoreData
             );
         };
@@ -289,9 +399,16 @@ function Product() {
                 if (!name) return null;
 
                 return {
-                    id: getCategoryId(item) || `category_${index}`,
+                    id:
+                        getCategoryId(item) ||
+                        `category_${index}`,
+
                     name,
-                    slug: makeSlug(item.slug || name),
+
+                    slug: makeSlug(
+                        item.slug || name
+                    ),
+
                     description:
                         item.description ||
                         item.details ||
@@ -301,23 +418,132 @@ function Product() {
             .filter(Boolean);
     }, [categories]);
 
-    const normalizedUrlSlug = makeSlug(categorySlug || "");
+    // =====================================
+    // NORMALIZE SUBCATEGORIES
+    // =====================================
+
+
+    // =====================================
+    // NORMALIZE SUBCATEGORIES
+    // =====================================
+
+    const normalizedSubcategories = useMemo(() => {
+        // Get subcategories nested inside admin categories
+        const nestedSubcategories = categories.flatMap(category => {
+            if (!category || typeof category !== "object") {
+                return [];
+            }
+
+            const categoryId = getCategoryId(category);
+            const categoryName = getCategoryName(category);
+
+            const children = Array.isArray(category.subcategories)
+                ? category.subcategories
+                : [];
+
+            return children.map((item, index) => {
+                const name = getSubcategoryName(item);
+
+                if (!name) return null;
+
+                const id =
+                    getSubcategoryId(item) ||
+                    `${categoryId || makeSlug(categoryName)}-${index}`;
+
+                return {
+                    id,
+                    name,
+                    slug: makeSlug(item?.slug || name),
+                    categoryId,
+                    categoryName,
+                    image:
+                        item?.image ||
+                        item?.imageUrl ||
+                        item?.thumbnail ||
+                        ""
+                };
+            }).filter(Boolean);
+        });
+
+        // Also support subcategories stored separately
+        const separateSubcategories = subcategories.map((item, index) => {
+            const name = getSubcategoryName(item);
+
+            if (!name) return null;
+
+            return {
+                id:
+                    getSubcategoryId(item) ||
+                    `subcategory_${index}`,
+
+                name,
+                slug: makeSlug(item.slug || name),
+
+                categoryId: String(
+                    item.categoryId ??
+                    getCategoryId(item.category) ??
+                    ""
+                ),
+
+                categoryName: getCategoryName(item.category),
+
+                image:
+                    item.image ||
+                    item.imageUrl ||
+                    item.thumbnail ||
+                    ""
+            };
+        }).filter(Boolean);
+
+        // Combine both sources and prevent duplicates
+        const combined = [
+            ...nestedSubcategories,
+            ...separateSubcategories
+        ];
+
+        const unique = new Map();
+
+        combined.forEach(item => {
+            const key = `${item.categoryId}__${item.slug}`;
+
+            if (!unique.has(key)) {
+                unique.set(key, item);
+            }
+        });
+
+        return Array.from(unique.values());
+    }, [categories, subcategories]);
+
+    // =====================================
+    // CURRENT URL CATEGORY
+    // =====================================
+
+    const normalizedUrlSlug = makeSlug(
+        categorySlug || ""
+    );
 
     const currentCategory = useMemo(() => {
         if (!normalizedUrlSlug) return null;
 
         return (
             normalizedCategories.find(
-                category => category.slug === normalizedUrlSlug
+                category =>
+                    category.slug === normalizedUrlSlug
             ) || null
         );
-    }, [normalizedCategories, normalizedUrlSlug]);
+    }, [
+        normalizedCategories,
+        normalizedUrlSlug
+    ]);
 
     // =====================================
     // CATEGORY MATCHING
     // =====================================
 
-    const productMatchesCategory = (product, category) => {
+    const productMatchesCategory = (
+        product,
+        category
+    ) => {
         if (!category) return true;
 
         const name = getProductCategoryName(product);
@@ -335,6 +561,50 @@ function Product() {
 
         return makeSlug(name) === category.slug;
     };
+
+    // =====================================
+    // SUBCATEGORY MATCHING
+    // =====================================
+
+    const productMatchesSubcategory = (
+        product,
+        subcategory
+    ) => {
+        if (!subcategory) return true;
+
+        const productSubcategoryId =
+            getProductSubcategoryId(product);
+
+        const productSubcategoryName =
+            getProductSubcategoryName(product);
+
+        // Match using permanent ID first
+        if (productSubcategoryId) {
+            return (
+                String(productSubcategoryId) ===
+                String(subcategory.id)
+            );
+        }
+
+        // Fallback for older products using names
+        return (
+            makeSlug(productSubcategoryName) ===
+            subcategory.slug
+        );
+    };
+
+    const currentSubcategory = useMemo(() => {
+        if (!selectedSubcategory) return null;
+
+        return (
+            normalizedSubcategories.find(
+                item => item.slug === selectedSubcategory
+            ) || null
+        );
+    }, [
+        normalizedSubcategories,
+        selectedSubcategory
+    ]);
 
     // =====================================
     // DYNAMIC FLAVOURS
@@ -404,6 +674,7 @@ function Product() {
     const clearFilters = () => {
         setSearch("");
         setSelectedCategory("");
+        setSelectedSubcategory("");
         setSelectedFlavour("");
         setSelectedSize("");
         setMinPrice("");
@@ -414,6 +685,7 @@ function Product() {
 
     const activeFilterCount = [
         selectedCategory,
+        selectedSubcategory,
         selectedFlavour,
         selectedSize,
         minPrice,
@@ -425,11 +697,16 @@ function Product() {
     // WEIGHT AND QUANTITY
     // =====================================
 
-    const handleWeightChange = (productId, weight) => {
+    const handleWeightChange = (
+        productId,
+        weight
+    ) => {
         setSelections(previous => ({
             ...previous,
+
             [productId]: {
                 ...previous[productId],
+
                 weight:
                     weight === ""
                         ? null
@@ -438,11 +715,16 @@ function Product() {
         }));
     };
 
-    const handleQuantityChange = (productId, quantity) => {
+    const handleQuantityChange = (
+        productId,
+        quantity
+    ) => {
         setSelections(previous => ({
             ...previous,
+
             [productId]: {
                 ...previous[productId],
+
                 quantity: Math.max(
                     1,
                     Number(quantity) || 1
@@ -477,7 +759,9 @@ function Product() {
     ) => {
         const addons = (product.addons || [])
             .filter(addon =>
-                selectedAddonIds.includes(getAddonId(addon))
+                selectedAddonIds.includes(
+                    getAddonId(addon)
+                )
             )
             .map(addon => ({
                 id: getAddonId(addon),
@@ -485,14 +769,19 @@ function Product() {
                 price: Number(addon.price) || 0
             }));
 
-        const basePrice = getBasePrice(product, weight);
+        const basePrice = getBasePrice(
+            product,
+            weight
+        );
 
         const addonPrice = addons.reduce(
-            (total, addon) => total + addon.price,
+            (total, addon) =>
+                total + addon.price,
             0
         );
 
-        const totalPrice = basePrice + addonPrice;
+        const totalPrice =
+            basePrice + addonPrice;
 
         const productId = getProductId(product);
 
@@ -512,6 +801,8 @@ function Product() {
             name: product.name,
             image: product.image || null,
             category: getProductCategoryName(product),
+            subcategory: getProductSubcategoryName(product),
+            subcategoryId: getProductSubcategoryId(product),
             weight,
             unit: getUnit(product),
             addons,
@@ -527,7 +818,8 @@ function Product() {
     const handleAddToCart = (product) => {
         const productId = getProductId(product);
 
-        const selected = selections[productId] || {};
+        const selected =
+            selections[productId] || {};
 
         const options = getWeightOptions(product);
 
@@ -572,7 +864,8 @@ function Product() {
 
     const isInWishlist = (productId) => {
         return wishlist.some(
-            item => String(item.id) === String(productId)
+            item =>
+                String(item.id) === String(productId)
         );
     };
 
@@ -584,13 +877,15 @@ function Product() {
 
         const productId = getProductId(product);
 
-        const wishlistKey = `konfiz_wishlist_${customerId}`;
+        const wishlistKey =
+            `konfiz_wishlist_${customerId}`;
 
         const exists = isInWishlist(productId);
 
         const updatedWishlist = exists
             ? wishlist.filter(
-                item => String(item.id) !== productId
+                item =>
+                    String(item.id) !== productId
             )
             : [
                 ...wishlist,
@@ -599,6 +894,7 @@ function Product() {
                     name: product.name,
                     image: product.image || "",
                     category: getProductCategoryName(product),
+                    subcategory: getProductSubcategoryName(product),
                     price: Number(product.price) || 0,
                     addedAt: new Date().toISOString()
                 }
@@ -616,7 +912,10 @@ function Product() {
                 new Event("konfiz-wishlist-updated")
             );
         } catch (error) {
-            console.error("Wishlist update failed:", error);
+            console.error(
+                "Wishlist update failed:",
+                error
+            );
         }
     };
 
@@ -634,23 +933,33 @@ function Product() {
         }
 
         let result = productData.filter(product => {
-            const name = String(product.name || "").toLowerCase();
+            const name = String(
+                product.name || ""
+            ).toLowerCase();
 
             const description = String(
                 product.description || ""
             ).toLowerCase();
 
-            const category = getProductCategoryName(product);
+            const category =
+                getProductCategoryName(product);
 
-            const flavour = String(getFlavour(product));
+            const subcategory =
+                getProductSubcategoryName(product);
 
-            const searchTerm = search.trim().toLowerCase();
+            const flavour = String(
+                getFlavour(product)
+            );
+
+            const searchTerm =
+                search.trim().toLowerCase();
 
             const matchesSearch =
                 !searchTerm ||
-                name.includes(searchTerm) ||
-                description.includes(searchTerm) ||
+                name.toLowerCase().includes(searchTerm) ||
+                description.toLowerCase().includes(searchTerm) ||
                 category.toLowerCase().includes(searchTerm) ||
+                subcategory.toLowerCase().includes(searchTerm) ||
                 flavour.toLowerCase().includes(searchTerm);
 
             const matchesUrlCategory =
@@ -663,19 +972,32 @@ function Product() {
                 !selectedCategory ||
                 makeSlug(category) === selectedCategory;
 
+            const matchesSelectedSubcategory =
+                !currentSubcategory ||
+                productMatchesSubcategory(
+                    product,
+                    currentSubcategory
+                );
+
             const matchesFlavour =
                 !selectedFlavour ||
                 flavour.toLowerCase() ===
                 selectedFlavour.toLowerCase();
 
-            const weights = getWeightOptions(product);
+            const weights =
+                getWeightOptions(product);
 
             const matchesPrice = weights.some(weight => {
-                const price = getBasePrice(product, weight);
+                const price = getBasePrice(
+                    product,
+                    weight
+                );
 
                 return (
-                    (!minPrice || price >= Number(minPrice)) &&
-                    (!maxPrice || price <= Number(maxPrice))
+                    (!minPrice ||
+                        price >= Number(minPrice)) &&
+                    (!maxPrice ||
+                        price <= Number(maxPrice))
                 );
             });
 
@@ -692,6 +1014,7 @@ function Product() {
                 matchesSearch &&
                 matchesUrlCategory &&
                 matchesSelectedCategory &&
+                matchesSelectedSubcategory &&
                 matchesFlavour &&
                 matchesPrice &&
                 matchesSize &&
@@ -732,6 +1055,7 @@ function Product() {
         search,
         sort,
         currentCategory,
+        currentSubcategory,
         categorySlug,
         storeLoaded,
         selectedCategory,
@@ -761,7 +1085,9 @@ function Product() {
     const popupAddonPrice = addonPopup.product
         ? (addonPopup.product.addons || [])
             .filter(addon =>
-                addonPopup.addons.includes(getAddonId(addon))
+                addonPopup.addons.includes(
+                    getAddonId(addon)
+                )
             )
             .reduce(
                 (total, addon) =>
@@ -804,19 +1130,65 @@ function Product() {
                             checked={
                                 selectedCategory === category.slug
                             }
-                            onChange={() =>
+                            onChange={() => {
                                 setSelectedCategory(
                                     selectedCategory === category.slug
                                         ? ""
                                         : category.slug
-                                )
-                            }
+                                );
+
+                                setSelectedSubcategory("");
+                            }}
                         />
 
                         <span>{category.name}</span>
                     </label>
                 ))}
             </div>
+
+
+            <div className="filter-group">
+                <h4>Subcategory</h4>
+
+                {normalizedSubcategories.length > 0 ? (
+                    normalizedSubcategories
+                        .filter(subcategory =>
+                            !selectedCategory ||
+                            subcategory.categoryId ===
+                            normalizedCategories.find(
+                                category => category.slug === selectedCategory
+                            )?.id
+                        )
+                        .map(subcategory => (
+                            <label
+                                className="filter-option"
+                                key={subcategory.id}
+                            >
+                                <input
+                                    type="radio"
+                                    name="filter-subcategory"
+                                    checked={
+                                        selectedSubcategory === subcategory.slug
+                                    }
+                                    onChange={() =>
+                                        setSelectedSubcategory(
+                                            selectedSubcategory === subcategory.slug
+                                                ? ""
+                                                : subcategory.slug
+                                        )
+                                    }
+                                />
+
+                                <span>{subcategory.name}</span>
+                            </label>
+                        ))
+                ) : (
+                    <p className="filter-hint">
+                        No subcategories available. Add them in Admin Dashboard.
+                    </p>
+                )}
+            </div>
+
 
             <div className="filter-group">
                 <h4>Flavour</h4>
@@ -965,7 +1337,7 @@ function Product() {
 
                 {/* CATEGORY SECTION */}
 
-                <section className="category-section">
+                {/* <section className="category-section">
 
                     <div className="section-heading">
                         <div>
@@ -980,6 +1352,78 @@ function Product() {
                             View All Products →
                         </Link>
                     </div>
+
+                </section> */}
+
+                {/* =====================================
+                    ADMIN CREATED SUBCATEGORIES
+                ===================================== */}
+
+                <section className="subcategory-section">
+
+                    <div className="section-heading">
+                        <div>
+                            <span className="section-eyebrow">
+                                DISCOVER MORE
+                            </span>
+
+                            <h2>Explore Our Collections</h2>
+                        </div>
+                    </div>
+
+                    {/* {normalizedSubcategories.length > 0 ? (
+
+                        <div className="subcategory-grid">
+
+                            {normalizedSubcategories.map(subcategory => {
+
+                                const isSelected =
+                                    selectedSubcategory === subcategory.slug;
+
+                                return (
+                                    <button
+                                        type="button"
+                                        key={subcategory.id}
+                                        className={`subcategory-card ${isSelected ? "active" : ""
+                                            }`}
+                                        onClick={() => {
+                                            setSelectedSubcategory(
+                                                isSelected
+                                                    ? ""
+                                                    : subcategory.slug
+                                            );
+
+                                            setSelectedFlavour("");
+                                        }}
+                                    >
+
+                                        {subcategory.image ? (
+                                            <img
+                                                src={subcategory.image}
+                                                alt={subcategory.name}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <span className="subcategory-icon">
+                                                🍨
+                                            </span>
+                                        )}
+
+                                        <span className="subcategory-name">
+                                            {subcategory.name}
+                                        </span>
+
+                                    </button>
+                                );
+                            })}
+
+                        </div>
+
+                    ) : (
+                        <p className="filter-hint">
+                            No subcategories available yet.
+                        </p>
+                    )} */}
 
                 </section>
 
@@ -1029,11 +1473,10 @@ function Product() {
                             <button
                                 type="button"
                                 key={flavour}
-                                className={`quick-filter ${
-                                    selectedFlavour === flavour
-                                        ? "active"
-                                        : ""
-                                }`}
+                                className={`quick-filter ${selectedFlavour === flavour
+                                    ? "active"
+                                    : ""
+                                    }`}
                                 onClick={() =>
                                     setSelectedFlavour(
                                         selectedFlavour === flavour
@@ -1048,9 +1491,8 @@ function Product() {
 
                     <button
                         type="button"
-                        className={`quick-filter ${
-                            inStockOnly ? "active" : ""
-                        }`}
+                        className={`quick-filter ${inStockOnly ? "active" : ""
+                            }`}
                         onClick={() =>
                             setInStockOnly(!inStockOnly)
                         }
@@ -1078,7 +1520,8 @@ function Product() {
 
                             <div>
                                 <h2>
-                                    {currentCategory?.name ||
+                                    {currentSubcategory?.name ||
+                                        currentCategory?.name ||
                                         "All Ice Creams"}
                                 </h2>
 
@@ -1141,307 +1584,367 @@ function Product() {
                         {/* ACTIVE FILTER CHIPS */}
 
                         {(selectedCategory ||
+                            selectedSubcategory ||
                             selectedFlavour ||
                             selectedSize ||
                             minPrice ||
                             maxPrice ||
                             inStockOnly) && (
 
-                            <div className="active-filter-list">
+                                <div className="active-filter-list">
 
-                                {selectedCategory && (
+                                    {selectedCategory && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setSelectedCategory("")
+                                            }
+                                        >
+                                            {normalizedCategories.find(
+                                                c => c.slug === selectedCategory
+                                            )?.name || selectedCategory} ×
+                                        </button>
+                                    )}
+
+                                    {selectedSubcategory && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setSelectedSubcategory("")
+                                            }
+                                        >
+                                            {currentSubcategory?.name ||
+                                                selectedSubcategory} ×
+                                        </button>
+                                    )}
+
+                                    {selectedFlavour && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setSelectedFlavour("")
+                                            }
+                                        >
+                                            {selectedFlavour} ×
+                                        </button>
+                                    )}
+
+                                    {selectedSize && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setSelectedSize("")
+                                            }
+                                        >
+                                            {selectedSize} ×
+                                        </button>
+                                    )}
+
+                                    {(minPrice || maxPrice) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setMinPrice("");
+                                                setMaxPrice("");
+                                            }}
+                                        >
+                                            Price ×
+                                        </button>
+                                    )}
+
+                                    {inStockOnly && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setInStockOnly(false)
+                                            }
+                                        >
+                                            In Stock ×
+                                        </button>
+                                    )}
+
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            setSelectedCategory("")
+                                        className="clear-active"
+                                        onClick={clearFilters}
+                                    >
+                                        Clear All
+                                    </button>
+
+                                </div>
+                            )}
+
+                        {/* PRODUCT GRID - CATEGORY WISE */}
+
+                        <div className="category-products-container">
+
+                            {Object.entries(
+                                filteredProducts.reduce(
+                                    (groups, product) => {
+                                        const categoryName =
+                                            getProductCategoryName(product) ||
+                                            "Other";
+
+                                        if (!groups[categoryName]) {
+                                            groups[categoryName] = [];
                                         }
-                                    >
-                                        {normalizedCategories.find(
-                                            c => c.slug === selectedCategory
-                                        )?.name || selectedCategory} ×
-                                    </button>
-                                )}
 
-                                {selectedFlavour && (
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setSelectedFlavour("")
-                                        }
-                                    >
-                                        {selectedFlavour} ×
-                                    </button>
-                                )}
+                                        groups[categoryName].push(product);
 
-                                {selectedSize && (
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setSelectedSize("")
-                                        }
-                                    >
-                                        {selectedSize} ×
-                                    </button>
-                                )}
+                                        return groups;
+                                    },
+                                    {}
+                                )
+                            ).map(([categoryName, categoryProducts]) => (
 
-                                {(minPrice || maxPrice) && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setMinPrice("");
-                                            setMaxPrice("");
-                                        }}
-                                    >
-                                        Price ×
-                                    </button>
-                                )}
-
-                                {inStockOnly && (
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setInStockOnly(false)
-                                        }
-                                    >
-                                        In Stock ×
-                                    </button>
-                                )}
-
-                                <button
-                                    type="button"
-                                    className="clear-active"
-                                    onClick={clearFilters}
+                                <section
+                                    className="product-category-section"
+                                    key={categoryName}
                                 >
-                                    Clear All
-                                </button>
 
-                            </div>
-                        )}
+                                    <div className="product-category-heading">
+                                        <h2>{categoryName}</h2>
 
-                        {/* PRODUCT GRID */}
+                                        <span>
+                                            {categoryProducts.length} Products
+                                        </span>
+                                    </div>
 
-                        <div className="product-grid">
+                                    <div className="product-grid">
 
-                            {filteredProducts.map(product => {
+                                        {categoryProducts.map(product => {
 
-                                const productId = getProductId(product);
+                                            const productId =
+                                                getProductId(product);
 
-                                const weightOptions =
-                                    getWeightOptions(product);
+                                            const weightOptions =
+                                                getWeightOptions(product);
 
-                                const selectedWeight =
-                                    selections[productId]?.weight !== undefined
-                                        ? selections[productId].weight
-                                        : weightOptions[0];
+                                            const selectedWeight =
+                                                selections[productId]?.weight !== undefined
+                                                    ? selections[productId].weight
+                                                    : weightOptions[0];
 
-                                const quantity =
-                                    selections[productId]?.quantity || 1;
+                                            const quantity =
+                                                selections[productId]?.quantity || 1;
 
-                                const basePrice = getBasePrice(
-                                    product,
-                                    selectedWeight
-                                );
+                                            const basePrice = getBasePrice(
+                                                product,
+                                                selectedWeight
+                                            );
 
-                                const categoryName =
-                                    getProductCategoryName(product);
+                                            const productCategoryName =
+                                                getProductCategoryName(product);
 
-                                const inWishlist =
-                                    isInWishlist(productId);
+                                            const inWishlist =
+                                                isInWishlist(productId);
 
-                                return (
+                                            return (
 
-                                    <article
-                                        className="product-card"
-                                        key={productId}
-                                    >
-
-                                        {/* PRODUCT IMAGE */}
-
-                                        <div className="product-image-wrapper">
-
-                                            <button
-                                                type="button"
-                                                className={`wishlist-btn ${
-                                                    inWishlist ? "active" : ""
-                                                }`}
-                                                onClick={() =>
-                                                    toggleWishlist(product)
-                                                }
-                                                aria-label={
-                                                    inWishlist
-                                                        ? "Remove from wishlist"
-                                                        : "Add to wishlist"
-                                                }
-                                            >
-                                                {inWishlist ? "♥" : "♡"}
-                                            </button>
-
-                                            {product.image ? (
-                                                <img
-                                                    src={product.image}
-                                                    alt={
-                                                        product.name ||
-                                                        "KONFiZ ice cream"
-                                                    }
-                                                    loading="lazy"
-                                                />
-                                            ) : (
-                                                <div className="product-image-placeholder">
-                                                    🍨
-                                                </div>
-                                            )}
-
-                                            {categoryName && (
-                                                <span className="product-category">
-                                                    {categoryName}
-                                                </span>
-                                            )}
-
-                                            {product.isNew && (
-                                                <span className="product-badge">
-                                                    New
-                                                </span>
-                                            )}
-
-                                        </div>
-
-                                        {/* PRODUCT INFO */}
-
-                                        <div className="product-info">
-
-                                            <div className="product-title-row">
-
-                                                <h3>{product.name}</h3>
-
-                                                {Number(product.rating) > 0 && (
-                                                    <span className="product-rating">
-                                                        ★ {Number(
-                                                            product.rating
-                                                        ).toFixed(1)}
-                                                    </span>
-                                                )}
-
-                                            </div>
-
-                                            <p className="product-description">
-                                                {product.description ||
-                                                    "A delicious KONFiZ treat."}
-                                            </p>
-
-                                            {/* WEIGHT */}
-
-                                            <div className="product-selection">
-
-                                                <label>Select Size</label>
-
-                                                <select
-                                                    value={selectedWeight ?? ""}
-                                                    onChange={e =>
-                                                        handleWeightChange(
-                                                            productId,
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                <article
+                                                    className="product-card"
+                                                    key={productId}
                                                 >
 
-                                                    {weightOptions.map(
-                                                        (weight, index) => (
-                                                            <option
-                                                                key={`${productId}-${index}`}
-                                                                value={weight ?? ""}
+                                                    {/* PRODUCT IMAGE */}
+
+                                                    <div className="product-image-wrapper">
+
+                                                        <button
+                                                            type="button"
+                                                            className={`wishlist-btn ${inWishlist ? "active" : ""
+                                                                }`}
+                                                            onClick={() =>
+                                                                toggleWishlist(product)
+                                                            }
+                                                            aria-label={
+                                                                inWishlist
+                                                                    ? "Remove from wishlist"
+                                                                    : "Add to wishlist"
+                                                            }
+                                                        >
+                                                            {inWishlist ? "♥" : "♡"}
+                                                        </button>
+
+                                                        {product.image ? (
+                                                            <img
+                                                                src={product.image}
+                                                                alt={
+                                                                    product.name ||
+                                                                    "KONFiZ ice cream"
+                                                                }
+                                                                loading="lazy"
+                                                            />
+                                                        ) : (
+                                                            <div className="product-image-placeholder">
+                                                                🍨
+                                                            </div>
+                                                        )}
+
+                                                        {productCategoryName && (
+                                                            <span className="product-category">
+                                                                {productCategoryName}
+                                                            </span>
+                                                        )}
+
+                                                        {product.isNew && (
+                                                            <span className="product-badge">
+                                                                New
+                                                            </span>
+                                                        )}
+
+                                                    </div>
+
+                                                    {/* PRODUCT INFO */}
+
+                                                    <div className="product-info">
+
+                                                        <div className="product-title-row">
+
+                                                            <h3>{product.name}</h3>
+
+                                                            {Number(product.rating) > 0 && (
+                                                                <span className="product-rating">
+                                                                    ★ {Number(
+                                                                        product.rating
+                                                                    ).toFixed(1)}
+                                                                </span>
+                                                            )}
+
+                                                        </div>
+
+                                                        <p className="product-description">
+                                                            {product.description ||
+                                                                "A delicious KONFiZ treat."}
+                                                        </p>
+
+                                                        {/* WEIGHT */}
+
+                                                        <div className="product-selection">
+
+                                                            <label>Select Size</label>
+
+                                                            <select
+                                                                value={selectedWeight ?? ""}
+                                                                onChange={e =>
+                                                                    handleWeightChange(
+                                                                        productId,
+                                                                        e.target.value
+                                                                    )
+                                                                }
                                                             >
-                                                                {weight === null
-                                                                    ? "Standard"
-                                                                    : `${weight} ${getUnit(product)}`}
-                                                            </option>
-                                                        )
-                                                    )}
 
-                                                </select>
+                                                                {weightOptions.map(
+                                                                    (weight, index) => (
+                                                                        <option
+                                                                            key={`${productId}-${index}`}
+                                                                            value={weight ?? ""}
+                                                                        >
+                                                                            {weight === null
+                                                                                ? "Standard"
+                                                                                : `${weight} ${getUnit(product)}`}
+                                                                        </option>
+                                                                    )
+                                                                )}
 
-                                            </div>
+                                                            </select>
 
-                                            {/* PRICE AND QUANTITY */}
+                                                        </div>
 
-                                            <div className="product-card-bottom">
+                                                        {/* PRICE AND QUANTITY */}
 
-                                                <div className="product-price">
+                                                        <div className="product-card-bottom">
 
-                                                    <span>Starting price</span>
+                                                            <div className="product-price">
 
-                                                    <strong>
-                                                        ₹{basePrice.toFixed(2)}
-                                                    </strong>
+                                                                <span>Starting price</span>
 
-                                                </div>
+                                                                <strong>
+                                                                    ₹{basePrice.toFixed(2)}
+                                                                </strong>
 
-                                                <div className="quantity-controls">
+                                                            </div>
 
-                                                    <button
-                                                        type="button"
-                                                        aria-label="Decrease quantity"
-                                                        onClick={() =>
-                                                            handleQuantityChange(
-                                                                productId,
-                                                                quantity - 1
-                                                            )
-                                                        }
-                                                    >
-                                                        −
-                                                    </button>
+                                                            <div className="quantity-controls">
 
-                                                    <span>{quantity}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Decrease quantity"
+                                                                    onClick={() =>
+                                                                        handleQuantityChange(
+                                                                            productId,
+                                                                            quantity - 1
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    −
+                                                                </button>
 
-                                                    <button
-                                                        type="button"
-                                                        aria-label="Increase quantity"
-                                                        onClick={() =>
-                                                            handleQuantityChange(
-                                                                productId,
-                                                                quantity + 1
-                                                            )
-                                                        }
-                                                    >
-                                                        +
-                                                    </button>
+                                                                <span>{quantity}</span>
 
-                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Increase quantity"
+                                                                    onClick={() =>
+                                                                        handleQuantityChange(
+                                                                            productId,
+                                                                            quantity + 1
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    +
+                                                                </button>
 
-                                            </div>
+                                                            </div>
 
-                                            {/* TOTAL */}
+                                                        </div>
 
-                                            <div className="product-total">
+                                                        {/* TOTAL */}
 
-                                                Total: <strong>
-                                                    ₹{(
-                                                        basePrice * quantity
-                                                    ).toFixed(2)}
-                                                </strong>
+                                                        <div className="product-total">
 
-                                            </div>
+                                                            Total: <strong>
+                                                                ₹{(
+                                                                    basePrice * quantity
+                                                                ).toFixed(2)}
+                                                            </strong>
 
-                                            {/* ADD TO CART */}
+                                                        </div>
 
-                                            <button
-                                                type="button"
-                                                className="add-cart-btn"
-                                                disabled={!getStock(product)}
-                                                onClick={() =>
-                                                    handleAddToCart(product)
-                                                }
-                                            >
-                                                {!getStock(product)
-                                                    ? "Out of Stock"
-                                                    : "+ Add to Cart"}
-                                            </button>
+                                                        {/* ADD TO CART */}
 
-                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            className="add-cart-btn"
+                                                            disabled={!getStock(product)}
+                                                            onClick={() =>
+                                                                handleAddToCart(product)
+                                                            }
+                                                        >
+                                                            {!getStock(product)
+                                                                ? "Out of Stock"
+                                                                : "+ Add to Cart"}
+                                                        </button>
 
-                                    </article>
+                                                    </div>
 
-                                );
-                            })}
+                                                </article>
+
+                                            );
+                                        })}
+
+                                    </div>
+
+                                </section>
+
+                            ))}
+
+                            {filteredProducts.length === 0 && (
+                                <div className="no-products">
+                                    <h3>No products found</h3>
+                                    <p>Try changing your filters.</p>
+                                </div>
+                            )}
 
                         </div>
 
@@ -1493,7 +1996,9 @@ function Product() {
 
                 <div
                     className="filter-drawer-overlay"
-                    onClick={() => setMobileFilterOpen(false)}
+                    onClick={() =>
+                        setMobileFilterOpen(false)
+                    }
                 >
 
                     <div
@@ -1610,7 +2115,8 @@ function Product() {
                             {(addonPopup.product.addons || []).map(
                                 (addon, index) => {
 
-                                    const addonId = getAddonId(addon);
+                                    const addonId =
+                                        getAddonId(addon);
 
                                     return (
 

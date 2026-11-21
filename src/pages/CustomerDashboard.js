@@ -835,7 +835,7 @@ function CustomerDashboard() {
 
             {wishlist.length ? (
 
-                <div className="customer-data-grid">
+                <div className="customer-data-grid wishlist">
 
                     {wishlist.map((item, index) => {
 
@@ -882,17 +882,18 @@ function CustomerDashboard() {
                                     {money(product.price)}
                                 </strong>
 
-                                <Link
-                                    to={
-                                        productId
-                                            ? `/product/${productId}`
-                                            : "/products"
-                                    }
-                                    className="customer-edit-btn"
-                                >
-                                    View Product →
-                                </Link>
-
+                                
+                                    <Link
+                                        to={
+                                            productId
+                                                ? `/product/${productId}`
+                                                : "/products"
+                                        }
+                                        className="customer-edit-btn"
+                                    >
+                                        View Product →
+                                    </Link>
+                               
                             </div>
 
                         );

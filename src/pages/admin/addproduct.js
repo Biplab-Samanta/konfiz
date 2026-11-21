@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import "../../style/add_product.css";
 
 function AddProduct({
@@ -21,7 +21,160 @@ function AddProduct({
         image: ""
     });
 
+    const [selectedCategoryId, setSelectedCategoryId] = useState("");
+    const [selectedSubcategoryId, setSelectedSubcategoryId] = useState("");
+
     const [error, setError] = useState("");
+
+    // =====================================
+    // CATEGORY HELPERS
+    // =====================================
+
+    const getCategoryId = (category) => {
+        if (typeof category === "string") {
+            return category;
+        }
+
+        return String(
+            category?.id ??
+            category?._id ??
+            category?.categoryId ??
+            ""
+        );
+    };
+
+    const getCategoryName = (category) => {
+        if (typeof category === "string") {
+            return category;
+        }
+
+        return category?.name || category?.categoryName || "";
+    };
+
+    const getSubcategoryId = (subcategory) => {
+        if (typeof subcategory === "string") {
+            return subcategory;
+        }
+
+        return String(
+            subcategory?.id ??
+            subcategory?._id ??
+            subcategory?.subcategoryId ??
+            ""
+        );
+    };
+
+    const getSubcategoryName = (subcategory) => {
+        if (typeof subcategory === "string") {
+            return subcategory;
+        }
+
+        return (
+            subcategory?.name ||
+            subcategory?.subcategoryName ||
+            ""
+        );
+    };
+
+    // =====================================
+    // NORMALIZE CATEGORY DATA
+    // Supports strings and objects
+    // =====================================
+
+    const availableCategories = useMemo(() => {
+        return categories
+            .map((category) => ({
+                id: getCategoryId(category),
+                name: getCategoryName(category),
+                original: category
+            }))
+            .filter((category) => category.id && category.name.trim());
+    }, [categories]);
+
+    // =====================================
+    // SELECTED CATEGORY
+    // =====================================
+
+    const selectedCategory = availableCategories.find(
+        (category) => category.id === selectedCategoryId
+    );
+
+    // =====================================
+    // GET SUBCATEGORIES OF SELECTED CATEGORY
+    // =====================================
+
+    const availableSubcategories = useMemo(() => {
+        if (!selectedCategory) {
+            return [];
+        }
+
+        const category = selectedCategory.original;
+
+        if (typeof category === "string") {
+            return [];
+        }
+
+        return (category.subcategories || [])
+            .map((subcategory) => ({
+                id: getSubcategoryId(subcategory),
+                name: getSubcategoryName(subcategory)
+            }))
+            .filter((subcategory) => subcategory.id && subcategory.name.trim());
+    }, [selectedCategory]);
+
+    // =====================================
+    // SELECTED SUBCATEGORY
+    // =====================================
+
+    const selectedSubcategory = availableSubcategories.find(
+        (subcategory) => subcategory.id === selectedSubcategoryId
+    );
+
+    // =====================================
+    // HANDLE FORM CHANGES
+    // =====================================
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value
+        }));
+
+        setError("");
+    };
+
+    // =====================================
+    // HANDLE CATEGORY CHANGE
+    // =====================================
+
+    const handleCategoryChange = (e) => {
+        const categoryId = e.target.value;
+
+        const category = availableCategories.find(
+            (item) => item.id === categoryId
+        );
+
+        setSelectedCategoryId(categoryId);
+        setSelectedSubcategoryId("");
+
+        setFormData((prev) => ({
+            ...prev,
+            category: category?.name || ""
+        }));
+
+        setError("");
+    };
+
+    // =====================================
+    // HANDLE SUBCATEGORY CHANGE
+    // =====================================
+
+    const handleSubcategoryChange = (e) => {
+        setSelectedSubcategoryId(e.target.value);
+        setError("");
+    };
 
     // =====================================
     // WEIGHT CONFIGURATION
@@ -42,36 +195,6 @@ function AddProduct({
     const [addons, setAddons] = useState([]);
     const [addonName, setAddonName] = useState("");
     const [addonPrice, setAddonPrice] = useState("");
-
-    // =====================================
-    // NORMALIZE CATEGORY DATA
-    // Supports both strings and objects
-    // =====================================
-
-    const availableCategories = categories
-        .map((category) => {
-            if (typeof category === "string") {
-                return category;
-            }
-
-            return category?.name || "";
-        })
-        .filter((category) => category.trim() !== "");
-
-    // =====================================
-    // HANDLE FORM CHANGES
-    // =====================================
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value
-        }));
-
-        setError("");
-    };
 
     // =====================================
     // ADD CUSTOM WEIGHT
@@ -147,7 +270,7 @@ function AddProduct({
         setAddons((prev) => [
             ...prev,
             {
-                id: Date.now() + Math.random(),
+                id: `ADD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                 name: addonName.trim(),
                 price: Number(addonPrice)
             }
@@ -170,7 +293,7 @@ function AddProduct({
 
     // =====================================
     // CALCULATE PRICE BASED ON WEIGHT
-    // Price is per 100 ml or 100 gm
+    // Price per 100 ml or 100 gm
     // =====================================
 
     const calculateWeightPrice = (weight) => {
@@ -235,6 +358,34 @@ function AddProduct({
     };
 
     // =====================================
+    // RESET FORM
+    // =====================================
+
+    const resetForm = () => {
+        setFormData({
+            name: "",
+            category: "",
+            description: "",
+            price: "",
+            rating: "4.5",
+            image: ""
+        });
+
+        setSelectedCategoryId("");
+        setSelectedSubcategoryId("");
+
+        setWeightUnit("ml");
+        setWeightOptions([100, 250, 500, 1000]);
+        setCustomWeight("");
+
+        setAddons([]);
+        setAddonName("");
+        setAddonPrice("");
+
+        setError("");
+    };
+
+    // =====================================
     // SUBMIT PRODUCT
     // =====================================
 
@@ -246,8 +397,13 @@ function AddProduct({
             return;
         }
 
-        if (!formData.category.trim()) {
-            setError("Please select a product category.");
+        if (!selectedCategoryId || !selectedCategory) {
+            setError("Please select a valid product category.");
+            return;
+        }
+
+        if (!selectedSubcategoryId || !selectedSubcategory) {
+            setError("Please select a product subcategory.");
             return;
         }
 
@@ -256,7 +412,11 @@ function AddProduct({
             return;
         }
 
-        if (!formData.price || Number(formData.price) <= 0) {
+        if (
+            !formData.price ||
+            !Number.isFinite(Number(formData.price)) ||
+            Number(formData.price) <= 0
+        ) {
             setError("Please enter a valid product price.");
             return;
         }
@@ -267,14 +427,11 @@ function AddProduct({
         }
 
         if (
-            !Number.isFinite(Number(formData.price)) ||
             !Number.isFinite(Number(formData.rating)) ||
             Number(formData.rating) < 0 ||
             Number(formData.rating) > 5
         ) {
-            setError(
-                "Enter a valid price and a rating between 0 and 5."
-            );
+            setError("Enter a rating between 0 and 5.");
             return;
         }
 
@@ -283,26 +440,44 @@ function AddProduct({
             return;
         }
 
-        // Check category still exists in Dashboard
+        // Verify selected category still exists
         const categoryStillExists = availableCategories.some(
-            (category) =>
-                category.toLowerCase() ===
-                formData.category.toLowerCase()
+            (category) => category.id === selectedCategoryId
         );
 
         if (!categoryStillExists) {
-            setError(
-                "This category is no longer available. Please select another category."
-            );
+            setError("Selected category is no longer available.");
+            return;
+        }
+
+        // Verify selected subcategory still exists
+        const subcategoryStillExists = availableSubcategories.some(
+            (subcategory) => subcategory.id === selectedSubcategoryId
+        );
+
+        if (!subcategoryStillExists) {
+            setError("Selected subcategory is no longer available.");
+            return;
+        }
+
+        if (typeof onAddProduct !== "function") {
+            setError("Product save function is not available.");
             return;
         }
 
         const newProduct = {
-            id: Date.now(),
+            id: `KON-PROD-${Date.now()}`,
 
             name: formData.name.trim(),
 
-            category: formData.category.trim(),
+            // Main category information
+            categoryId: selectedCategoryId,
+            category: selectedCategory.name,
+
+            // Subcategory information
+            subcategoryId: selectedSubcategoryId,
+            subcategory: selectedSubcategory.name,
+            subcategoryName: selectedSubcategory.name,
 
             description: formData.description.trim(),
 
@@ -312,6 +487,8 @@ function AddProduct({
             rating: Number(formData.rating),
 
             image: formData.image,
+
+            stock: 0,
 
             // Weight pricing information
             pricing: {
@@ -329,32 +506,13 @@ function AddProduct({
             }))
         };
 
-        if (typeof onAddProduct === "function") {
+        try {
             onAddProduct(newProduct);
-        } else {
-            setError("Product save function is not available.");
-            return;
+            resetForm();
+        } catch (saveError) {
+            console.error("Product save error:", saveError);
+            setError("Unable to save product. Please try again.");
         }
-
-        // Reset form after successful submission
-        setFormData({
-            name: "",
-            category: "",
-            description: "",
-            price: "",
-            rating: "4.5",
-            image: ""
-        });
-
-        setWeightUnit("ml");
-        setWeightOptions([100, 250, 500, 1000]);
-        setCustomWeight("");
-
-        setAddons([]);
-        setAddonName("");
-        setAddonPrice("");
-
-        setError("");
     };
 
     // =====================================
@@ -433,39 +591,77 @@ function AddProduct({
                         />
                     </div>
 
-                    {/* CATEGORY DROPDOWN */}
+                    {/* MAIN CATEGORY */}
 
                     <div className="form-group">
-                        <label>Category *</label>
+                        <label>Main Category *</label>
 
                         <select
-                            name="category"
-                            value={formData.category}
-                            onChange={handleChange}
+                            value={selectedCategoryId}
+                            onChange={handleCategoryChange}
                             required
                         >
                             <option value="">
-                                -- Select Category --
+                                -- Select Main Category --
                             </option>
 
-                            {availableCategories.map(
-                                (category, index) => (
-                                    <option
-                                        key={`${category}-${index}`}
-                                        value={category}
-                                    >
-                                        {category}
-                                    </option>
-                                )
-                            )}
+                            {availableCategories.map((category) => (
+                                <option
+                                    key={category.id}
+                                    value={category.id}
+                                >
+                                    {category.name}
+                                </option>
+                            ))}
                         </select>
 
                         {availableCategories.length === 0 && (
                             <small>
-                                No categories available. Please add a
-                                category from Dashboard → Categories.
+                                No categories available. Please add a category
+                                from Dashboard → Categories.
                             </small>
                         )}
+                    </div>
+
+                    {/* SUBCATEGORY */}
+
+                    <div className="form-group">
+                        <label>Subcategory *</label>
+
+                        <select
+                            value={selectedSubcategoryId}
+                            onChange={handleSubcategoryChange}
+                            disabled={
+                                !selectedCategoryId ||
+                                availableSubcategories.length === 0
+                            }
+                            required
+                        >
+                            <option value="">
+                                {!selectedCategoryId
+                                    ? "Select main category first"
+                                    : availableSubcategories.length === 0
+                                        ? "No subcategories available"
+                                        : "-- Select Subcategory --"}
+                            </option>
+
+                            {availableSubcategories.map((subcategory) => (
+                                <option
+                                    key={subcategory.id}
+                                    value={subcategory.id}
+                                >
+                                    {subcategory.name}
+                                </option>
+                            ))}
+                        </select>
+
+                        {selectedCategoryId &&
+                            availableSubcategories.length === 0 && (
+                                <small>
+                                    No subcategories found. Please add one
+                                    from Dashboard → Categories.
+                                </small>
+                            )}
                     </div>
 
                     {/* DESCRIPTION */}
@@ -536,17 +732,12 @@ function AddProduct({
                                     </span>
 
                                     <span>
-                                        ₹
-                                        {calculateWeightPrice(
-                                            weight
-                                        ).toFixed(2)}
+                                        ₹{calculateWeightPrice(weight).toFixed(2)}
                                     </span>
 
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            handleRemoveWeight(weight)
-                                        }
+                                        onClick={() => handleRemoveWeight(weight)}
                                         aria-label={`Remove ${weight} ${weightUnit}`}
                                     >
                                         ×
@@ -674,10 +865,7 @@ function AddProduct({
                                 </span>
 
                                 <strong>
-                                    ₹
-                                    {calculateTotalPrice(
-                                        weight
-                                    ).toFixed(2)}
+                                    ₹{calculateTotalPrice(weight).toFixed(2)}
                                 </strong>
                             </div>
                         ))}

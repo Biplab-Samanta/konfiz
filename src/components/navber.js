@@ -9,6 +9,7 @@ import DynamicIcon from "./dynamicIcon";
 import CartDrawer from "./CartDrawer";
 import Marquee from "react-fast-marquee";
 
+
 import "../App.css";
 
 function Navbar() {
@@ -47,34 +48,19 @@ function Navbar() {
     // NAVBAR SCROLL STATE
     // =====================================
 
-    const [showNavbar, setShowNavbar] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
 
-    useEffect(() => {
-        let lastScrollY = window.scrollY;
+useEffect(() => {
+    const handleScroll = () => {
+        setIsScrolled(window.scrollY > 80);
+    };
 
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
-            if (currentScrollY <= 80) {
-                setShowNavbar(true);
-            } else if (currentScrollY > lastScrollY) {
-                setShowNavbar(false);
-            } else if (currentScrollY < lastScrollY) {
-                setShowNavbar(true);
-            }
-
-            lastScrollY = currentScrollY;
-        };
-
-        window.addEventListener("scroll", handleScroll, {
-            passive: true
-        });
-
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, []);
-
+    return () => {
+        window.removeEventListener("scroll", handleScroll);
+    };
+}, []);
     // =====================================
     // LOGOUT
     // =====================================
@@ -135,7 +121,8 @@ function Navbar() {
                 MAIN NAVBAR
             ===================================== */}
 
-            <nav className={`navbar ${showNavbar ? "" : "navbar-hidden"}`}>
+            <nav className={`navbar ${isScrolled ? "navbar-hidden" : ""}`}>
+            {/* <nav className="navbar"> */}
 
                 {/* LOGO */}
 

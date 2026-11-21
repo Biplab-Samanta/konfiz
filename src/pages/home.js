@@ -7,6 +7,7 @@ import HeroSlider from "../components/heroSlider";
 import DynamicVideo from "../components/DynamicVideo";
 import videoSchema from "../data/videoschema";
 import Footer from "../components/footer";
+import ProductGallery from "../components/productGallery/productGallery";
 
 import "../../src/App.css";
 
@@ -23,9 +24,19 @@ function Home() {
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
 
+    // const [products, setProducts] = useState(() => {
+    //     try {
+    //         return JSON.parse(
+    //             localStorage.getItem("konfizProducts")
+    //         ) || [];
+    //     } catch {
+    //         return [];
+    //     }
+    // });
 
-    // LOAD ACTUAL PRODUCTS
     
+    // LOAD ACTUAL PRODUCTS
+
 
     useEffect(() => {
 
@@ -103,6 +114,26 @@ function Home() {
             {/* HERO SECTION */}
 
             <HeroSlider />
+
+            {/* best seller section */}
+            {/* <div className="best-sellers-grid">
+                {products.slice(0, 4).map((product) => (
+                    <div className="product-card" key={product.id}>
+
+                        <ProductGallery
+                            images={product.images || (product.image ? [product.image] : [])}
+                            productName={product.name}
+                            layout="horizontal"
+                            showThumbnails={false}
+                            showArrows={false}
+                        />
+
+                        <h3>{product.name}</h3>
+                        <p>₹{product.price}</p>
+
+                    </div>
+                ))}
+            </div> */}
 
             {/* VIDEO SECTION */}
 
@@ -371,7 +402,7 @@ function Home() {
 
             </section>
 
-           
+
 
             <Footer />
 

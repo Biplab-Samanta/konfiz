@@ -8,23 +8,49 @@ import {
     Navigate
 } from "react-router-dom";
 
+// =====================================
+// CONTEXT IMPORTS
+// =====================================
+
 import { CartProvider } from "./context/cartcontext";
 import { AuthProvider, useAuth } from "./context/authContext";
+
+// =====================================
+// PAGE IMPORTS
+// =====================================
 
 import Home from "./pages/home";
 import Product from "./pages/product";
 import Login from "./pages/admin/login";
 import Dashboard from "./pages/admin/dashboard";
 import Cart from "./pages/cart";
-import OurStory from "./pages/ourStory";
-import WeMakeYouSell from "./pages/weMakeYouSell.js";
-import DistinguishedFlavours from "./pages/DistinguishedFlavours";
-import QuickDelivery from "./pages/QuickDelivery.js";
 import Checkout from "./pages/checkout";
-import CustomerDashboard from "./pages/CustomerDashboard.js";
+
+import OurStory from "./pages/ourStory";
+import WeMakeYouSell from "./pages/weMakeYouSell";
+import DistinguishedFlavours from "./pages/DistinguishedFlavours";
+import QuickDelivery from "./pages/QuickDelivery";
+
+import CustomerDashboard from "./pages/CustomerDashboard";
 import NotFound from "./pages/NotFound";
 
-import Loader from "./components/loader.js";
+// =====================================
+// COMPONENT IMPORTS
+// =====================================
+
+import Loader from "./components/loader";
+
+// =====================================
+// AUTH HELPER
+// =====================================
+
+const isUserAuthenticated = (user) => {
+    return Boolean(user) && user.authenticated !== false;
+};
+
+const getUserRole = (user) => {
+    return String(user?.role || "").trim().toLowerCase();
+};
 
 
 // =====================================
@@ -35,23 +61,21 @@ function LoginRoute() {
 
     const { user } = useAuth();
 
-    // Already logged in
-    if (user && user.authenticated) {
+    if (isUserAuthenticated(user)) {
 
-        const userRole = user.role?.toLowerCase();
+        const role = getUserRole(user);
 
-        if (userRole === "admin") {
+        if (role === "admin") {
             return <Navigate to="/admin/dashboard" replace />;
         }
 
-        if (userRole === "customer") {
+        if (role === "customer") {
             return <Navigate to="/customer/dashboard" replace />;
         }
 
         return <Navigate to="/" replace />;
     }
 
-    // Not logged in
     return <Login />;
 }
 
@@ -64,15 +88,15 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
 
     const { user } = useAuth();
 
-    // USER NOT LOGGED IN
-    if (!user || !user.authenticated) {
+    // Check login
+    if (!isUserAuthenticated(user)) {
         return <Navigate to="/login" replace />;
     }
 
-    // VERIFY USER ROLE
-    const userRole = user.role?.toLowerCase();
+    // Normalize role
+    const userRole = getUserRole(user);
 
-    // CHECK PERMISSION
+    // Check access permission
     if (!allowedRoles.includes(userRole)) {
         return <Navigate to="/" replace />;
     }
@@ -89,9 +113,17 @@ function AppRoutes() {
 
     const { user } = useAuth();
 
-    // CUSTOMER / ADMIN CART IDENTIFICATION
-    const cartUserId = user
-        ? (user.customerId || user.id || user._id)
+    // =====================================
+    // CUSTOMER-SPECIFIC CART IDENTIFICATION
+    // =====================================
+
+    const cartUserId = isUserAuthenticated(user)
+        ? (
+            user.customerId ||
+            user.id ||
+            user._id ||
+            null
+        )
         : null;
 
     return (
@@ -108,9 +140,6 @@ function AppRoutes() {
                     path="/"
                     element={<Home />}
                 />
-
-                {/* Login automatically redirects
-                    already logged-in users */}
 
                 <Route
                     path="/login"
@@ -145,7 +174,9 @@ function AppRoutes() {
                 <Route
                     path="/products"
                     element={
-                        <ProtectedRoute allowedRoles={["customer", "admin"]}>
+                        <ProtectedRoute
+                            allowedRoles={["customer", "admin"]}
+                        >
                             <Product />
                         </ProtectedRoute>
                     }
@@ -154,7 +185,9 @@ function AppRoutes() {
                 <Route
                     path="/cart"
                     element={
-                        <ProtectedRoute allowedRoles={["customer", "admin"]}>
+                        <ProtectedRoute
+                            allowedRoles={["customer", "admin"]}
+                        >
                             <Cart />
                         </ProtectedRoute>
                     }
@@ -163,7 +196,9 @@ function AppRoutes() {
                 <Route
                     path="/checkout"
                     element={
-                        <ProtectedRoute allowedRoles={["customer", "admin"]}>
+                        <ProtectedRoute
+                            allowedRoles={["customer", "admin"]}
+                        >
                             <Checkout />
                         </ProtectedRoute>
                     }
@@ -171,13 +206,15 @@ function AppRoutes() {
 
 
                 {/* =====================================
-                    CUSTOMER ONLY PAGES
+                    CUSTOMER ONLY
                 ===================================== */}
 
                 <Route
                     path="/customer/dashboard"
                     element={
-                        <ProtectedRoute allowedRoles={["customer"]}>
+                        <ProtectedRoute
+                            allowedRoles={["customer"]}
+                        >
                             <CustomerDashboard />
                         </ProtectedRoute>
                     }
@@ -185,13 +222,15 @@ function AppRoutes() {
 
 
                 {/* =====================================
-                    ADMIN ONLY PAGES
+                    ADMIN ONLY
                 ===================================== */}
 
                 <Route
                     path="/admin/dashboard"
                     element={
-                        <ProtectedRoute allowedRoles={["admin"]}>
+                        <ProtectedRoute
+                            allowedRoles={["admin"]}
+                        >
                             <Dashboard />
                         </ProtectedRoute>
                     }
@@ -199,7 +238,7 @@ function AppRoutes() {
 
 
                 {/* =====================================
-                    INVALID ROUTES
+                    404 PAGE
                 ===================================== */}
 
                 <Route
@@ -210,7 +249,6 @@ function AppRoutes() {
             </Routes>
 
         </CartProvider>
-
     );
 }
 
@@ -254,9 +292,11 @@ function App() {
             <BrowserRouter>
 
                 {/* GLOBAL LOADER */}
+
                 <GlobalLoader />
 
-                {/* ALL APPLICATION ROUTES */}
+                {/* APPLICATION ROUTES */}
+
                 <AppRoutes />
 
             </BrowserRouter>
@@ -264,7 +304,6 @@ function App() {
         </AuthProvider>
 
     );
-
 }
 
 export default App;

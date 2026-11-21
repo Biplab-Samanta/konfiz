@@ -131,25 +131,17 @@ button.navbar-cart-button {
 ===================================== */
 
 .navbar {
-  height: 82px;
-  padding: 0 7%;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  background: var(--cream);
-
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-
-  z-index: 9999;
-
-  box-shadow: 0 2px 15px #422c280a;
-
-  transition: transform 0.35s ease-in-out;
+    height: 82px;
+    padding: 0 7%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 15px #422c280a;
+    margin-bottom: -82px;
 }
 
 /* NAVBAR VISIBLE */
@@ -160,15 +152,18 @@ button.navbar-cart-button {
   perspective: 1000px;
 }
 
-.navbar-visible {
+/* .navbar-visible {
   transform: translateY(0);
+} */
+.navbar-hidden, .navbar-visible {
+  background-color: #f5e8cceb !important;
 }
 
 /* NAVBAR HIDDEN */
 
-.navbar-hidden {
+/* .navbar-hidden {
   transform: translateY(-100%);
-}
+} */
 
 /* MEGA MENU CONTAINER */
 
@@ -351,16 +346,17 @@ button.navbar-cart-button {
 }
 
 .navbar {
-  height: 82px;
-  padding: 0 7%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--cream);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 15px #422c280a;
+     height: 82px;
+    padding: 0 7%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 15px #422c280a;
+    margin-bottom: -82px;
 }
 
 .logo {
