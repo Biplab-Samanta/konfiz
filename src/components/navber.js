@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import { useCart } from "../context/cartcontext";
 import { useAuth } from "../context/authContext";
@@ -9,18 +9,109 @@ import DynamicIcon from "./dynamicIcon";
 import CartDrawer from "./CartDrawer";
 import Marquee from "react-fast-marquee";
 
+// import "../App.css";
+import "../style/navbar.css";
+// =====================================
+// PRODUCT CATEGORIES
+// =====================================
 
-import "../App.css";
+const productCategories = [
+    {
+        name: "Gelato",
+        description: "Cup · Cone · Stick",
+        category: "cones"
+    },
+    {
+        name: "Kulfi",
+        description: "Rajasthani · Punjabi · Matka",
+        category: "tubs"
+    },
+    {
+        name: "Sorbet",
+        description: "Cup",
+        category: "family-packs"
+    },
+    {
+        name: "Popsicles",
+        description: "Mini · Big · Real Fruit",
+        category: "sundaes"
+    },
+    {
+        name: "Chocolate",
+        description: "All Chocolate Products",
+        category: "sticks"
+    },
+    {
+        name: "Breads & Buns",
+        description: "All Bakery Products",
+        category: "milkshakes"
+    },
+    {
+        name: "Cookies",
+        description: "All Cookie Products",
+        category: "cookies"
+    },
+    {
+        name: "Dips & Spreads",
+        description: "Hummus · Pesto · Hazelnut · Biskia · Magnum Spread",
+        category: "dips-spreads"
+    }
+];
+
+
+// =====================================
+// OTHER NAVIGATION LINKS
+// =====================================
+
+const navigationLinks = [
+    {
+        name: "30 Minute Delivery in Kolkata",
+        path: "/quick-delivery"
+    },
+    {
+        name: "Our Distinguished Flavours",
+        path: "/distinguished-flavours"
+    },
+    {
+        name: "We Make You Sell",
+        path: "/we-make-you-sell"
+    },
+    {
+        name: "Our Story",
+        path: "/our-story"
+    }
+];
+
+
+// =====================================
+// MOBILE NAVIGATION LINK
+// =====================================
+
+function MobileNavLink({ to, children, onNavigate }) {
+    return (
+        <Link to={to} onClick={onNavigate}>
+            <span>{children}</span>
+            <DynamicIcon name="arrow-right" size={17} />
+        </Link>
+    );
+}
+
+
+// =====================================
+// MAIN NAVBAR
+// =====================================
 
 function Navbar() {
+
     // =====================================
     // AUTHENTICATION
     // =====================================
 
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
 
-    // Normalize role to avoid uppercase/lowercase issues
+    const navigate = useNavigate();
+    const location = useLocation();
+
     const userRole = String(user?.role || "").toLowerCase().trim();
 
     const isAdmin = userRole === "admin";
@@ -29,7 +120,13 @@ function Navbar() {
     const isLoggedIn = !!user && user.authenticated !== false;
 
     const customer = isCustomer ? user : null;
+
     const adminEmail = isAdmin ? user?.email : "";
+
+    const dashboardPath = isAdmin
+        ? "/admin/dashboard"
+        : "/customer/dashboard";
+
 
     // =====================================
     // CART STATE
@@ -44,38 +141,126 @@ function Navbar() {
 
     const displayCartCount = cartCount ?? totalQuantity ?? 0;
 
+
     // =====================================
-    // NAVBAR SCROLL STATE
+    // SCROLL STATE
     // =====================================
 
-  const [isScrolled, setIsScrolled] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
 
-useEffect(() => {
-    const handleScroll = () => {
-        setIsScrolled(window.scrollY > 80);
+    useEffect(() => {
+
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 80);
+        };
+
+        window.addEventListener("scroll", handleScroll, {
+            passive: true
+        });
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+        };
+
+    }, []);
+
+
+    // =====================================
+    // MOBILE OFFCANVAS STATE
+    // =====================================
+
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
+
+
+    // =====================================
+    // MOBILE MENU FUNCTIONS
+    // =====================================
+
+    const closeMobileMenu = () => {
+        setMobileMenuOpen(false);
+        setMobileProductsOpen(false);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-        window.removeEventListener("scroll", handleScroll);
+    const toggleMobileMenu = () => {
+        setMobileMenuOpen(prev => !prev);
     };
-}, []);
+
+    const toggleMobileProducts = () => {
+        setMobileProductsOpen(prev => !prev);
+    };
+
+
+    // =====================================
+    // BODY SCROLL LOCK
+    // =====================================
+
+    useEffect(() => {
+
+        document.body.style.overflow = mobileMenuOpen
+            ? "hidden"
+            : "";
+
+        return () => {
+            document.body.style.overflow = "";
+        };
+
+    }, [mobileMenuOpen]);
+
+
+    // =====================================
+    // ESCAPE KEY
+    // =====================================
+
+    useEffect(() => {
+
+        const handleEscape = (event) => {
+            if (event.key === "Escape") {
+                closeMobileMenu();
+                setCartOpen(false);
+            }
+        };
+
+        window.addEventListener("keydown", handleEscape);
+
+        return () => {
+            window.removeEventListener("keydown", handleEscape);
+        };
+
+    }, []);
+
+
+    // =====================================
+    // CLOSE DRAWER AFTER ROUTE CHANGE
+    // =====================================
+
+    useEffect(() => {
+        closeMobileMenu();
+    }, [location.pathname, location.search]);
+
+
     // =====================================
     // LOGOUT
     // =====================================
 
     const handleLogout = () => {
+
+        closeMobileMenu();
         setCartOpen(false);
+
         logout();
+
         navigate("/");
     };
 
+
     // =====================================
-    // CART DRAWER
+    // CART FUNCTIONS
     // =====================================
 
     const openCart = () => {
+        closeMobileMenu();
         setCartOpen(true);
     };
 
@@ -83,26 +268,51 @@ useEffect(() => {
         setCartOpen(false);
     };
 
+
     // =====================================
-    // DASHBOARD NAVIGATION
+    // MOBILE ACCOUNT NAVIGATION
     // =====================================
 
-    const dashboardPath = isAdmin
-        ? "/admin/dashboard"
-        : "/customer/dashboard";
+    const openAccount = () => {
+
+        closeMobileMenu();
+
+        navigate(isLoggedIn ? dashboardPath : "/login");
+    };
+
+
+    // =====================================
+    // ACTIVE NAVIGATION
+    // =====================================
+
+    const isHomeActive = location.pathname === "/";
+
+    const isProductsActive = location.pathname === "/products";
+
+    const isAccountActive =
+        location.pathname === "/login" ||
+        location.pathname.includes("dashboard");
+
+
+    // =====================================
+    // RENDER
+    // =====================================
 
     return (
         <>
+
             {/* =====================================
                 TOP OFFER BAR
             ===================================== */}
 
             <div className="topbar">
+
                 <Marquee
                     speed={50}
                     pauseOnHover={true}
                     gradient={false}
                 >
+
                     <span style={{ marginRight: "2rem" }}>
                         Scoop Into Happiness!
                     </span>
@@ -114,25 +324,49 @@ useEffect(() => {
                     <span style={{ marginRight: "2rem" }}>
                         Every Scoop Tells a Sweet Story!
                     </span>
+
                 </Marquee>
+
             </div>
+
 
             {/* =====================================
                 MAIN NAVBAR
             ===================================== */}
 
             <nav className={`navbar ${isScrolled ? "navbar-hidden" : ""}`}>
-            {/* <nav className="navbar"> */}
 
-                {/* LOGO */}
+                {/* LOGO + MOBILE HAMBURGER */}
 
-                <Link to="/" className="logo">
-                    KONFiZ
-                    <small>ICE CREAM</small>
-                </Link>
+                <div className="navbar-brand-wrapper">
+
+                    <Link
+                        to="/"
+                        className="logo"
+                        onClick={closeMobileMenu}
+                    >
+                        KONFiZ
+                        <small>ICE CREAM</small>
+                    </Link>
+
+                    <button
+                        type="button"
+                        className="mobile-menu-toggle"
+                        onClick={toggleMobileMenu}
+                        aria-label="Toggle navigation"
+                        aria-expanded={mobileMenuOpen}
+                    >
+                        <DynamicIcon
+                            name={mobileMenuOpen ? "close" : "menu"}
+                            size={25}
+                        />
+                    </button>
+
+                </div>
+
 
                 {/* =====================================
-                    MAIN NAVIGATION
+                    DESKTOP NAVIGATION
                 ===================================== */}
 
                 <div className="nav-links">
@@ -140,6 +374,7 @@ useEffect(() => {
                     <Link to="/">
                         Home
                     </Link>
+
 
                     {/* PRODUCTS MEGA MENU */}
 
@@ -158,6 +393,7 @@ useEffect(() => {
                                 />
                             </span>
                         </Link>
+
 
                         <div className="mega-menu">
 
@@ -180,92 +416,28 @@ useEffect(() => {
 
                                 </div>
 
+
                                 <div className="mega-menu-grid">
 
-                                    <Link
-                                        to="/products?category=cones"
-                                        className="mega-item"
-                                    >
-                                        <div>
-                                            <h3>Gelato</h3>
-                                            <p>Cup · Cone · Stick</p>
-                                        </div>
-                                    </Link>
+                                    {productCategories.map(category => (
 
-                                    <Link
-                                        to="/products?category=tubs"
-                                        className="mega-item"
-                                    >
-                                        <div>
-                                            <h3>Kulfi</h3>
-                                            <p>Rajasthani · Punjabi · Matka</p>
-                                        </div>
-                                    </Link>
+                                        <Link
+                                            key={category.category}
+                                            to={`/products?category=${category.category}`}
+                                            className="mega-item"
+                                        >
 
-                                    <Link
-                                        to="/products?category=family-packs"
-                                        className="mega-item"
-                                    >
-                                        <div>
-                                            <h3>Sorbet</h3>
-                                            <p>Cup</p>
-                                        </div>
-                                    </Link>
+                                            <div>
+                                                <h3>{category.name}</h3>
+                                                <p>{category.description}</p>
+                                            </div>
 
-                                    <Link
-                                        to="/products?category=sundaes"
-                                        className="mega-item"
-                                    >
-                                        <div>
-                                            <h3>Popsicles</h3>
-                                            <p>Mini · Big · Real Fruit</p>
-                                        </div>
-                                    </Link>
+                                        </Link>
 
-                                    <Link
-                                        to="/products?category=sticks"
-                                        className="mega-item"
-                                    >
-                                        <div>
-                                            <h3>Chocolate</h3>
-                                            <p>All Chocolate Products</p>
-                                        </div>
-                                    </Link>
-
-                                    <Link
-                                        to="/products?category=milkshakes"
-                                        className="mega-item"
-                                    >
-                                        <div>
-                                            <h3>Breads & Buns</h3>
-                                            <p>All Bakery Products</p>
-                                        </div>
-                                    </Link>
-
-                                    <Link
-                                        to="/products?category=cookies"
-                                        className="mega-item"
-                                    >
-                                        <div>
-                                            <h3>Cookies</h3>
-                                            <p>All Cookie Products</p>
-                                        </div>
-                                    </Link>
-
-                                    <Link
-                                        to="/products?category=dips-spreads"
-                                        className="mega-item"
-                                    >
-                                        <div>
-                                            <h3>Dips & Spreads</h3>
-                                            <p>
-                                                Hummus · Pesto · Hazelnut ·
-                                                Biskia · Magnum Spread
-                                            </p>
-                                        </div>
-                                    </Link>
+                                    ))}
 
                                 </div>
+
 
                                 <div className="mega-menu-footer">
 
@@ -281,36 +453,33 @@ useEffect(() => {
                                 </div>
 
                             </div>
+
                         </div>
+
                     </div>
 
-                    <Link to="/quick-delivery">
-                        30 Minute Delivery in Kolkata
-                    </Link>
 
-                    <Link to="/distinguished-flavours">
-                        Our Distinguished Flavours
-                    </Link>
+                    {/* OTHER LINKS */}
 
-                    <Link to="/we-make-you-sell">
-                        We Make You Sell
-                    </Link>
+                    {navigationLinks.map(link => (
 
-                    <Link to="/our-story">
-                        Our Story
-                    </Link>
+                        <Link
+                            key={link.path}
+                            to={link.path}
+                        >
+                            {link.name}
+                        </Link>
+
+                    ))}
 
                 </div>
 
+
                 {/* =====================================
-                    USER AND CART SECTION
+                    DESKTOP USER SECTION
                 ===================================== */}
 
                 <div className="navbar-user-section">
-
-                    {/* =====================================
-                        LOGIN / CUSTOMER / ADMIN PROFILE
-                    ===================================== */}
 
                     {isLoggedIn ? (
 
@@ -345,15 +514,12 @@ useEffect(() => {
 
                                 </div>
 
-                                {/* =====================================
-                                    PROFILE DROPDOWN
-                                ===================================== */}
+
+                                {/* PROFILE DROPDOWN */}
 
                                 <div className="profile-dropdown">
 
-                                    <h3>
-                                        Profile Information
-                                    </h3>
+                                    <h3>Profile Information</h3>
 
                                     <p>
                                         <strong>Name:</strong>{" "}
@@ -376,7 +542,6 @@ useEffect(() => {
                                             : customer?.email || "N/A"}
                                     </p>
 
-                                    {/* CUSTOMER INFORMATION */}
 
                                     {isCustomer && (
                                         <>
@@ -396,9 +561,6 @@ useEffect(() => {
                                         </>
                                     )}
 
-                                    {/* =====================================
-                                        ADMIN DASHBOARD
-                                    ===================================== */}
 
                                     {isAdmin && (
                                         <Link
@@ -409,14 +571,10 @@ useEffect(() => {
                                                 name="dashboard"
                                                 size={17}
                                             />
-
                                             Admin Dashboard
                                         </Link>
                                     )}
 
-                                    {/* =====================================
-                                        CUSTOMER DASHBOARD
-                                    ===================================== */}
 
                                     {isCustomer && (
                                         <Link
@@ -427,14 +585,10 @@ useEffect(() => {
                                                 name="dashboard"
                                                 size={17}
                                             />
-
                                             My Account
                                         </Link>
                                     )}
 
-                                    {/* =====================================
-                                        LOGOUT
-                                    ===================================== */}
 
                                     <button
                                         className="logout-btn"
@@ -445,17 +599,16 @@ useEffect(() => {
                                             name="logout"
                                             size={17}
                                         />
-
                                         Logout
                                     </button>
 
                                 </div>
+
                             </div>
+
                         </div>
 
                     ) : (
-
-                        /* LOGGED OUT */
 
                         <Link
                             className="konfiz_login"
@@ -466,40 +619,356 @@ useEffect(() => {
 
                     )}
 
-                    {/* =====================================
-                        STICKY CART BUTTON
-                    ===================================== */}
 
-                    <div
-                        className="cart-button"
+                    {/* DESKTOP CART */}
+
+                    <button
+                        type="button"
+                        className="navbar-cart-button"
                         onClick={openCart}
                         aria-label="Open shopping cart"
-                        aria-expanded={cartOpen}
                     >
 
-                        <button
-                            type="button"
-                            className="navbar-cart-button"
-                            aria-label="Open cart"
-                        >
-                            <DynamicIcon
-                                name="cart"
-                                size={23}
-                            />
-                        </button>
+                        <DynamicIcon
+                            name="cart"
+                            size={30}
+                        />
 
                         <span className="navbar-cart-count">
                             {displayCartCount}
                         </span>
 
-                    </div>
+                    </button>
 
                 </div>
 
             </nav>
 
+
             {/* =====================================
-                GLOBAL OFF-CANVAS CART DRAWER
+                MOBILE OFFCANVAS OVERLAY
+            ===================================== */}
+
+            <div
+                className={`mobile-menu-overlay ${
+                    mobileMenuOpen ? "active" : ""
+                }`}
+                onClick={closeMobileMenu}
+                aria-hidden={!mobileMenuOpen}
+            >
+
+                <aside
+                    className={`mobile-offcanvas ${
+                        mobileMenuOpen ? "active" : ""
+                    }`}
+                    onClick={event => event.stopPropagation()}
+                    aria-label="Mobile navigation"
+                    aria-modal="true"
+                    role="dialog"
+                >
+
+                    {/* DRAWER HEADER */}
+
+                    <div className="mobile-offcanvas-header">
+
+                        <Link
+                            to="/"
+                            className="mobile-menu-logo"
+                            onClick={closeMobileMenu}
+                        >
+                            KONFiZ
+                            <small>ICE CREAM & HAPPINESS</small>
+                        </Link>
+
+                        <button
+                            type="button"
+                            className="mobile-menu-close"
+                            onClick={closeMobileMenu}
+                            aria-label="Close menu"
+                        >
+                            <DynamicIcon
+                                name="close"
+                                size={24}
+                            />
+                        </button>
+
+                    </div>
+
+
+                    {/* DRAWER LINKS */}
+
+                    <div className="mobile-menu-body">
+
+                        <MobileNavLink
+                            to="/"
+                            onNavigate={closeMobileMenu}
+                        >
+                            Home
+                        </MobileNavLink>
+
+
+                        {/* PRODUCTS ACCORDION */}
+
+                        <div className="mobile-products-section">
+
+                            <div className="mobile-products-heading">
+
+                                <Link
+                                    to="/products"
+                                    onClick={closeMobileMenu}
+                                >
+                                    Products
+                                </Link>
+
+                                <button
+                                    type="button"
+                                    onClick={toggleMobileProducts}
+                                    aria-expanded={mobileProductsOpen}
+                                    aria-label="Toggle product categories"
+                                >
+                                    <DynamicIcon
+                                        name="dropdown"
+                                        size={19}
+                                    />
+                                </button>
+
+                            </div>
+
+
+                            {mobileProductsOpen && (
+
+                                <div className="mobile-submenu">
+
+                                    {productCategories.map(category => (
+
+                                        <Link
+                                            key={category.category}
+                                            to={`/products?category=${category.category}`}
+                                            onClick={closeMobileMenu}
+                                        >
+                                            {category.name}
+                                        </Link>
+
+                                    ))}
+
+                                    <Link
+                                        to="/products"
+                                        onClick={closeMobileMenu}
+                                    >
+                                        View All Products →
+                                    </Link>
+
+                                </div>
+
+                            )}
+
+                        </div>
+
+
+                        {/* OTHER NAVIGATION LINKS */}
+
+                        {navigationLinks.map(link => (
+
+                            <MobileNavLink
+                                key={link.path}
+                                to={link.path}
+                                onNavigate={closeMobileMenu}
+                            >
+                                {link.name}
+                            </MobileNavLink>
+
+                        ))}
+
+                    </div>
+
+
+                    {/* DRAWER ACCOUNT SECTION */}
+
+                    <div className="mobile-menu-account">
+
+                        {isLoggedIn ? (
+
+                            <>
+
+                                <div className="mobile-account-info">
+
+                                    <DynamicIcon
+                                        name="profile"
+                                        size={23}
+                                    />
+
+                                    <div>
+
+                                        <strong>
+                                            {isAdmin
+                                                ? "Administrator"
+                                                : customer?.name ||
+                                                  customer?.fullName ||
+                                                  "Customer"}
+                                        </strong>
+
+                                        <small>
+                                            {isAdmin
+                                                ? "Admin Account"
+                                                : "Customer Account"}
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                <Link
+                                    to={dashboardPath}
+                                    className="mobile-account-dashboard"
+                                    onClick={closeMobileMenu}
+                                >
+                                    <DynamicIcon
+                                        name="dashboard"
+                                        size={18}
+                                    />
+
+                                    {isAdmin
+                                        ? "Admin Dashboard"
+                                        : "My Account"}
+                                </Link>
+
+
+                                <button
+                                    type="button"
+                                    className="mobile-account-logout"
+                                    onClick={handleLogout}
+                                >
+                                    <DynamicIcon
+                                        name="logout"
+                                        size={18}
+                                    />
+                                    Logout
+                                </button>
+
+                            </>
+
+                        ) : (
+
+                            <Link
+                                to="/login"
+                                className="mobile-account-login"
+                                onClick={closeMobileMenu}
+                            >
+                                <DynamicIcon
+                                    name="profile"
+                                    size={19}
+                                />
+
+                                Login / My Account
+                            </Link>
+
+                        )}
+
+                    </div>
+
+
+                    {/* DRAWER FOOTER */}
+
+                    <div className="mobile-menu-footer">
+                        🍦 A little scoop of happiness!
+                    </div>
+
+                </aside>
+
+            </div>
+
+
+            {/*   MOBILE FIXED BOTTOM NAVBAR  */}
+
+            <div className="mobile-bottom-navbar">
+
+                {/* HOME */}
+
+                <Link
+                    to="/"
+                    className={`mobile-bottom-item ${
+                        isHomeActive ? "active" : ""
+                    }`}
+                >
+                    <DynamicIcon
+                        name="home"
+                        size={21}
+                    />
+
+                    <span>Home</span>
+                </Link>
+
+
+                {/* PRODUCTS */}
+
+                <Link
+                    to="/products"
+                    className={`mobile-bottom-item ${
+                        isProductsActive ? "active" : ""
+                    }`}
+                >
+                    <DynamicIcon
+                        name="shoppingBag"
+                        size={21}
+                    />
+
+                    <span>Products</span>
+                </Link>
+
+
+                {/* CART */}
+
+                <button
+                    type="button"
+                    className="mobile-bottom-item mobile-bottom-cart"
+                    onClick={openCart}
+                >
+
+                    <span className="mobile-bottom-cart-icon">
+
+                        <DynamicIcon
+                            name="cart"
+                            size={21}
+                        />
+
+                        {displayCartCount > 0 && (
+                            <span className="mobile-bottom-cart-count">
+                                {displayCartCount}
+                            </span>
+                        )}
+
+                    </span>
+
+                    <span>Cart</span>
+
+                </button>
+
+
+                {/* ACCOUNT */}
+
+                <button
+                    type="button"
+                    className={`mobile-bottom-item ${
+                        isAccountActive ? "active" : ""
+                    }`}
+                    onClick={openAccount}
+                >
+
+                    <DynamicIcon
+                        name="profile"
+                        size={21}
+                    />
+
+                    <span>Account</span>
+
+                </button>
+
+            </div>
+
+
+            {/* =====================================
+                GLOBAL CART DRAWER
             ===================================== */}
 
             <CartDrawer

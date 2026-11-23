@@ -8,15 +8,41 @@ import DynamicVideo from "../components/DynamicVideo";
 import videoSchema from "../data/videoschema";
 import Footer from "../components/footer";
 import ProductGallery from "../components/productGallery/productGallery";
+import TestimonialSection from "../components/testimonials/testimonial_components";
+import { BrandPartnersStrip } from "../components/testimonials/testimonial_components";
+import WhyChooseUs from "../components/whyChooseUs";
+import FAQ from "../components/faq";
 
 import "../../src/App.css";
 
+
 const categories = [
-    { name: "Ice Cream Cones", count: "12 Flavours", emoji: "🍦" },
-    { name: "Ice Cream Tubs", count: "18 Products", emoji: "🍨" },
-    { name: "Family Packs", count: "8 Products", emoji: "👨‍👩‍👧‍👦" },
-    { name: "Sundaes", count: "10 Products", emoji: "🍧" },
+    {
+        name: "Ice Cream Cones",
+        count: "12 Flavours",
+        emoji: "🍦",
+        image: "images/categories/images.jpg"
+    },
+     {
+        name: "Family Packs",
+        count: "8 Products",
+        emoji: "👨‍👩‍👧‍👦",
+        image: "images/categories/family_cube.jpg"
+    },
+    {
+        name: "Ice Cream Tubs",
+        count: "18 Products",
+        emoji: "🍨",
+        image: "images/categories/tubs.jpg"
+    },
+    {
+        name: "Sundaes",
+        count: "10 Products",
+        emoji: "🍧",
+        image: "images/categories/sundeas.jpg"
+    }
 ];
+
 
 function Home() {
 
@@ -34,7 +60,7 @@ function Home() {
     //     }
     // });
 
-    
+
     // LOAD ACTUAL PRODUCTS
 
 
@@ -114,79 +140,6 @@ function Home() {
             {/* HERO SECTION */}
 
             <HeroSlider />
-
-            {/* best seller section */}
-            {/* <div className="best-sellers-grid">
-                {products.slice(0, 4).map((product) => (
-                    <div className="product-card" key={product.id}>
-
-                        <ProductGallery
-                            images={product.images || (product.image ? [product.image] : [])}
-                            productName={product.name}
-                            layout="horizontal"
-                            showThumbnails={false}
-                            showArrows={false}
-                        />
-
-                        <h3>{product.name}</h3>
-                        <p>₹{product.price}</p>
-
-                    </div>
-                ))}
-            </div> */}
-
-            {/* VIDEO SECTION */}
-
-            <DynamicVideo video={videoSchema.home} />
-
-            {/*  CATEGORIES SECTION  */}
-
-            <section className="categories section" id="categories">
-
-                <div className="section-heading">
-
-                    <span className="eyebrow">
-                        FIND YOUR FAVOURITE
-                    </span>
-
-                    <h2>
-                        Something for <span>Everyone.</span>
-                    </h2>
-
-                    <p>
-                        Explore our delicious world of ice cream.
-                    </p>
-
-                </div>
-
-                <div className="category-grid">
-
-                    {categories.map((category) => (
-
-                        <Link
-                            to={`/products?category=${encodeURIComponent(category.name)}`}
-                            className="category-card"
-                            key={category.name}
-                        >
-
-                            <div className="category-emoji">
-                                {category.emoji}
-                            </div>
-
-                            <h3>{category.name}</h3>
-
-                            <p>{category.count}</p>
-
-                            <span className="category-arrow">→</span>
-
-                        </Link>
-
-                    ))}
-
-                </div>
-
-            </section>
-
             {/*  POPULAR PRODUCTS*/}
 
             <section className="popular-products" id="products">
@@ -198,7 +151,7 @@ function Home() {
                     </span>
 
                     <h2>
-                        Popular <span>Products.</span>
+                        Best Selling <span>Products</span>
                     </h2>
 
                     <p>
@@ -290,6 +243,115 @@ function Home() {
 
             </section>
 
+
+            {/* VIDEO SECTION */}
+
+            <DynamicVideo video={videoSchema.home} />
+
+            {/* brands  */}
+            <BrandPartnersStrip
+                title="Our Partners who Trusted Us"
+                speed={40}
+                className="home-brand-strip"
+            />
+
+            <TestimonialSection
+                type="brand"
+                layout="full"
+                limit={8}
+            />
+
+
+            {/* ================================
+    CATEGORIES SECTION  ================================ */}
+
+            <section className="categories section" id="categories">
+
+                <div className="section-heading">
+                    <span className="eyebrow">
+                        FIND YOUR FAVOURITE
+                    </span>
+
+                    <h2>
+                        Something for <span>Everyone.</span>
+                    </h2>
+
+                    <p>
+                        From classic favourites to exciting new flavours,
+                        discover something delicious for every moment.
+                    </p>
+                </div>
+
+                <div className="category-grid">
+
+                    {categories.map((category, index) => (
+
+                        <Link
+                            to={`/products?category=${encodeURIComponent(category.name)}`}
+                            className="category-card"
+                            key={category.name}
+                        >
+
+                            <div className="category-card-image">
+
+                                {category.image ? (
+                                    <img
+                                        src={category.image}
+                                        alt={category.name}
+                                        loading="lazy"
+                                    />
+                                ) : (
+                                    <div className="category-placeholder">
+                                        {category.emoji}
+                                    </div>
+                                )}
+
+                                <span className="category-number">
+                                    0{index + 1}
+                                </span>
+
+                                <span className="category-arrow">
+                                    ↗
+                                </span>
+
+                            </div>
+
+                            <div className="category-card-content">
+
+                                <div>
+                                    <h3>{category.name}</h3>
+                                    <p>{category.count}</p>
+                                </div>
+
+                                <span className="category-explore">
+                                    Explore Collection
+                                </span>
+
+                            </div>
+
+                        </Link>
+
+                    ))}
+
+                </div>
+
+            </section>
+
+            
+            {/* testimonials */}
+
+
+
+            <TestimonialSection
+                type="b2b"
+                layout="cards"
+                limit={8}
+            />
+
+
+
+
+
             {/* BRAND STORY*/}
 
             <section className="story" id="story">
@@ -357,6 +419,25 @@ function Home() {
                 </div>
 
             </section>
+            <TestimonialSection
+                type="b2c"
+                layout="cards"
+                limit={8}
+            />
+
+
+            <ProductGallery />
+
+            {/* why choose us section  */}
+            <WhyChooseUs />
+
+
+            {/* faq section  */}
+            <FAQ
+                heading="Frequently Asked Questions"
+                subheading="Everything you need to know about enjoying KONFiZ."
+                limit={5}
+            />
 
             {/* PROMOTION */}
 
@@ -381,8 +462,8 @@ function Home() {
 
                     <div className="buttun_area">
 
-                        <Link to="/products" className="primary-btn">
-                            Order Your Happiness →
+                        <Link to="/franchise" className="primary-btn">
+                            Become a Franchise Partner →
                         </Link>
 
                         <a

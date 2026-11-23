@@ -151,15 +151,15 @@ function Footer() {
 
                     <p>
                         📧
-                        <a href="mailto:support@konfiz.com">
-                            support@konfiz.com
+                        <a href="mailto:smg.biplab@gmail.com">
+                            smg.biplab@gmail.com
                         </a>
                     </p>
 
                     <p>
                         📞
-                        <a href="tel:+910000000000">
-                            +91 00000 00000
+                        <a href="tel:+919230967112">
+                            +91 9230967112
                         </a>
                     </p>
 

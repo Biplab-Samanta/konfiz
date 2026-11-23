@@ -1,134 +1,84 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import "./ProductGallery.css";
 
-const ProductGallery = ({
-    images = [],
-    productName = "Product",
-    layout = "vertical",
-    showThumbnails = true,
-    showArrows = true,
-    imageFit = "contain",
-    className = "",
-    onImageChange
+// =====================================
+// AUTOMATICALLY LOAD GALLERY IMAGES
+// =====================================
+
+const galleryContext = require.context(
+    "../../images/gallery",
+    false,
+    /\.(png|jpe?g|webp|avif)$/i
+);
+
+const galleryImages = galleryContext.keys().map((path, index) => ({
+    id: index + 1,
+    image: galleryContext(path),
+    name: path.split("/").pop().replace(/\.[^/.]+$/, "")
+}));
+
+// =====================================
+// IMAGE GALLERY COMPONENT
+// =====================================
+
+const ImageGallery = ({
+    heading = "Our Sweet Moments",
+    subheading = "A little glimpse of the happiness we create.",
+    limit = 9   
 }) => {
 
-    const validImages = images
-        .map((image, index) => {
-            if (typeof image === "string") {
-                return {
-                    id: index,
-                    url: image,
-                    alt: `${productName} image ${index + 1}`
-                };
-            }
-
-            return image?.url
-                ? {
-                    id: image.id ?? index,
-                    url: image.url,
-                    alt: image.alt || `${productName} image ${index + 1}`
-                }
-                : null;
-        })
-        .filter(Boolean);
-
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [zoom, setZoom] = useState(false);
-
-    useEffect(() => {
-        setActiveIndex(0);
-        setZoom(false);
-    }, [images]);
-
-    if (!validImages.length) {
-        return (
-            <div className="gallery-no-image">
-                No Image Available
-            </div>
-        );
-    }
-
-    const activeImage = validImages[activeIndex];
-
-    const changeImage = (index) => {
-        const nextIndex =
-            (index + validImages.length) % validImages.length;
-
-        setActiveIndex(nextIndex);
-        setZoom(false);
-
-        if (onImageChange) {
-            onImageChange(validImages[nextIndex], nextIndex);
-        }
-    };
+    // Display limited images
+    const visibleImages = galleryImages.slice(0, limit);
 
     return (
-        <div className={`product-gallery gallery-${layout} ${className}`}>
+        <section className="image-gallery-section">
 
-            {/* Thumbnail section */}
-            {showThumbnails && validImages.length > 1 && (
-                <div className="gallery-thumbnails">
-                    {validImages.map((image, index) => (
-                        <button
-                            type="button"
-                            key={image.id}
-                            className={`gallery-thumb ${
-                                activeIndex === index ? "active" : ""
-                            }`}
-                            onClick={() => changeImage(index)}
-                            aria-label={`View image ${index + 1}`}
-                        >
-                            <img
-                                src={image.url}
-                                alt={image.alt}
-                            />
-                        </button>
-                    ))}
-                </div>
-            )}
+            {/* SECTION HEADING */}
 
-            {/* Main image */}
-            <div
-                className={`gallery-main ${zoom ? "zoomed" : ""}`}
-                onMouseEnter={() => setZoom(true)}
-                onMouseLeave={() => setZoom(false)}
-            >
-                <img
-                    src={activeImage.url}
-                    alt={activeImage.alt}
-                    className={`gallery-main-image fit-${imageFit}`}
-                />
+            <div className="image-gallery-heading">
 
-                {showArrows && validImages.length > 1 && (
-                    <>
-                        <button
-                            type="button"
-                            className="gallery-arrow gallery-prev"
-                            onClick={() => changeImage(activeIndex - 1)}
-                            aria-label="Previous image"
-                        >
-                            &#10094;
-                        </button>
-
-                        <button
-                            type="button"
-                            className="gallery-arrow gallery-next"
-                            onClick={() => changeImage(activeIndex + 1)}
-                            aria-label="Next image"
-                        >
-                            &#10095;
-                        </button>
-                    </>
-                )}
-
-                <span className="gallery-counter">
-                    {activeIndex + 1} / {validImages.length}
+                <span className="gallery-subtitle">
+                    EXPLORE OUR WORLD
                 </span>
+
+                <h2>{heading}</h2>
+
+                <p>{subheading}</p>
+
             </div>
 
-        </div>
+            {/* IMAGE GALLERY */}
+
+            <div className="image-gallery-grid">
+
+                {visibleImages.map((item) => (
+
+                    <div
+                        className="gallery-image-card"
+                        key={item.id}
+                    >
+
+                        <img
+                            src={item.image}
+                            alt={item.name}
+                            loading="lazy"
+                        />
+
+                    </div>
+
+                ))}
+
+            </div>
+
+            {visibleImages.length === 0 && (
+                <p className="gallery-empty">
+                    Gallery images will appear here.
+                </p>
+            )}
+
+        </section>
     );
 };
 
-export default ProductGallery;
+export default ImageGallery;

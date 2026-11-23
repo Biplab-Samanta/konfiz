@@ -1,0 +1,828 @@
+/* =====================================================
+   KONFiZ NAVBAR CSS
+   Desktop + Mobile + Offcanvas + Bottom Navigation
+===================================================== */
+
+/* ================= ROOT ================= */
+
+:root {
+    --nav-pink: #f9dfe2;
+    --nav-pink-dark: #e98598;
+    --nav-red: #d94e64;
+    --nav-cream: #fffaf2;
+    --nav-brown: #422c28;
+    --nav-white: #ffffff;
+    --nav-muted: #8b7770;
+}
+
+/* ================= TOP OFFER BAR ================= */
+
+.topbar {
+    background: #292929;
+    color: #fff;
+    padding: 10px;
+    font-size: 13px;
+}
+
+/* ================= MAIN NAVBAR ================= */
+
+.navbar {
+    height: 82px;
+    width: 100%;
+    padding: 0 7%;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    background: transparent;
+    box-shadow: 0 2px 15px #422c280a;
+
+    /* margin-bottom: -82px; */
+    transition: background .3s ease;
+}
+
+.navbar-hidden,
+.navbar-visible {
+    background: #f5e8cceb !important;
+}
+
+/* ================= LOGO ================= */
+
+.logo {
+    display: flex;
+    flex-direction: column;
+
+    color: var(--nav-brown);
+
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+
+    flex-shrink: 0;
+}
+
+.logo small {
+    margin-top: 5px;
+    color: var(--nav-muted);
+    font-size: 8px;
+    letter-spacing: 2px;
+}
+
+/* ================= DESKTOP LINKS ================= */
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-links>a,
+.nav-links .nav-product-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--nav-brown);
+    transition: color .3s ease;
+}
+
+.nav-links>a:hover,
+.nav-links .nav-product-link:hover {
+    color: var(--nav-red);
+}
+
+/* ================= PRODUCTS MEGA MENU ================= */
+
+.nav-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-product-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dropdown-arrow {
+    transition: transform .3s ease;
+}
+
+.nav-dropdown:hover .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.mega-menu {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+
+    width: min(850px, 90vw);
+
+    padding: 25px;
+    background: #fff;
+    border-radius: 16px;
+
+    box-shadow: 0 15px 45px rgba(0, 0, 0, .13);
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition: .3s ease;
+    z-index: 9999;
+}
+
+.nav-dropdown:hover .mega-menu,
+.nav-dropdown:focus-within .mega-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.mega-menu-heading {
+    margin-bottom: 22px;
+}
+
+.mega-menu-heading span {
+    color: #e87936;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.mega-menu-heading h2 {
+    margin: 8px 0;
+    color: #292929;
+    font-size: 23px;
+}
+
+.mega-menu-heading p {
+    color: #777;
+    font-size: 13px;
+}
+
+.mega-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.mega-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 12px;
+
+    background: #fffaf5;
+    border: 1px solid #f5eee7;
+    border-radius: 10px;
+
+    transition: .25s ease;
+}
+
+.mega-item:hover {
+    background: #fff0df;
+    border-color: #f2c49b;
+    transform: translateY(-3px);
+}
+
+.mega-item h3 {
+    margin-bottom: 5px;
+    color: #333;
+    font-size: 13px;
+}
+
+.mega-item p {
+    color: #888;
+    font-size: 11px;
+}
+
+.mega-menu-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-top: 22px;
+    padding-top: 17px;
+
+    border-top: 1px solid #eee;
+    font-size: 12px;
+}
+
+.mega-menu-footer span {
+    color: #777;
+}
+
+.mega-menu-footer a {
+    color: #e87936;
+    font-weight: 700;
+}
+
+/* ================= LOGIN ================= */
+
+a.konfiz_login {
+    padding: 10px 15px;
+    margin-right: 10px;
+
+    border: 1px solid var(--nav-brown);
+    border-radius: 50px;
+
+    font-size: 14px;
+}
+
+/* ================= USER SECTION ================= */
+
+.navbar-user-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.navbar-profile {
+    position: relative;
+}
+
+.profile-info {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 8px 12px;
+    border-radius: 8px;
+
+    cursor: pointer;
+}
+
+.profile-icon {
+    font-size: 24px;
+}
+
+.profile-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-details strong {
+    font-size: 14px;
+}
+
+.profile-details small {
+    color: #777;
+    font-size: 11px;
+}
+
+/* ================= PROFILE DROPDOWN ================= */
+
+.profile-dropdown {
+    display: none;
+
+    position: absolute;
+    top: 100%;
+    right: 0;
+
+    width: 260px;
+    padding: 18px;
+
+    background: #fff;
+    color: #333;
+
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, .15);
+
+    z-index: 9999;
+}
+
+.profile-info:hover .profile-dropdown,
+.profile-info:focus-within .profile-dropdown {
+    display: block;
+}
+
+.profile-dropdown h3 {
+    margin-bottom: 15px;
+}
+
+.profile-dropdown p {
+    margin: 10px 0;
+    font-size: 13px;
+    word-break: break-word;
+}
+
+.profile-dashboard-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 12px;
+    margin: 12px 0;
+
+    background: #fff0e7;
+    color: #39251e;
+
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+
+    transition: .2s ease;
+}
+
+.profile-dashboard-link:hover {
+    background: #39251e;
+    color: #fff;
+}
+
+.profile-dropdown .logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    width: 100%;
+    padding: 10px;
+
+    background: #e74c3c;
+    color: #fff;
+
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+.logout-btn:hover {
+    background: #c0392b;
+}
+
+/* ================= CART ================= */
+
+.cart-button {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 15px 17px;
+
+    background: var(--nav-brown);
+    color: #fff;
+
+    border-radius: 30px;
+    cursor: pointer;
+}
+
+button.navbar-cart-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: transparent;
+    color: #100f0f;
+}
+
+.navbar-cart-count {
+    position: absolute;
+    top: -8px;
+    right: -5px;
+
+    min-width: 21px;
+    height: 21px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 5px;
+
+    background: var(--nav-pink-dark);
+    color: #fff;
+
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* ================= MOBILE HEADER ELEMENTS ================= */
+
+.navbar-brand-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mobile-menu-toggle {
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px;
+
+    background: transparent;
+    color: var(--nav-brown);
+
+    cursor: pointer;
+}
+
+.mobile-bottom-navbar {
+    display: none;
+}
+
+.mobile-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+
+    background: rgba(0, 0, 0, .5);
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition: opacity .3s ease, visibility .3s ease;
+}
+
+.mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* ================= OFFCANVAS ================= */
+
+.mobile-offcanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: min(360px, 88%);
+    height: 100%;
+    height: 100dvh;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #fff;
+    overflow-y: auto;
+
+    transform: translateX(-100%);
+    transition: transform .35s ease;
+
+    box-shadow: 5px 0 25px rgba(0, 0, 0, .15);
+}
+
+.mobile-offcanvas.active {
+    transform: translateX(0);
+}
+
+/* ================= OFFCANVAS HEADER ================= */
+
+.mobile-offcanvas-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.mobile-menu-logo {
+    display: flex;
+    flex-direction: column;
+
+    color: #d92768;
+    font-size: 27px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.mobile-menu-logo small {
+    margin-top: 3px;
+    color: #777;
+    font-size: 9px;
+    letter-spacing: 2px;
+}
+
+.mobile-menu-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    background: #f5f5f5;
+    border-radius: 50%;
+}
+
+/* ================= OFFCANVAS LINKS ================= */
+
+.mobile-menu-body {
+    padding: 12px 20px;
+}
+
+.mobile-menu-body>a,
+.mobile-products-heading {
+    min-height: 52px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 1px solid #eee;
+
+    color: #292929;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.mobile-menu-body a:hover {
+    color: #d92768;
+}
+
+/* ================= MOBILE PRODUCTS ================= */
+
+.mobile-products-heading>a {
+    flex: 1;
+    color: #292929;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.mobile-products-heading>button {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent;
+}
+
+.mobile-products-heading>button svg {
+    transition: transform .3s ease;
+}
+
+.mobile-products-section:has(.mobile-submenu) .mobile-products-heading>button svg {
+    transform: rotate(180deg);
+}
+
+.mobile-submenu {
+    display: flex;
+    flex-direction: column;
+
+    padding: 6px 0 12px 15px;
+
+    background: #fafafa;
+    border-left: 2px solid #d92768;
+}
+
+.mobile-submenu a {
+    padding: 11px 12px;
+    color: #666;
+    font-size: 13px;
+}
+
+/* ================= MOBILE ACCOUNT ================= */
+
+.mobile-menu-account {
+    margin: auto 20px 15px;
+    padding: 16px;
+
+    background: #faf5f7;
+    border-radius: 12px;
+}
+
+.mobile-account-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    margin-bottom: 15px;
+    color: #d92768;
+}
+
+.mobile-account-info div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mobile-account-info strong {
+    color: #292929;
+    font-size: 14px;
+}
+
+.mobile-account-info small {
+    color: #888;
+    font-size: 11px;
+}
+
+.mobile-account-dashboard,
+.mobile-account-login,
+.mobile-account-logout {
+    width: 100%;
+    min-height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+
+    border: none;
+    border-radius: 7px;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.mobile-account-dashboard,
+.mobile-account-login {
+    background: #d92768;
+    color: #fff;
+}
+
+.mobile-account-logout {
+    margin-top: 9px;
+    background: #fff;
+    color: #d92768;
+}
+
+/* ================= OFFCANVAS FOOTER ================= */
+
+.mobile-menu-footer {
+    padding: 15px 20px;
+    text-align: center;
+
+    border-top: 1px solid #eee;
+
+    color: #999;
+    font-size: 11px;
+}
+
+/* ================= MOBILE BOTTOM NAVBAR ================= */
+
+@media (max-width: 991px) {
+
+    .navbar {
+        height: 72px;
+        padding: 0 18px;
+        margin-bottom: 0;
+    }
+
+    .navbar.navbar-hidden {
+        transform: none !important;
+        visibility: visible !important;
+    }
+
+    .navbar .nav-links,
+    .navbar .navbar-user-section {
+        display: none !important;
+    }
+
+    .navbar-brand-wrapper {
+        width: 100%;
+        flex: 1;
+    }
+
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    .mobile-bottom-navbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        z-index: 9997;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+
+        min-height: 68px;
+        padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
+
+        background: #fff;
+        border-top: 1px solid #eee;
+        box-shadow: 0 -3px 15px rgba(0, 0, 0, .07);
+    }
+
+    .mobile-bottom-item {
+        position: relative;
+        flex: 1;
+        height: 100%;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+
+        background: transparent;
+        color: #888;
+
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .mobile-bottom-item.active {
+        color: #d92768;
+        font-weight: 700;
+    }
+
+    .mobile-bottom-item.active svg {
+        transform: translateY(-2px);
+    }
+
+    .mobile-bottom-cart-icon {
+        position: relative;
+        display: flex;
+    }
+
+    .mobile-bottom-cart-count {
+        position: absolute;
+        top: -8px;
+        right: -11px;
+
+        min-width: 17px;
+        height: 17px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0 4px;
+
+        background: #d92768;
+        color: #fff;
+        border-radius: 20px;
+
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    body {
+        padding-bottom: calc(78px + env(safe-area-inset-bottom));
+    }
+
+    .mega-menu {
+        display: none;
+    }
+}
+
+/* ================= SMALL MOBILE ================= */
+
+@media (max-width: 480px) {
+
+    .navbar {
+        padding: 0 14px;
+    }
+
+    .logo {
+        font-size: 25px;
+    }
+
+    .mobile-offcanvas {
+        width: min(340px, 88%);
+    }
+
+    .mobile-bottom-navbar {
+        min-height: 65px;
+    }
+
+    .mobile-bottom-item {
+        font-size: 10px;
+    }
+}
+
+/* ================= TABLET MEGA MENU ================= */
+
+@media (min-width: 992px) and (max-width: 1200px) {
+
+    .navbar {
+        padding: 0 3%;
+    }
+
+    .nav-links {
+        gap: 10px;
+    }
+
+    .nav-links>a,
+    .nav-links .nav-product-link {
+        font-size: 11px;
+    }
+
+    .mega-menu-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

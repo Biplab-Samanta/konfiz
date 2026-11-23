@@ -1,160 +1,120 @@
+/* =====================================
+   IMAGE GALLERY SECTION
+===================================== */
 
-.product-gallery {
-    display: flex;
-    gap: 15px;
+.image-gallery-section {
     width: 100%;
-    align-items: flex-start;
+    padding: 75px 6%;
+    background: #ffffff;
+    box-sizing: border-box;
 }
 
-/* Main image */
+/* HEADING */
 
-.gallery-main {
-    position: relative;
-    width: 100%;
-    min-width: 0;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    background: #fff8f3;
-    border-radius: 14px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.image-gallery-heading {
+    text-align: center;
+    max-width: 750px;
+    margin: 0 auto 40px;
 }
 
-.gallery-main-image {
-    width: 100%;
-    height: 100%;
-    transition: transform 0.35s ease;
-}
-
-.gallery-main-image.fit-contain {
-    object-fit: contain;
-}
-
-.gallery-main-image.fit-cover {
-    object-fit: cover;
-}
-
-.gallery-main.zoomed .gallery-main-image {
-    transform: scale(1.5);
-}
-
-/* Vertical thumbnails */
-
-.gallery-vertical .gallery-thumbnails {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 75px;
-    flex-shrink: 0;
-    max-height: 450px;
-    overflow-y: auto;
-}
-
-.gallery-thumb {
-    width: 65px;
-    height: 65px;
-    padding: 3px;
-    border: 1px solid #ddd;
-    border-radius: 9px;
-    background: white;
-    cursor: pointer;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.gallery-thumb.active {
-    border: 2px solid #e87837;
-}
-
-.gallery-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-/* Horizontal thumbnails */
-
-.gallery-horizontal {
-    flex-direction: column;
-}
-
-.gallery-horizontal .gallery-thumbnails {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    width: 100%;
-    padding-bottom: 5px;
-}
-
-.gallery-horizontal .gallery-main {
-    order: 0;
-}
-
-.gallery-horizontal .gallery-thumbnails {
-    order: 1;
-}
-
-/* Arrows */
-
-.gallery-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.9);
-    cursor: pointer;
-    font-size: 17px;
-    z-index: 2;
-}
-
-.gallery-prev {
-    left: 10px;
-}
-
-.gallery-next {
-    right: 10px;
-}
-
-.gallery-counter {
-    position: absolute;
-    bottom: 10px;
-    right: 12px;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    padding: 4px 9px;
-    border-radius: 20px;
+.gallery-subtitle {
+    display: inline-block;
+    color: #ed7390;
     font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
 }
 
-.gallery-no-image {
-    width: 100%;
-    aspect-ratio: 1;
-    background: #f5f5f5;
+.image-gallery-heading h2 {
+    font-size: 36px;
+    font-weight: 800;
+    color: #35252a;
+    margin: 0 0 12px;
+}
+
+.image-gallery-heading p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #777;
+    margin: 0;
+}
+
+/* MASONRY GALLERY */
+
+.image-gallery-grid {
+    columns: 3;
+    gap: 5px;
+    max-width: 1250px;
+    margin: auto;
     display: grid;
-    place-items: center;
-    border-radius: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
 }
 
-/* Mobile */
+/* IMAGE CARD */
 
-@media (max-width: 600px) {
-    .gallery-vertical {
-        flex-direction: column;
+.gallery-image-card {
+    width: 100%;
+    display: inline-block;
+    overflow: hidden;
+    border-radius: 14px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    background: #f8f4f2;
+    height: 350px;
+}
+
+/* ORIGINAL IMAGE RATIO */
+
+.gallery-image-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s ease;
+}
+
+/* HOVER */
+
+.gallery-image-card:hover img {
+    transform: scale(1.04);
+}
+
+/* TABLET */
+
+@media (max-width: 900px) {
+    .image-gallery-grid {
+        columns: 2;
+        gap: 5px;
     }
 
-    .gallery-vertical .gallery-thumbnails {
-        flex-direction: row;
-        width: 100%;
-        max-height: none;
-        overflow-x: auto;
+    .gallery-image-card {
+        /* margin-bottom: 15px; */
+    }
+}
+
+/* MOBILE */
+
+@media (max-width: 576px) {
+    .image-gallery-section {
+        padding: 50px 16px;
     }
 
-    .gallery-thumb {
-        width: 58px;
-        height: 58px;
+    .image-gallery-heading h2 {
+        font-size: 27px;
+    }
+
+    .image-gallery-heading p {
+        font-size: 14px;
+    }
+
+    .image-gallery-grid {
+        columns: 2;
+        gap: 5px;
+    }
+
+    .gallery-image-card {
+        /* margin-bottom: 10px; */
+        border-radius: 9px;
     }
 }

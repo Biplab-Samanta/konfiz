@@ -5,7 +5,8 @@ import {
     BrowserRouter,
     Routes,
     Route,
-    Navigate
+    Navigate,
+    useLocation
 } from "react-router-dom";
 
 // =====================================
@@ -60,6 +61,8 @@ const getUserRole = (user) => {
 function LoginRoute() {
 
     const { user } = useAuth();
+    
+   
 
     if (isUserAuthenticated(user)) {
 
@@ -112,6 +115,13 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
 function AppRoutes() {
 
     const { user } = useAuth();
+
+
+     const location = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [location.pathname]);
 
     // =====================================
     // CUSTOMER-SPECIFIC CART IDENTIFICATION

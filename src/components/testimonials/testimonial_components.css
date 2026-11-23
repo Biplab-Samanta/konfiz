@@ -1,0 +1,838 @@
+/* =====================================================
+   TESTIMONIAL SECTION
+===================================================== */
+
+.testimonial-section {
+    width: 100%;
+    padding: 65px 4%;
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.testimonial-section * {
+    box-sizing: border-box;
+}
+
+.testimonial-section-heading {
+    margin-bottom: 30px;
+}
+
+.testimonial-section-heading h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #222222;
+    line-height: 1.3;
+    margin: 0 0 20px;
+}
+
+.testimonial-section-subtitle {
+    font-size: 18px;
+    color: #888888;
+    margin: 0 0 8px;
+}
+
+section.testimonial-section.testimonial-b2b {
+    background-color: #fffaf2;
+}
+
+/* =====================================================
+   CUSTOMER SLIDER
+===================================================== */
+
+.testimonial-customer-slider {
+    width: 100%;
+    position: relative;
+}
+
+.testimonial-slider-controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+
+/* =====================================================
+   SLIDER ARROWS
+===================================================== */
+
+.testimonial-arrow {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #e5e5e5;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #222222;
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.testimonial-arrow:hover {
+    background: #ffc400;
+    border-color: #ffc400;
+    color: #111111;
+    transform: translateY(-2px);
+}
+
+.testimonial-arrow:active {
+    transform: scale(0.94);
+}
+
+
+/* =====================================================
+   CUSTOMER CARD TRACK
+===================================================== */
+
+.testimonial-card-track {
+    display: flex;
+    align-items: stretch;
+    gap: 18px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding: 5px 2px 15px;
+}
+
+.testimonial-card-track::-webkit-scrollbar {
+    display: none;
+}
+
+.testimonial-card-item {
+    flex: 0 0 calc((100% - 54px) / 4);
+    min-width: 0;
+    scroll-snap-align: start;
+    display: flex;
+}
+
+
+/* =====================================================
+   TESTIMONIAL CARD
+===================================================== */
+
+.testimonial-card {
+    width: 100%;
+    min-height: 220px;
+    padding: 22px 18px;
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    border-radius: 10px;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.045);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: #f0d36a;
+}
+
+
+/* =====================================================
+   CUSTOMER INFORMATION
+===================================================== */
+
+.testimonial-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.testimonial-customer-image,
+.testimonial-avatar-fallback {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.testimonial-avatar-fallback {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f5e7b4;
+    color: #493a12;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.testimonial-customer-info {
+    min-width: 0;
+}
+
+.testimonial-customer-info h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #222222;
+    margin: 0 0 4px;
+    line-height: 1.4;
+}
+
+.testimonial-customer-info p {
+    font-size: 11px;
+    color: #888888;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.testimonial-customer-info span {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #555555;
+    margin-top: 3px;
+}
+
+
+/* =====================================================
+   STAR RATING
+===================================================== */
+
+.testimonial-rating {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-bottom: 12px;
+}
+
+.testimonial-rating span {
+    font-size: 14px;
+}
+
+.testimonial-rating .star-filled {
+    color: #f4b400;
+}
+
+.testimonial-rating .star-empty {
+    color: #dddddd;
+}
+
+
+/* =====================================================
+   CUSTOMER REVIEW
+===================================================== */
+
+.testimonial-review {
+    font-size: 12px;
+    line-height: 1.7;
+    color: #666666;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+
+/* =====================================================
+   BUSINESS LOGO
+===================================================== */
+
+.testimonial-business-logo {
+    margin-top: auto;
+    padding-top: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.testimonial-business-logo img {
+    max-width: 95px;
+    max-height: 35px;
+    object-fit: contain;
+}
+
+
+/* =====================================================
+   EMPTY TESTIMONIAL
+===================================================== */
+
+.testimonial-empty {
+    width: 100%;
+    padding: 35px 15px;
+    text-align: center;
+    color: #888888;
+    font-size: 14px;
+    background: #fafafa;
+    border-radius: 8px;
+}
+
+
+/* =====================================================
+   BRAND FULL-WIDTH SLIDER
+===================================================== */
+
+.testimonial-brand-slider {
+    width: 100%;
+    position: relative;
+}
+
+.testimonial-brand-slide {
+    width: 100%;
+    min-height: 390px;
+    padding: 65px 8%;
+    border-radius: 14px;
+    background-color: #00000060;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    animation: testimonialFade 0.5s ease;
+}
+
+@keyframes testimonialFade {
+    from {
+        opacity: 0.5;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.testimonial-brand-content {
+    width: 100%;
+    max-width: 850px;
+    margin: auto;
+}
+
+
+/* =====================================================
+   BRAND LOGO
+===================================================== */
+
+.testimonial-brand-logo {
+    width: fit-content;
+    margin: auto;
+    border-radius: 500px;
+    overflow: hidden;
+    padding: 30px;
+    background: #fff;
+}
+
+.testimonial-brand-logo img {
+    max-width: 150px;
+    max-height: 75px;
+    object-fit: contain;
+}
+
+
+/* =====================================================
+   BRAND LABEL
+===================================================== */
+
+.testimonial-brand-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #ffc400;
+    margin-bottom: 20px;
+}
+
+
+/* =====================================================
+   BRAND QUOTATION
+===================================================== */
+
+.testimonial-brand-quote {
+    font-size: clamp(20px, 3vw, 34px);
+    line-height: 1.55;
+    font-weight: 400;
+    color: #ffffff;
+    margin: 0 auto 30px;
+}
+
+
+/* =====================================================
+   BRAND DETAILS
+===================================================== */
+
+.testimonial-brand-details h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 7px;
+}
+
+.testimonial-brand-details p {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+    margin: 0;
+}
+
+
+/* =====================================================
+   BRAND NAVIGATION
+===================================================== */
+
+.testimonial-brand-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+    margin-top: 22px;
+}
+
+.testimonial-brand-dots {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.testimonial-dot {
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #d7d7d7;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.testimonial-dot.active {
+    width: 25px;
+    border-radius: 10px;
+    background: #ffc400;
+}
+
+
+/* =====================================================
+   KEYBOARD ACCESSIBILITY
+===================================================== */
+
+.testimonial-section button:focus-visible {
+    outline: 2px solid #e5a900;
+    outline-offset: 3px;
+}
+
+
+/* =====================================================
+   TABLET RESPONSIVE
+===================================================== */
+
+@media (max-width: 1024px) {
+
+    .testimonial-section {
+        padding: 55px 4%;
+    }
+
+    .testimonial-card-item {
+        flex: 0 0 calc((100% - 18px) / 2);
+    }
+
+    .testimonial-brand-slide {
+        min-height: 350px;
+        padding: 50px 6%;
+    }
+
+}
+
+
+/* =====================================================
+   MOBILE RESPONSIVE
+===================================================== */
+
+@media (max-width: 600px) {
+
+    .testimonial-section {
+        padding: 40px 5%;
+    }
+
+    .testimonial-section-heading {
+        margin-bottom: 20px;
+    }
+
+    .testimonial-section-heading h2 {
+        font-size: 22px;
+    }
+
+    .testimonial-slider-controls {
+        margin-bottom: 12px;
+    }
+
+    .testimonial-arrow {
+        width: 34px;
+        height: 34px;
+        font-size: 17px;
+    }
+
+    .testimonial-card-track {
+        gap: 12px;
+    }
+
+    .testimonial-card-item {
+        flex: 0 0 88%;
+    }
+
+    .testimonial-card {
+        min-height: 195px;
+        padding: 18px;
+    }
+
+    .testimonial-card-header {
+        gap: 10px;
+    }
+
+    .testimonial-customer-image,
+    .testimonial-avatar-fallback {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+    }
+
+    .testimonial-brand-slide {
+        min-height: 350px;
+        padding: 40px 22px;
+        border-radius: 10px;
+    }
+
+    .testimonial-brand-quote {
+        font-size: 21px;
+        line-height: 1.5;
+    }
+
+    .testimonial-brand-logo img {
+        max-width: 120px;
+        max-height: 60px;
+    }
+
+    .testimonial-brand-navigation {
+        gap: 15px;
+    }
+
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 380px) {
+
+    .testimonial-card-item {
+        flex: 0 0 94%;
+    }
+
+    .testimonial-section-heading h2 {
+        font-size: 20px;
+    }
+
+    .testimonial-brand-slide {
+        min-height: 320px;
+        padding: 30px 16px;
+    }
+
+    .testimonial-brand-quote {
+        font-size: 18px;
+    }
+
+}
+
+/* barnds  */
+
+/* =====================================================
+   BRAND PARTNERS SECTION
+===================================================== */
+
+.brand-partners-section {
+    width: 100%;
+    padding: 55px 0;
+    background: #ffffff;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+
+/* =====================================================
+   SECTION HEADING
+===================================================== */
+
+.brand-partners-heading {
+    max-width: 750px;
+    margin: 0 auto 35px;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.brand-partners-heading h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #222222;
+    margin: 0 0 12px;
+}
+
+.brand-partners-heading p {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #777777;
+    margin: 0;
+}
+
+
+/* =====================================================
+   MARQUEE CONTAINER
+===================================================== */
+
+.brand-marquee {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+
+/* =====================================================
+   MARQUEE TRACK
+   Two groups create one continuous strip
+===================================================== */
+
+.brand-marquee-track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    animation: brandMarqueeMove var(--marquee-duration, 30s) linear infinite;
+}
+
+
+/* =====================================================
+   MARQUEE GROUP
+===================================================== */
+
+.brand-marquee-group {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+
+/* =====================================================
+   INDIVIDUAL BRAND ITEM
+===================================================== */
+
+.brand-marquee-item {
+    width: 180px;
+    height: 100px;
+    margin: 0 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+
+/* Brand name */
+
+.brand-marquee-item h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555555;
+    margin: 0;
+    text-align: center;
+}
+
+
+/* Brand logo */
+
+.brand-marquee-item img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 135px;
+    max-height: 55px;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: 0.65;
+    transition: all 0.3s ease;
+}
+
+
+/* Hover effect */
+
+.brand-marquee-item:hover img {
+    filter: grayscale(0%);
+    opacity: 1;
+    transform: scale(1.08);
+}
+
+.brand-marquee-item:hover h3 {
+    color: #222222;
+}
+
+
+/* =====================================================
+   LEFT TO RIGHT MARQUEE ANIMATION
+===================================================== */
+
+@keyframes brandMarqueeMove {
+    from {
+        transform: translateX(0%);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+
+/* Pause when hovering */
+
+.brand-marquee:hover .brand-marquee-track {
+    animation-play-state: paused;
+}
+
+
+/* =====================================================
+   TABLET RESPONSIVE
+===================================================== */
+
+@media (max-width: 768px) {
+
+    .brand-partners-section {
+        padding: 40px 0;
+    }
+
+    .brand-partners-heading {
+        margin-bottom: 25px;
+    }
+
+    .brand-partners-heading h2 {
+        font-size: 23px;
+    }
+
+    .brand-partners-heading p {
+        font-size: 13px;
+    }
+
+    .brand-marquee-item {
+        width: 140px;
+        height: 85px;
+        margin: 0 15px;
+        gap: 8px;
+    }
+
+    .brand-marquee-item h3 {
+        font-size: 12px;
+    }
+
+    .brand-marquee-item img {
+        max-width: 110px;
+        max-height: 48px;
+    }
+}
+
+
+/* =====================================================
+   MOBILE RESPONSIVE
+===================================================== */
+
+@media (max-width: 480px) {
+
+    .brand-partners-section {
+        padding: 35px 0;
+    }
+
+    .brand-partners-heading h2 {
+        font-size: 21px;
+    }
+
+    .brand-partners-heading p {
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    .brand-marquee-item {
+        width: 115px;
+        height: 75px;
+        margin: 0 10px;
+        gap: 6px;
+    }
+
+    .brand-marquee-item h3 {
+        font-size: 11px;
+    }
+
+    .brand-marquee-item img {
+        max-width: 95px;
+        max-height: 42px;
+    }
+}
+
+
+/* =====================================================
+   REDUCED MOTION ACCESSIBILITY
+===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .brand-marquee-track {
+        animation: none;
+        transform: none;
+    }
+
+}
+
+/* =========================================
+   BRAND PARTNERS SECTION HEADING
+========================================= */
+
+.brand-partners-heading {
+    max-width: 750px;
+    margin: 0 auto 35px;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.brand-partners-heading h2 {
+    margin: 0 0 12px;
+    color: #252525;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.brand-partners-heading p {
+    margin: 0;
+    color: #777;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+/* Responsive */
+
+@media (max-width: 600px) {
+    .brand-partners-heading {
+        margin-bottom: 25px;
+    }
+
+    .brand-partners-heading h2 {
+        font-size: 25px;
+    }
+
+    .brand-partners-heading p {
+        font-size: 14px;
+    }
+}
+
+.container.home-brand-strip {
+    padding: 96px 0 40px;
+}
