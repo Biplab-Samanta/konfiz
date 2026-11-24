@@ -17,12 +17,12 @@ import "../style/navbar.css";
 
 const productCategories = [
     {
-        name: "Gelato",
+        name: "gelato",
         description: "Cup · Cone · Stick",
         category: "cones"
     },
     {
-        name: "Kulfi",
+        name: "kulfi",
         description: "Rajasthani · Punjabi · Matka",
         category: "tubs"
     },
@@ -423,7 +423,7 @@ function Navbar() {
 
                                         <Link
                                             key={category.category}
-                                            to={`/products?category=${category.category}`}
+                                            to={`/products#${category.name}`}
                                             className="mega-item"
                                         >
 

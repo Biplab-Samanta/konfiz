@@ -34,6 +34,7 @@ import QuickDelivery from "./pages/QuickDelivery";
 
 import CustomerDashboard from "./pages/CustomerDashboard";
 import NotFound from "./pages/NotFound";
+import ProductDetails from "./pages/productdetails";
 
 // =====================================
 // COMPONENT IMPORTS
@@ -61,8 +62,8 @@ const getUserRole = (user) => {
 function LoginRoute() {
 
     const { user } = useAuth();
-    
-   
+
+
 
     if (isUserAuthenticated(user)) {
 
@@ -117,7 +118,7 @@ function AppRoutes() {
     const { user } = useAuth();
 
 
-     const location = useLocation();
+    const location = useLocation();
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -176,7 +177,10 @@ function AppRoutes() {
                     element={<QuickDelivery />}
                 />
 
-
+                <Route
+                    path="/products/details/:productId"
+                    element={<ProductDetails />}
+                />
                 {/* =====================================
                     CUSTOMER + ADMIN PAGES
                 ===================================== */}

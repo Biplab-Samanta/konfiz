@@ -12,6 +12,7 @@ import TestimonialSection from "../components/testimonials/testimonial_component
 import { BrandPartnersStrip } from "../components/testimonials/testimonial_components";
 import WhyChooseUs from "../components/whyChooseUs";
 import FAQ from "../components/faq";
+import ReachOut from "../components/ReachOut";
 
 import "../../src/App.css";
 
@@ -23,7 +24,7 @@ const categories = [
         emoji: "🍦",
         image: "images/categories/images.jpg"
     },
-     {
+    {
         name: "Family Packs",
         count: "8 Products",
         emoji: "👨‍👩‍👧‍👦",
@@ -337,7 +338,7 @@ function Home() {
 
             </section>
 
-            
+
             {/* testimonials */}
 
 
@@ -483,7 +484,7 @@ function Home() {
 
             </section>
 
-
+            <ReachOut />
 
             <Footer />
 

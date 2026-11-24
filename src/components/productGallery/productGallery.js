@@ -23,7 +23,7 @@ const galleryImages = galleryContext.keys().map((path, index) => ({
 // =====================================
 
 const ImageGallery = ({
-    heading = "Our Sweet Moments",
+    heading = "Image Gallery",
     subheading = "A little glimpse of the happiness we create.",
     limit = 9   
 }) => {

@@ -5,10 +5,12 @@ import { useAuth } from "../context/authContext";
 import "../style/product.css";
 import Navbar from "../components/navber";
 import { useCart } from "../context/cartcontext";
+// import { useLocation } from "react-router-dom";
 
 // =====================================
 // HELPERS
 // =====================================
+
 
 const makeSlug = (value = "") =>
     String(value)
@@ -1295,15 +1297,15 @@ function Product() {
                         }
                     />
 
-                    <span>In Stock Only</span>
+                    <span>Our best selling products</span>
                 </label>
             </div>
         </>
     );
 
-    // =====================================
-    // UI
-    // =====================================
+
+    // UI----------------------
+
 
     return (
         <div className="product-page">
@@ -1497,7 +1499,7 @@ function Product() {
                             setInStockOnly(!inStockOnly)
                         }
                     >
-                        In Stock
+                        Best selling
                     </button>
 
                 </section>
@@ -1698,6 +1700,7 @@ function Product() {
                             ).map(([categoryName, categoryProducts]) => (
 
                                 <section
+                                    id={`${categoryName.toLowerCase().replace(/\s+/g, "-")}`}
                                     className="product-category-section"
                                     key={categoryName}
                                 >
@@ -1801,7 +1804,12 @@ function Product() {
 
                                                         <div className="product-title-row">
 
-                                                            <h3>{product.name}</h3>
+                                                            <Link
+                                                                to={`/products/details/${productId}`}
+                                                                className="product-details-link"
+                                                            >
+                                                                <h3>{product.name}</h3>
+                                                            </Link>
 
                                                             {Number(product.rating) > 0 && (
                                                                 <span className="product-rating">
@@ -1813,7 +1821,7 @@ function Product() {
 
                                                         </div>
 
-                                                        <p className="product-description">
+                                                        <p className="product-description card-description">
                                                             {product.description ||
                                                                 "A delicious KONFiZ treat."}
                                                         </p>
@@ -1911,21 +1919,29 @@ function Product() {
 
                                                         </div>
 
-                                                        {/* ADD TO CART */}
-
-                                                        <button
-                                                            type="button"
-                                                            className="add-cart-btn"
-                                                            disabled={!getStock(product)}
-                                                            onClick={() =>
-                                                                handleAddToCart(product)
-                                                            }
-                                                        >
-                                                            {!getStock(product)
-                                                                ? "Out of Stock"
-                                                                : "+ Add to Cart"}
-                                                        </button>
-
+                                                        <div className="pro-button-wrapper">
+                                                            <div className="pro-details-button">
+                                                                <Link
+                                                                    to={`/products/details/${productId}`}
+                                                                    className="product-details-link"
+                                                                >
+                                                                    View Product
+                                                                </Link>
+                                                            </div>
+                                                            {/* ADD TO CART */}
+                                                            <button
+                                                                type="button"
+                                                                className="add-cart-btn"
+                                                                disabled={!getStock(product)}
+                                                                onClick={() =>
+                                                                    handleAddToCart(product)
+                                                                }
+                                                            >
+                                                                {!getStock(product)
+                                                                    ? "Out of Stock"
+                                                                    : "+ Add to Cart"}
+                                                            </button>
+                                                        </div>
                                                     </div>
 
                                                 </article>
@@ -1941,8 +1957,8 @@ function Product() {
 
                             {filteredProducts.length === 0 && (
                                 <div className="no-products">
-                                    <h3>No products found</h3>
-                                    <p>Try changing your filters.</p>
+                                    <h3>We are cooked for you!</h3>
+                                    <p>try with ours others products</p>
                                 </div>
                             )}
 
@@ -1959,7 +1975,7 @@ function Product() {
                                 <h3>
                                     {invalidCategory
                                         ? "Category Not Found"
-                                        : "No Ice Creams Found"}
+                                        : "we are cooked for you!"}
                                 </h3>
 
                                 <p>

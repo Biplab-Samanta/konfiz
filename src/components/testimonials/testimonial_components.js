@@ -214,7 +214,7 @@ export const testimonialData = [
         id: 21,
         type: "brand",
         brandName: "Fresh Retail",
-        // logo: "/images/brands/amul.png",
+        logo: "/images/brands/amul.png",
         representative: "Ankit Sharma",
         designation: "Business Head",
         review:
