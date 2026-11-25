@@ -13,6 +13,7 @@ import { BrandPartnersStrip } from "../components/testimonials/testimonial_compo
 import WhyChooseUs from "../components/whyChooseUs";
 import FAQ from "../components/faq";
 import ReachOut from "../components/ReachOut";
+import { useProducts } from "../data/products/productStore";
 
 import "../../src/App.css";
 
@@ -47,9 +48,41 @@ const categories = [
 
 function Home() {
 
-    const [popularProducts, setPopularProducts] = useState([]);
+    // =====================================
+    // REAL-TIME PRODUCT STORE
+    // =====================================
+
+    const products = useProducts();
+
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
+
+    // =====================================
+    // BEST SELLING PRODUCTS
+    // SHOW ONLY 4 PRODUCTS
+    // =====================================
+
+    const popularProducts = products
+        .filter(product =>
+            product.status !== "inactive" &&
+            product.status !== false &&
+            product.available !== false
+        )
+        .sort((a, b) => {
+
+            const aFeatured =
+                a.isPopular === true || a.featured === true;
+
+            const bFeatured =
+                b.isPopular === true || b.featured === true;
+
+            return Number(bFeatured) - Number(aFeatured);
+
+        })
+        .slice(0, 4);
+
+    // const [email, setEmail] = useState("");
+    // const [message, setMessage] = useState("");
 
     // const [products, setProducts] = useState(() => {
     //     try {
@@ -65,58 +98,84 @@ function Home() {
     // LOAD ACTUAL PRODUCTS
 
 
+
+    // =====================================
+    // REAL-TIME POPULAR PRODUCTS
+    // =====================================
+
     useEffect(() => {
+        {
+            popularProducts.length > 0 ? (
 
-        const loadProducts = () => {
+                <div className="product-grid">
 
-            try {
+                    {popularProducts.map((product) => (
 
-                const savedProducts = JSON.parse(
-                    localStorage.getItem("konfizProducts") || "[]"
-                );
+                        <Link
+                            to={`/products/details/${product.id}`}
+                            className="product-card"
+                            key={product.id}
+                        >
 
-                if (!Array.isArray(savedProducts)) {
-                    setPopularProducts([]);
-                    return;
-                }
+                            <div className="product-image">
 
-                const activeProducts = savedProducts.filter(
-                    product => product.status !== "inactive"
-                );
+                                <img
+                                    src={product.image}
+                                    alt={product.name}
+                                    loading="lazy"
+                                />
 
-                const featuredProducts = activeProducts.filter(
-                    product =>
-                        product.isPopular === true ||
-                        product.featured === true
-                );
+                                {(product.tag || product.isPopular) && (
 
-                const productsToShow =
-                    featuredProducts.length > 0
-                        ? featuredProducts
-                        : activeProducts;
+                                    <span className="product-tag">
+                                        {product.tag || "Popular"}
+                                    </span>
 
-                setPopularProducts(productsToShow.slice(0, 4));
+                                )}
 
-            } catch (error) {
+                            </div>
 
-                console.error("Product loading error:", error);
-                setPopularProducts([]);
+                            <div className="product-info">
 
-            }
+                                <h3>{product.name}</h3>
 
-        };
+                                <p>
+                                    {product.description ||
+                                        "Deliciously made with love, just for you."}
+                                </p>
 
-        loadProducts();
+                                <div className="product-card-bottom">
 
-        window.addEventListener("storage", loadProducts);
-        window.addEventListener("konfizProductsUpdated", loadProducts);
+                                    <span className="product-price">
+                                        ₹{product.price}
+                                    </span>
 
-        return () => {
-            window.removeEventListener("storage", loadProducts);
-            window.removeEventListener("konfizProductsUpdated", loadProducts);
-        };
+                                    <span className="product-view-link">
+                                        View Product →
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </Link>
+
+                    ))}
+
+                </div>
+
+            ) : (
+
+            <div className="no-products">
+                <h3>Our delicious collection is coming soon!</h3>
+                <p>We are preparing something special for you.</p>
+            </div>
+
+        )
+        }
 
     }, []);
+
 
     // NEWSLETTER
 
@@ -168,7 +227,7 @@ function Home() {
                         {popularProducts.map((product) => (
 
                             <Link
-                                to={`/product/${product.id}`}
+                                to={`/products/details/${product.id}`}
                                 className="product-card"
                                 key={product.id}
                             >

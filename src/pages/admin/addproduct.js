@@ -3,49 +3,54 @@ import React, { useMemo, useState } from "react";
 import "../../style/add_product.css";
 import { addProduct } from "../../data/products/productStore";
 
-
-
 const DEFAULT_WEIGHTS = [100, 250, 500, 1000];
 
 const initialForm = {
     name: "",
-    sku: "",
-    category: "",
     description: "",
-    shortDescription: "",
-    price: "",
-    rating: "4.5",
     flavour: "",
-    ingredients: "",
-    allergens: "",
-    storageInstructions: "Keep frozen at -18°C or below.",
-    shelfLife: "",
     servingSuggestion: "",
-    stock: "0"
+    stock: "0",
+    rating: "0"
 };
 
 function AddProduct({ onAddProduct, onCancel, categories = [] }) {
     const [formData, setFormData] = useState(initialForm);
 
+    // CATEGORY AND SUBCATEGORY
     const [selectedCategoryId, setSelectedCategoryId] = useState("");
-    const [selectedSubcategoryId, setSelectedSubcategoryId] = useState("");
+    const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState([]);
 
-    const [error, setError] = useState("");
-
-    // PACK SIZE CONFIGURATION
+    // PACK SIZE
     const [weightUnit, setWeightUnit] = useState("ml");
     const [weightOptions, setWeightOptions] = useState(DEFAULT_WEIGHTS);
     const [customWeight, setCustomWeight] = useState("");
 
-    // OPTIONAL ADD-ONS
+    // INDIVIDUAL PACK PRICING
+    const [weightPrices, setWeightPrices] = useState(() =>
+        DEFAULT_WEIGHTS.reduce((acc, weight) => {
+            acc[weight] = {
+                price: "",
+                offerPrice: ""
+            };
+            return acc;
+        }, {})
+    );
+
+    // PREMIUM
+    const [isPremium, setIsPremium] = useState(false);
+
+    // ADD-ONS
     const [enableAddons, setEnableAddons] = useState(false);
     const [addons, setAddons] = useState([]);
     const [addonName, setAddonName] = useState("");
     const [addonPrice, setAddonPrice] = useState("");
 
-    // PRODUCT IMAGES
+    // IMAGES
     const [mainImage, setMainImage] = useState("");
     const [galleryImages, setGalleryImages] = useState([]);
+
+    const [error, setError] = useState("");
 
     // =====================================
     // CATEGORY HELPERS
@@ -96,7 +101,11 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
                 name: getCategoryName(category),
                 original: category
             }))
-            .filter((category) => category.id && category.name.trim());
+            .filter(
+                (category) =>
+                    category.id &&
+                    category.name.trim()
+            );
     }, [categories]);
 
     const selectedCategory = availableCategories.find(
@@ -104,24 +113,34 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
     );
 
     const availableSubcategories = useMemo(() => {
-        if (!selectedCategory || typeof selectedCategory.original === "string") {
+        if (
+            !selectedCategory ||
+            typeof selectedCategory.original === "string"
+        ) {
             return [];
         }
 
-        return (selectedCategory.original.subcategories || [])
+        return (
+            selectedCategory.original.subcategories || []
+        )
             .map((subcategory) => ({
                 id: getSubcategoryId(subcategory),
                 name: getSubcategoryName(subcategory)
             }))
-            .filter((subcategory) => subcategory.id && subcategory.name.trim());
+            .filter(
+                (subcategory) =>
+                    subcategory.id &&
+                    subcategory.name.trim()
+            );
     }, [selectedCategory]);
 
-    const selectedSubcategory = availableSubcategories.find(
-        (subcategory) => subcategory.id === selectedSubcategoryId
-    );
+    // const validSubcategories = availableSubcategories.filter(
+    //     (subcategory) =>
+    //         selectedSubcategoryIds.includes(subcategory.id)
+    // );
 
     // =====================================
-    // GENERAL FORM HANDLERS
+    // GENERAL HANDLERS
     // =====================================
 
     const handleChange = (e) => {
@@ -138,23 +157,57 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
     const handleCategoryChange = (e) => {
         const categoryId = e.target.value;
 
-        const category = availableCategories.find(
-            (item) => item.id === categoryId
-        );
-
         setSelectedCategoryId(categoryId);
-        setSelectedSubcategoryId("");
+        setSelectedSubcategoryIds([]);
+        setError("");
+    };
 
-        setFormData((prev) => ({
-            ...prev,
-            category: category?.name || ""
-        }));
+    const handleSubcategoryChange = (subcategoryId) => {
+        setSelectedSubcategoryIds((prev) => {
+            if (prev.includes(subcategoryId)) {
+                return prev.filter(
+                    (id) => id !== subcategoryId
+                );
+            }
+
+            if (prev.length >= 2) {
+                return prev;
+            }
+
+            return [...prev, subcategoryId];
+        });
 
         setError("");
     };
 
-    const handleSubcategoryChange = (e) => {
-        setSelectedSubcategoryId(e.target.value);
+    // =====================================
+    // RATING HANDLER
+    // =====================================
+
+    const handleRatingChange = (e) => {
+        const value = e.target.value;
+
+        if (value === "") {
+            setFormData((prev) => ({
+                ...prev,
+                rating: ""
+            }));
+            return;
+        }
+
+        const rating = Number(value);
+
+        if (
+            Number.isFinite(rating) &&
+            rating >= 0 &&
+            rating <= 5
+        ) {
+            setFormData((prev) => ({
+                ...prev,
+                rating: value
+            }));
+        }
+
         setError("");
     };
 
@@ -179,6 +232,14 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
             [...prev, weight].sort((a, b) => a - b)
         );
 
+        setWeightPrices((prev) => ({
+            ...prev,
+            [weight]: {
+                price: "",
+                offerPrice: ""
+            }
+        }));
+
         setCustomWeight("");
         setError("");
     };
@@ -188,13 +249,25 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
             prev.filter((item) => item !== weight)
         );
 
+        setWeightPrices((prev) => {
+            const updated = { ...prev };
+            delete updated[weight];
+            return updated;
+        });
+
         setError("");
     };
 
-    const calculateWeightPrice = (weight) => {
-        return (
-            (Number(formData.price || 0) * Number(weight)) / 100
-        );
+    const handleWeightPriceChange = (weight, field, value) => {
+        setWeightPrices((prev) => ({
+            ...prev,
+            [weight]: {
+                ...prev[weight],
+                [field]: value
+            }
+        }));
+
+        setError("");
     };
 
     // =====================================
@@ -207,14 +280,17 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
             return;
         }
 
-        if (!Number.isFinite(Number(addonPrice)) || Number(addonPrice) < 0) {
+        const price = Number(addonPrice);
+
+        if (!Number.isFinite(price) || price < 0) {
             setError("Enter a valid add-on price.");
             return;
         }
 
         const duplicate = addons.some(
             (addon) =>
-                addon.name.toLowerCase() === addonName.trim().toLowerCase()
+                addon.name.toLowerCase() ===
+                addonName.trim().toLowerCase()
         );
 
         if (duplicate) {
@@ -225,9 +301,12 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
         setAddons((prev) => [
             ...prev,
             {
-                id: `ADD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                id: `ADD-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .slice(2, 7)}`,
                 name: addonName.trim(),
-                price: Number(addonPrice)
+                price,
+                active: true
             }
         ]);
 
@@ -237,7 +316,9 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
     };
 
     const handleRemoveAddon = (id) => {
-        setAddons((prev) => prev.filter((addon) => addon.id !== id));
+        setAddons((prev) =>
+            prev.filter((addon) => addon.id !== id)
+        );
     };
 
     // =====================================
@@ -246,17 +327,22 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
 
     const readImage = (file) => {
         return new Promise((resolve, reject) => {
-            if (!file || !file.type.startsWith("image/")) {
-                reject(new Error("Please select a valid image."));
+            if (
+                !file ||
+                !file.type.startsWith("image/")
+            ) {
+                reject(
+                    new Error("Please select a valid image.")
+                );
                 return;
             }
 
             const reader = new FileReader();
 
             reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(
-                new Error("Unable to read the selected image.")
-            );
+
+            reader.onerror = () =>
+                reject(new Error("Unable to read image."));
 
             reader.readAsDataURL(file);
         });
@@ -271,8 +357,8 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
             const image = await readImage(file);
             setMainImage(image);
             setError("");
-        } catch (imageError) {
-            setError(imageError.message);
+        } catch (err) {
+            setError(err.message);
         }
 
         e.target.value = "";
@@ -286,18 +372,27 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
         const remaining = 4 - galleryImages.length;
 
         if (files.length > remaining) {
-            setError(`You can add only ${remaining} more gallery image(s).`);
+            setError(
+                `You can add only ${remaining} more gallery image(s).`
+            );
+
             e.target.value = "";
             return;
         }
 
         try {
-            const images = await Promise.all(files.map(readImage));
+            const images = await Promise.all(
+                files.map(readImage)
+            );
 
-            setGalleryImages((prev) => [...prev, ...images]);
+            setGalleryImages((prev) => [
+                ...prev,
+                ...images
+            ]);
+
             setError("");
-        } catch (imageError) {
-            setError(imageError.message);
+        } catch (err) {
+            setError(err.message);
         }
 
         e.target.value = "";
@@ -305,7 +400,7 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
 
     const removeGalleryImage = (index) => {
         setGalleryImages((prev) =>
-            prev.filter((_, imageIndex) => imageIndex !== index)
+            prev.filter((_, i) => i !== index)
         );
     };
 
@@ -314,14 +409,26 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
     // =====================================
 
     const resetForm = () => {
-        setFormData(initialForm);
+        setFormData({ ...initialForm });
 
         setSelectedCategoryId("");
-        setSelectedSubcategoryId("");
+        setSelectedSubcategoryIds([]);
 
         setWeightUnit("ml");
-        setWeightOptions(DEFAULT_WEIGHTS);
+        setWeightOptions([...DEFAULT_WEIGHTS]);
         setCustomWeight("");
+
+        setWeightPrices(
+            DEFAULT_WEIGHTS.reduce((acc, weight) => {
+                acc[weight] = {
+                    price: "",
+                    offerPrice: ""
+                };
+                return acc;
+            }, {})
+        );
+
+        setIsPremium(false);
 
         setEnableAddons(false);
         setAddons([]);
@@ -338,203 +445,267 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
     // SUBMIT PRODUCT
     // =====================================
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError("");
 
-const handleSubmit = (e) => {
-    e.preventDefault();
-    setError("");
+        // BASIC VALIDATION
 
-    // BASIC VALIDATION
-    if (!formData.name.trim()) {
-        setError("Please enter the product name.");
-        return;
-    }
+        if (!formData.name.trim()) {
+            setError("Please enter the product name.");
+            return;
+        }
 
-    if (!selectedCategory) {
-        setError("Please select a valid main category.");
-        return;
-    }
+        if (!formData.description.trim()) {
+            setError("Please enter the product description.");
+            return;
+        }
 
-    if (!selectedSubcategory) {
-        setError("Please select a valid subcategory.");
-        return;
-    }
+        if (!selectedCategory) {
+            setError("Please select a category.");
+            return;
+        }
 
-    if (!formData.description.trim()) {
-        setError("Please enter the product description.");
-        return;
-    }
+        if (!formData.flavour.trim()) {
+            setError("Please enter at least one flavour.");
+            return;
+        }
 
-    if (!formData.flavour.trim()) {
-        setError("Please enter the ice cream flavour.");
-        return;
-    }
+        if (!mainImage) {
+            setError("Please upload the main product image.");
+            return;
+        }
 
-    if (!formData.ingredients.trim()) {
-        setError("Please enter the ingredients.");
-        return;
-    }
+        // RATING VALIDATION
 
-    if (!formData.price || Number(formData.price) <= 0) {
-        setError("Enter a valid price per 100 units.");
-        return;
-    }
+        const rating = Number(formData.rating);
 
-    if (!mainImage) {
-        setError("Please upload the main product image.");
-        return;
-    }
-
-    if (weightOptions.length === 0) {
-        setError("Select at least one pack size.");
-        return;
-    }
-
-    if (
-        !Number.isFinite(Number(formData.rating)) ||
-        Number(formData.rating) < 0 ||
-        Number(formData.rating) > 5
-    ) {
-        setError("Enter a rating between 0 and 5.");
-        return;
-    }
-
-    if (
-        !Number.isFinite(Number(formData.stock)) ||
-        Number(formData.stock) < 0
-    ) {
-        setError("Enter a valid stock quantity.");
-        return;
-    }
-
-    // =====================================
-    // CREATE STRUCTURED PRODUCT OBJECT
-    // =====================================
-
-    const newProduct = {
-
-        id: `KON-PROD-${Date.now()}`,
-
-        // BASIC INFORMATION
-        name: formData.name.trim(),
-        sku: formData.sku.trim(),
-
-        categoryId: selectedCategoryId,
-        category: selectedCategory.name,
-
-        subcategoryId: selectedSubcategoryId,
-        subcategory: selectedSubcategory.name,
-        subcategoryName: selectedSubcategory.name,
-
-        // DESCRIPTION
-        description: formData.description.trim(),
-        shortDescription: formData.shortDescription.trim(),
-
-        // ICE CREAM INFORMATION
-        flavour: formData.flavour.trim(),
-        ingredients: formData.ingredients.trim(),
-        allergens: formData.allergens.trim(),
-        storageInstructions: formData.storageInstructions.trim(),
-        shelfLife: formData.shelfLife.trim(),
-        servingSuggestion: formData.servingSuggestion.trim(),
-
-        // PRICING
-        price: Number(formData.price),
-        unit: weightUnit,
-
-        pricing: {
-            unit: weightUnit,
-            baseQuantity: 100,
-            pricePerBaseUnit: Number(formData.price)
-        },
-
-        // CUSTOMER SELECTABLE SIZES
-        weightOptions: [...weightOptions],
-
-        sizes: weightOptions.map((weight, index) => ({
-            id: index + 1,
-            weight: weight,
-            unit: weightUnit,
-            price: Number(
-                calculateWeightPrice(weight).toFixed(2)
-            )
-        })),
-
-        // PRODUCT IMAGES
-        image: mainImage,
-        images: [
-            mainImage,
-            ...galleryImages
-        ],
-
-        // ADD-ONS
-        hasAddons: enableAddons,
-
-        addons: enableAddons
-            ? addons.map(addon => ({
-                ...addon,
-                active: true
-            }))
-            : [],
-
-        // INVENTORY
-        stock: Number(formData.stock),
-        inStock: Number(formData.stock) > 0,
-        available: Number(formData.stock) > 0,
-
-        // PRODUCT STATUS
-        status: "active",
-        featured: false,
-
-        // RATINGS
-        rating: Number(formData.rating),
-
-        // DATES
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-
-    // =====================================
-    // SAVE TO CENTRAL PRODUCT STORE
-    // =====================================
-
-    try {
-
-        const savedProduct = addProduct(newProduct);
-
-        if (!savedProduct) {
+        if (
+            formData.rating === "" ||
+            !Number.isFinite(rating) ||
+            rating < 0 ||
+            rating > 5
+        ) {
             setError(
-                "Unable to save product. Please check your storage."
+                "Product rating must be between 0 and 5."
             );
             return;
         }
 
-        console.log(
-            "KONFiZ Product Saved Successfully:",
-            savedProduct
-        );
-
-        alert(
-            `${savedProduct.name} added successfully!`
-        );
-
-        // OPTIONAL PARENT NOTIFICATION
-        // Do not save the product again in the parent.
-        if (typeof onAddProduct === "function") {
-            onAddProduct(savedProduct);
+        if (weightOptions.length === 0) {
+            setError("Add at least one pack size.");
+            return;
         }
 
-        resetForm();
+        // VALIDATE EVERY PACK SIZE
 
-    } catch (saveError) {
+        for (const weight of weightOptions) {
+            const pricing = weightPrices[weight];
 
-        console.error("Product saving error:", saveError);
+            const price = Number(pricing?.price);
+            const offerPrice = Number(pricing?.offerPrice);
 
-        setError(
-            "Something went wrong while saving the product."
+            if (
+                pricing?.price === "" ||
+                !Number.isFinite(price) ||
+                price <= 0
+            ) {
+                setError(
+                    `Enter a valid regular price for ${weight} ${weightUnit}.`
+                );
+                return;
+            }
+
+            if (
+                pricing?.offerPrice === "" ||
+                !Number.isFinite(offerPrice) ||
+                offerPrice <= 0
+            ) {
+                setError(
+                    `Enter a valid offer price for ${weight} ${weightUnit}.`
+                );
+                return;
+            }
+
+            if (offerPrice > price) {
+                setError(
+                    `Offer price cannot exceed regular price for ${weight} ${weightUnit}.`
+                );
+                return;
+            }
+        }
+
+        // STOCK VALIDATION
+
+        const stock = Number(formData.stock);
+
+        if (
+            formData.stock === "" ||
+            !Number.isInteger(stock) ||
+            stock < 0
+        ) {
+            setError(
+                "Enter a valid available stock quantity."
+            );
+            return;
+        }
+
+        // STRUCTURED PACK PRICING
+
+        const sizes = weightOptions.map((weight, index) => ({
+            id: index + 1,
+            weight,
+            unit: weightUnit,
+            price: Number(weightPrices[weight].price),
+            offerPrice: Number(
+                weightPrices[weight].offerPrice
+            )
+        }));
+
+        // FLAVOURS
+
+        const flavours = formData.flavour
+            .split(",")
+            .map((flavour) => flavour.trim())
+            .filter(Boolean);
+
+        if (flavours.length === 0) {
+            setError("Please enter valid flavours.");
+            return;
+        }
+
+        // SUBCATEGORIES
+
+        const validSubcategories = availableSubcategories.filter(
+            (subcategory) =>
+                selectedSubcategoryIds.includes(subcategory.id)
         );
-    }
-};
 
+        // PRODUCT OBJECT
+
+        const newProduct = {
+            id: `KON-PROD-${Date.now()}`,
+
+            // BASIC INFORMATION
+            name: formData.name.trim(),
+
+            description: formData.description.trim(),
+
+            rating: Number(formData.rating),
+
+            categoryId: selectedCategoryId,
+            category: selectedCategory.name,
+
+            // MULTIPLE SUBCATEGORIES
+            subcategoryIds: validSubcategories.map(
+                (subcategory) => subcategory.id
+            ),
+
+            subcategories: validSubcategories.map(
+                (subcategory) => subcategory.name
+            ),
+
+            // BACKWARD COMPATIBILITY
+            subcategoryId:
+                validSubcategories[0]?.id || "",
+
+            subcategory:
+                validSubcategories[0]?.name || "",
+
+            subcategoryName:
+                validSubcategories[0]?.name || "",
+
+            // FLAVOURS
+            flavour: flavours.join(", "),
+            flavours,
+
+            // PREMIUM TAG
+            isPremium,
+            premium: isPremium,
+            featured: isPremium,
+
+            // UNIT AND PRICING
+            unit: weightUnit,
+            weightOptions: [...weightOptions],
+            sizes,
+
+            // LEGACY BASE PRICE FIELDS
+            price: sizes[0].price,
+            offerPrice: sizes[0].offerPrice,
+
+            pricing: {
+                unit: weightUnit,
+                sizes
+            },
+
+            // IMAGES
+            image: mainImage,
+
+            images: [
+                mainImage,
+                ...galleryImages
+            ],
+
+            // ADD-ONS
+            hasAddons: enableAddons,
+
+            addons: enableAddons
+                ? addons.map((addon) => ({
+                    ...addon,
+                    active: true
+                }))
+                : [],
+
+            // INVENTORY
+            stock,
+            inStock: stock > 0,
+            available: stock > 0,
+
+            // SERVING SUGGESTION
+            servingSuggestion:
+                formData.servingSuggestion.trim(),
+
+            // STATUS
+            status: "active",
+
+            // DATES
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        // SAVE PRODUCT
+
+        try {
+            const savedProduct = addProduct(newProduct);
+
+            if (!savedProduct) {
+                setError(
+                    "Unable to save product. Please check your product store."
+                );
+                return;
+            }
+
+            alert(
+                `${savedProduct.name} added successfully!`
+            );
+
+            if (typeof onAddProduct === "function") {
+                onAddProduct(savedProduct);
+            }
+
+            resetForm();
+
+        } catch (saveError) {
+            console.error(
+                "Product saving error:",
+                saveError
+            );
+
+            setError(
+                "Something went wrong while saving the product."
+            );
+        }
+    };
 
     // =====================================
     // UI
@@ -546,28 +717,35 @@ const handleSubmit = (e) => {
             <div className="add-product-heading">
                 <div>
                     <h2>Add New Product</h2>
-                    <p>Create a complete product listing for your KONFiZ store.</p>
+                    <p>
+                        Create a complete product listing for your KONFiZ store.
+                    </p>
                 </div>
 
-                <button type="button" onClick={onCancel} className="secondary-btn">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="secondary-btn"
+                >
                     Cancel
                 </button>
             </div>
 
-            <form className="product-form" onSubmit={handleSubmit}>
+            <form
+                className="product-form"
+                onSubmit={handleSubmit}
+            >
 
                 {/* BASIC INFORMATION */}
 
                 <section className="product-form-section">
                     <h3>Basic Product Information</h3>
-                    <p className="section-description">
-                        Enter the basic information customers will see in your store.
-                    </p>
 
                     <div className="form-grid">
 
-                        <div className="form-group">
+                        <div className="form-group full-width">
                             <label>Product Name *</label>
+
                             <input
                                 name="name"
                                 value={formData.name}
@@ -577,72 +755,207 @@ const handleSubmit = (e) => {
                             />
                         </div>
 
-                        <div className="form-group">
-                            <label>Product SKU</label>
-                            <input
-                                name="sku"
-                                value={formData.sku}
-                                onChange={handleChange}
-                                placeholder="e.g. KON-CHO-001"
-                            />
-                        </div>
+                        {/* MAIN CATEGORY */}
 
                         <div className="form-group">
                             <label>Main Category *</label>
+
                             <select
                                 value={selectedCategoryId}
                                 onChange={handleCategoryChange}
                                 required
                             >
-                                <option value="">-- Select Category --</option>
+                                <option value="">
+                                    -- Select Category --
+                                </option>
+
                                 {availableCategories.map((category) => (
-                                    <option key={category.id} value={category.id}>
+                                    <option
+                                        key={category.id}
+                                        value={category.id}
+                                    >
                                         {category.name}
                                     </option>
                                 ))}
                             </select>
                         </div>
 
-                        <div className="form-group">
-                            <label>Subcategory *</label>
-                            <select
-                                value={selectedSubcategoryId}
-                                onChange={handleSubcategoryChange}
-                                disabled={!selectedCategoryId || availableSubcategories.length === 0}
-                                required
-                            >
-                                <option value="">-- Select Subcategory --</option>
-                                {availableSubcategories.map((subcategory) => (
-                                    <option key={subcategory.id} value={subcategory.id}>
-                                        {subcategory.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* MULTIPLE SUBCATEGORIES */}
 
                         <div className="form-group">
-                            <label>Flavour *</label>
+                            <label>
+                                Subcategories (Optional – Select up to 2)
+                            </label>
+
+                            <div className="subcategory-checkbox-list">
+
+                                {availableSubcategories.length > 0 ? (
+                                    availableSubcategories.map(
+                                        (subcategory) => (
+                                            <label
+                                                key={subcategory.id}
+                                                className="subcategory-checkbox-item"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedSubcategoryIds.includes(
+                                                        subcategory.id
+                                                    )}
+                                                    disabled={
+                                                        !selectedSubcategoryIds.includes(
+                                                            subcategory.id
+                                                        ) &&
+                                                        selectedSubcategoryIds.length >= 2
+                                                    }
+                                                    onChange={() =>
+                                                        handleSubcategoryChange(
+                                                            subcategory.id
+                                                        )
+                                                    }
+                                                />
+
+                                                <span>
+                                                    {subcategory.name}
+                                                </span>
+                                            </label>
+                                        )
+                                    )
+                                ) : (
+                                    <small>
+                                        Select a category first to see subcategories.
+                                    </small>
+                                )}
+
+                            </div>
+
+                            <small>
+                                Selected: {selectedSubcategoryIds.length}/2
+                            </small>
+                        </div>
+
+                        {/* FLAVOURS */}
+
+                        <div className="form-group full-width">
+                            <label>Flavours *</label>
+
                             <input
                                 name="flavour"
                                 value={formData.flavour}
                                 onChange={handleChange}
-                                placeholder="e.g. Belgian Dark Chocolate"
+                                placeholder="Belgian Chocolate, Dark Chocolate, Vanilla"
+                                required
+                            />
+
+                            <small>
+                                Enter multiple flavours separated by commas.
+                            </small>
+                        </div>
+
+                        {/* PREMIUM */}
+
+                        <div className="form-group full-width">
+                            <label className="addon-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={isPremium}
+                                    onChange={(e) =>
+                                        setIsPremium(e.target.checked)
+                                    }
+                                />
+
+                                <span>Premium Product</span>
+                            </label>
+
+                            <small>
+                                Premium products will have a premium tag.
+                            </small>
+                        </div>
+
+                    </div>
+                </section>
+
+                {/* DESCRIPTION */}
+
+                <section className="product-form-section">
+                    <h3>Product Description</h3>
+
+                    <p className="section-description">
+                        Add all product information in one description area,
+                        including ingredients, allergens, storage instructions
+                        and shelf life.
+                    </p>
+
+                    <div className="form-grid">
+
+                        <div className="form-group full-width">
+                            <label>Complete Product Description *</label>
+
+                            <textarea
+                                name="description"
+                                rows="9"
+                                value={formData.description}
+                                onChange={handleChange}
+                                placeholder={`Enter complete product information.
+
+Short Description:
+A rich and creamy Belgian chocolate ice cream.
+
+Ingredients:
+Milk, cream, sugar and cocoa powder.
+
+Allergen Information:
+Contains milk. May contain nuts.
+
+Storage Instructions:
+Keep frozen at -18°C or below.
+
+Shelf Life:
+6 months from manufacturing.`}
                                 required
                             />
                         </div>
 
+                        {/* RATING */}
+
                         <div className="form-group">
-                            <label>Rating (0–5)</label>
+                            <label htmlFor="rating">
+                                Product Rating (0–5)
+                            </label>
+
                             <input
+                                id="rating"
                                 type="number"
                                 name="rating"
                                 min="0"
                                 max="5"
                                 step="0.1"
                                 value={formData.rating}
-                                onChange={handleChange}
+                                onChange={handleRatingChange}
+                                placeholder="e.g. 4.5"
                             />
-                            <small>For a new product, 0 is also acceptable.</small>
+
+                            <small>
+                                Enter a numeric rating between 0 and 5.
+                            </small>
+                        </div>
+
+                        {/* SERVING SUGGESTION */}
+
+                        <div className="form-group full-width">
+                            <label>Serving Suggestion</label>
+
+                            <textarea
+                                name="servingSuggestion"
+                                rows="3"
+                                value={formData.servingSuggestion}
+                                onChange={handleChange}
+                                placeholder="e.g. Allow to soften for 2-3 minutes before serving."
+                            />
+
+                            <small>
+                                This can be displayed separately on the
+                                customer Product Details page.
+                            </small>
                         </div>
 
                     </div>
@@ -652,27 +965,31 @@ const handleSubmit = (e) => {
 
                 <section className="product-form-section">
                     <h3>Product Images</h3>
+
                     <p className="section-description">
-                        Upload one main image and up to four additional product images.
+                        Upload one main image and up to four additional images.
                     </p>
 
                     <div className="form-grid">
 
                         <div className="form-group full-width">
                             <label>Main Product Image *</label>
+
                             <input
                                 type="file"
                                 accept="image/png,image/jpeg,image/webp"
                                 onChange={handleMainImageChange}
                             />
-                            <small>
-                                This image will be used as the main product image in product cards.
-                            </small>
 
                             {mainImage && (
                                 <div className="product-image-preview main-image-preview">
-                                    <img src={mainImage} alt="Main product" />
+                                    <img
+                                        src={mainImage}
+                                        alt="Main product"
+                                    />
+
                                     <span>Main Image</span>
+
                                     <button
                                         type="button"
                                         onClick={() => setMainImage("")}
@@ -684,7 +1001,10 @@ const handleSubmit = (e) => {
                         </div>
 
                         <div className="form-group full-width">
-                            <label>Additional Images (Maximum 4)</label>
+                            <label>
+                                Additional Images (Maximum 4)
+                            </label>
+
                             <input
                                 type="file"
                                 accept="image/png,image/jpeg,image/webp"
@@ -692,116 +1012,35 @@ const handleSubmit = (e) => {
                                 disabled={galleryImages.length >= 4}
                                 onChange={handleGalleryImagesChange}
                             />
+
                             <small>
-                                Add product close-ups, texture, packaging, and serving images.
-                                {` ${galleryImages.length}/4 uploaded.`}
+                                {galleryImages.length}/4 images uploaded.
                             </small>
 
                             <div className="product-gallery-preview">
+
                                 {galleryImages.map((image, index) => (
-                                    <div className="product-image-preview" key={index}>
-                                        <img src={image} alt={`Product view ${index + 1}`} />
+                                    <div
+                                        className="product-image-preview"
+                                        key={index}
+                                    >
+                                        <img
+                                            src={image}
+                                            alt={`Product view ${index + 1}`}
+                                        />
+
                                         <button
                                             type="button"
-                                            onClick={() => removeGalleryImage(index)}
+                                            onClick={() =>
+                                                removeGalleryImage(index)
+                                            }
                                         >
                                             Remove
                                         </button>
                                     </div>
                                 ))}
+
                             </div>
-                        </div>
-
-                    </div>
-                </section>
-
-                {/* PROFESSIONAL DESCRIPTION */}
-
-                <section className="product-form-section">
-                    <h3>Product Description & Ice Cream Details</h3>
-                    <p className="section-description">
-                        Provide accurate product information to help customers understand
-                        the flavour, ingredients, and storage requirements.
-                    </p>
-
-                    <div className="form-grid">
-
-                        <div className="form-group full-width">
-                            <label>Short Description</label>
-                            <textarea
-                                name="shortDescription"
-                                rows="2"
-                                maxLength="180"
-                                value={formData.shortDescription}
-                                onChange={handleChange}
-                                placeholder="A rich and creamy chocolate ice cream made for chocolate lovers."
-                            />
-                            <small>Short text for product cards. Maximum 180 characters.</small>
-                        </div>
-
-                        <div className="form-group full-width">
-                            <label>Professional Product Description *</label>
-                            <textarea
-                                name="description"
-                                rows="5"
-                                value={formData.description}
-                                onChange={handleChange}
-                                placeholder="Describe the ice cream's taste, texture, aroma, ingredients, and what makes it special..."
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group full-width">
-                            <label>Ingredients *</label>
-                            <textarea
-                                name="ingredients"
-                                rows="3"
-                                value={formData.ingredients}
-                                onChange={handleChange}
-                                placeholder="Enter ingredients in descending order of quantity, as applicable."
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Allergen Information</label>
-                            <textarea
-                                name="allergens"
-                                rows="3"
-                                value={formData.allergens}
-                                onChange={handleChange}
-                                placeholder="e.g. Contains milk. May contain nuts, soy..."
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Storage Instructions</label>
-                            <textarea
-                                name="storageInstructions"
-                                rows="3"
-                                value={formData.storageInstructions}
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Shelf Life</label>
-                            <input
-                                name="shelfLife"
-                                value={formData.shelfLife}
-                                onChange={handleChange}
-                                placeholder="e.g. 6 months from manufacturing"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Serving Suggestion</label>
-                            <input
-                                name="servingSuggestion"
-                                value={formData.servingSuggestion}
-                                onChange={handleChange}
-                                placeholder="e.g. Serve chilled at -18°C"
-                            />
                         </div>
 
                     </div>
@@ -810,16 +1049,18 @@ const handleSubmit = (e) => {
                 {/* PACK SIZE AND PRICING */}
 
                 <section className="product-form-section">
-                    <h3>Pack Size & Pricing</h3>
+                    <h3>Unit, Pack Size & Pricing</h3>
+
                     <p className="section-description">
-                        Select only the pack sizes that customers are allowed to purchase.
-                        Unselected sizes will not be available on the customer Product page.
+                        Enter an individual regular price and offer price
+                        for every available pack size.
                     </p>
 
                     <div className="form-grid">
 
                         <div className="form-group">
                             <label>Measurement Unit *</label>
+
                             <select
                                 value={weightUnit}
                                 onChange={(e) => {
@@ -827,107 +1068,158 @@ const handleSubmit = (e) => {
                                     setCustomWeight("");
                                 }}
                             >
-                                <option value="ml">Millilitre (ml)</option>
-                                <option value="g">Gram (g)</option>
-                            </select>
-                        </div>
+                                <option value="ml">
+                                    Millilitre (ml)
+                                </option>
 
-                        <div className="form-group">
-                            <label>Price per 100 {weightUnit} (₹) *</label>
-                            <input
-                                type="number"
-                                name="price"
-                                min="0.01"
-                                step="0.01"
-                                value={formData.price}
-                                onChange={handleChange}
-                                placeholder="e.g. 60"
-                                required
-                            />
+                                <option value="g">
+                                    Gram (g)
+                                </option>
+                            </select>
                         </div>
 
                         <div className="form-group full-width">
                             <label>Available Pack Sizes *</label>
 
                             <div className="pack-size-admin-list">
-                                {weightOptions.map((weight) => (
-                                    <div className="pack-size-admin-item" key={weight}>
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked
-                                                onChange={() => handleRemoveWeight(weight)}
-                                            />
-                                            <span>{weight} {weightUnit}</span>
-                                        </label>
 
+                                {weightOptions.map((weight) => (
+                                    <div
+                                        className="pack-size-admin-item"
+                                        key={weight}
+                                    >
                                         <strong>
-                                            ₹{calculateWeightPrice(weight).toFixed(2)}
+                                            {weight} {weightUnit}
                                         </strong>
 
                                         <button
                                             type="button"
-                                            onClick={() => handleRemoveWeight(weight)}
+                                            onClick={() =>
+                                                handleRemoveWeight(weight)
+                                            }
                                         >
                                             Remove
                                         </button>
                                     </div>
                                 ))}
+
                             </div>
 
                             <div className="add-weight-row">
+
                                 <input
                                     type="number"
                                     min="1"
                                     value={customWeight}
-                                    onChange={(e) => setCustomWeight(e.target.value)}
-                                    placeholder={`Enter custom size in ${weightUnit}`}
+                                    onChange={(e) =>
+                                        setCustomWeight(e.target.value)
+                                    }
+                                    placeholder={`Enter size in ${weightUnit}`}
                                 />
-                                <button type="button" onClick={handleAddWeight}>
+
+                                <button
+                                    type="button"
+                                    onClick={handleAddWeight}
+                                >
                                     + Add Pack Size
                                 </button>
+
                             </div>
-
-                            {weightOptions.length === 0 && (
-                                <small className="form-error">
-                                    Select at least one pack size before saving.
-                                </small>
-                            )}
-                        </div>
-
-                        <div className="form-group">
-                            <label>Available Stock</label>
-                            <input
-                                type="number"
-                                name="stock"
-                                min="0"
-                                step="1"
-                                value={formData.stock}
-                                onChange={handleChange}
-                            />
                         </div>
 
                     </div>
 
-                    <div className="pack-price-preview">
-                        <h4>Customer Pack Price Preview</h4>
-                        {weightOptions.map((weight) => (
-                            <div key={weight}>
-                                <span>{weight} {weightUnit}</span>
-                                <strong>₹{calculateWeightPrice(weight).toFixed(2)}</strong>
+                    {/* INDIVIDUAL PRICING */}
+
+                    <div className="form-group full-width">
+                        <h4>Price Configuration</h4>
+
+                        <div className="pack-price-preview">
+
+                            <div className="price-config-header">
+                                <strong>Pack Size</strong>
+                                <strong>Regular Price (₹)</strong>
+                                <strong>Offer Price (₹)</strong>
                             </div>
-                        ))}
+
+                            {weightOptions.map((weight) => (
+                                <div
+                                    className="price-config-row"
+                                    key={weight}
+                                >
+                                    <strong>
+                                        {weight} {weightUnit}
+                                    </strong>
+
+                                    <input
+                                        type="number"
+                                        min="0.01"
+                                        step="0.01"
+                                        value={
+                                            weightPrices[weight]?.price ?? ""
+                                        }
+                                        onChange={(e) =>
+                                            handleWeightPriceChange(
+                                                weight,
+                                                "price",
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="Regular price"
+                                        aria-label={`Regular price for ${weight} ${weightUnit}`}
+                                    />
+
+                                    <input
+                                        type="number"
+                                        min="0.01"
+                                        step="0.01"
+                                        value={
+                                            weightPrices[weight]?.offerPrice ?? ""
+                                        }
+                                        onChange={(e) =>
+                                            handleWeightPriceChange(
+                                                weight,
+                                                "offerPrice",
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="Offer price"
+                                        aria-label={`Offer price for ${weight} ${weightUnit}`}
+                                    />
+                                </div>
+                            ))}
+
+                        </div>
                     </div>
+
+                    {/* STOCK */}
+
+                    <div className="form-group">
+                        <label>Available Stock *</label>
+
+                        <input
+                            type="number"
+                            name="stock"
+                            min="0"
+                            step="1"
+                            value={formData.stock}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+
                 </section>
 
                 {/* OPTIONAL ADD-ONS */}
 
                 <section className="product-form-section">
+
                     <div className="addon-section-heading">
                         <div>
                             <h3>Optional Product Add-ons</h3>
+
                             <p className="section-description">
-                                Add extras only when this product supports customization.
+                                Add extras customers can select when ordering.
                             </p>
                         </div>
 
@@ -937,19 +1229,26 @@ const handleSubmit = (e) => {
                                 checked={enableAddons}
                                 onChange={(e) => {
                                     setEnableAddons(e.target.checked);
-                                    if (!e.target.checked) setError("");
+
+                                    if (!e.target.checked) {
+                                        setError("");
+                                    }
                                 }}
                             />
-                            <span>Enable add-ons</span>
+
+                            <span>Enable Add-ons</span>
                         </label>
                     </div>
 
                     {enableAddons ? (
                         <>
                             <div className="addon-input-row">
+
                                 <input
                                     value={addonName}
-                                    onChange={(e) => setAddonName(e.target.value)}
+                                    onChange={(e) =>
+                                        setAddonName(e.target.value)
+                                    }
                                     placeholder="e.g. Chocolate chips"
                                 />
 
@@ -958,42 +1257,59 @@ const handleSubmit = (e) => {
                                     min="0"
                                     step="0.01"
                                     value={addonPrice}
-                                    onChange={(e) => setAddonPrice(e.target.value)}
+                                    onChange={(e) =>
+                                        setAddonPrice(e.target.value)
+                                    }
                                     placeholder="Price ₹"
                                 />
 
-                                <button type="button" onClick={handleAddAddon}>
+                                <button
+                                    type="button"
+                                    onClick={handleAddAddon}
+                                >
                                     + Add
                                 </button>
+
                             </div>
 
                             <div className="addon-list">
+
                                 {addons.map((addon) => (
-                                    <div className="addon-item" key={addon.id}>
+                                    <div
+                                        className="addon-item"
+                                        key={addon.id}
+                                    >
                                         <span>{addon.name}</span>
-                                        <strong>₹{addon.price.toFixed(2)}</strong>
+
+                                        <strong>
+                                            ₹{addon.price.toFixed(2)}
+                                        </strong>
+
                                         <button
                                             type="button"
-                                            onClick={() => handleRemoveAddon(addon.id)}
+                                            onClick={() =>
+                                                handleRemoveAddon(addon.id)
+                                            }
                                         >
                                             ×
                                         </button>
                                     </div>
                                 ))}
+
                             </div>
 
                             {addons.length === 0 && (
                                 <small>
-                                    Add-ons are enabled, but no extras have been added yet.
+                                    No add-ons added yet.
                                 </small>
                             )}
                         </>
                     ) : (
                         <p className="addon-disabled-note">
-                            Add-ons are disabled for this product. Customers will not see
-                            an add-ons selection.
+                            Add-ons are disabled for this product.
                         </p>
                     )}
+
                 </section>
 
                 {/* ERROR */}
@@ -1007,13 +1323,22 @@ const handleSubmit = (e) => {
                 {/* ACTIONS */}
 
                 <div className="form-actions">
-                    <button type="button" className="secondary-btn" onClick={resetForm}>
+
+                    <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={resetForm}
+                    >
                         Reset Form
                     </button>
 
-                    <button type="submit" className="primary-btn">
+                    <button
+                        type="submit"
+                        className="primary-btn"
+                    >
                         + Save Product
                     </button>
+
                 </div>
 
             </form>

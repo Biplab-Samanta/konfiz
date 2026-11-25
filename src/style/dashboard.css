@@ -2423,204 +2423,415 @@
     }
 }
 
-/* PRODUCT EDIT POPUP */
 
-.edit-product-overlay {
+
+
+/* =====================================
+   EDIT PRODUCT MODAL OVERLAY
+===================================== */
+
+.edit-modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 99999;
-    background: rgba(20, 15, 25, 0.65);
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
     display: flex;
-    align-items: center;
     justify-content: center;
-    padding: 15px;
-}
-
-.edit-product-modal {
-    width: 100%;
-    max-width: 850px;
-    max-height: 92vh;
-    overflow-y: auto;
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
-
-.edit-product-header {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 15px;
-    padding: 20px 25px;
-    background: #fff;
-    border-bottom: 1px solid #eee;
-}
-
-.edit-product-header h2 {
-    margin: 0 0 5px;
-}
-
-.edit-product-header p {
-    margin: 0;
-    color: #777;
-}
-
-.edit-product-header > button {
-    width: 38px;
-    height: 38px;
-    border: none;
-    border-radius: 50%;
-    background: #f3f3f3;
-    font-size: 25px;
-    cursor: pointer;
-}
-
-.edit-product-body {
-    padding: 25px;
-}
-
-.edit-product-body h3 {
-    margin: 25px 0 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.edit-form-group {
-    display: flex;
-    flex: 1;
-    min-width: 0;
-    flex-direction: column;
-    gap: 7px;
-    margin-bottom: 16px;
-}
-
-.edit-form-group label {
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.edit-form-group input,
-.edit-form-group select,
-.edit-form-group textarea {
-    width: 100%;
-    min-width: 0;
-    padding: 11px 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font: inherit;
+    padding: 20px;
+    z-index: 99999;
+    overflow-y: auto;
     box-sizing: border-box;
 }
 
-.edit-form-group input:focus,
-.edit-form-group select:focus,
-.edit-form-group textarea:focus {
-    outline: none;
-    border-color: #e85b91;
-    box-shadow: 0 0 0 3px rgba(232, 91, 145, 0.1);
+/* =====================================
+   MODAL CONTAINER
+===================================== */
+
+.edit-modal {
+    width: 100%;
+    max-width: 850px;
+    max-height: 90vh;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: editModalOpen 0.25s ease;
 }
 
-.edit-form-row {
-    display: flex;
-    gap: 15px;
+@keyframes editModalOpen {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
+
+/* =====================================
+   MODAL HEADER
+===================================== */
+
+.edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 25px;
+    background: #fff4ed;
+    border-bottom: 1px solid #f0ded2;
+    flex-shrink: 0;
+}
+
+.edit-modal-header h2 {
+    margin: 0;
+    color: #3b2419;
+    font-size: 23px;
+    font-weight: 700;
+}
+
+.edit-modal-header button {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: #f3e2d8;
+    color: #563322;
+    font-size: 19px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.edit-modal-header button:hover {
+    background: #e8c7b5;
+    transform: rotate(90deg);
+}
+
+/* =====================================
+   FORM BODY
+===================================== */
+
+.edit-modal form {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+.edit-modal form h3 {
+    margin: 24px 0 16px;
+    padding-bottom: 10px;
+    color: #7b3f20;
+    font-size: 17px;
+    font-weight: 700;
+    border-bottom: 1px solid #f0e2d9;
+}
+
+.edit-modal form h3:first-of-type {
+    margin-top: 0;
+}
+
+/* =====================================
+   FORM GROUP
+===================================== */
+
+.edit-modal .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 18px;
+    width: 100%;
+}
+
+.edit-modal .form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #40352f;
+}
+
+.edit-modal .form-group input,
+.edit-modal .form-group select,
+.edit-modal .form-group textarea {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid #d9cec7;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #333333;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.edit-modal .form-group textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.edit-modal .form-group input:focus,
+.edit-modal .form-group select:focus,
+.edit-modal .form-group textarea:focus {
+    border-color: #b76b3d;
+    box-shadow: 0 0 0 3px rgba(183, 107, 61, 0.12);
+}
+
+.edit-modal .form-group small {
+    color: #888888;
+    font-size: 12px;
+}
+
+/* =====================================
+   TWO COLUMN FORM ROW
+===================================== */
+
+.edit-modal .form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+.edit-modal .form-row .form-group {
+    min-width: 0;
+}
+
+/* =====================================
+   PRODUCT IMAGE PREVIEW
+===================================== */
 
 .edit-product-preview {
-    width: 130px;
-    height: 110px;
-    margin-top: 10px;
+    display: block;
+    width: 140px;
+    height: 140px;
+    margin-top: 12px;
     object-fit: cover;
     border-radius: 10px;
-    border: 1px solid #eee;
+    border: 1px solid #e5d8ce;
+    background: #fffaf6;
 }
 
+/* =====================================
+   ADD-ON ROW
+===================================== */
+
 .edit-addon-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px auto;
+    gap: 12px;
     align-items: center;
-    gap: 10px;
     margin-bottom: 12px;
+    padding: 12px;
+    background: #fffaf6;
+    border: 1px solid #eee0d5;
+    border-radius: 9px;
 }
 
 .edit-addon-row input {
-    flex: 1;
+    width: 100%;
     min-width: 0;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    padding: 10px 12px;
+    border: 1px solid #d9cec7;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.edit-addon-row input:focus {
+    border-color: #b76b3d;
+    box-shadow: 0 0 0 3px rgba(183, 107, 61, 0.10);
 }
 
 .edit-addon-row button {
-    padding: 10px 12px;
+    padding: 9px 13px;
     border: none;
+    border-radius: 6px;
+    background: #ffe5e2;
+    color: #c0392b;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.edit-addon-row button:hover {
+    background: #f8c9c4;
+}
+
+/* =====================================
+   ADD ADD-ON BUTTON
+===================================== */
+
+.edit-modal form > button[type="button"] {
+    padding: 10px 16px;
+    margin: 4px 0 20px;
+    border: 1px dashed #b76b3d;
     border-radius: 7px;
-    background: #fff0f0;
-    color: #c62828;
+    background: #fff7f1;
+    color: #934d28;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
+    transition: 0.2s ease;
 }
 
-.edit-add-addon-btn {
-    padding: 10px 15px;
-    border: 1px dashed #e85b91;
-    border-radius: 8px;
-    background: #fff7fa;
-    color: #d83e7c;
-    cursor: pointer;
+.edit-modal form > button[type="button"]:hover {
+    background: #ffeadc;
 }
 
-.edit-product-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
+/* =====================================
+   MODAL ACTION BUTTONS
+===================================== */
+
+.edit-modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 17px 25px;
-    background: #fff;
-    border-top: 1px solid #eee;
+    padding-top: 20px;
+    margin-top: 20px;
+    border-top: 1px solid #eee3dc;
 }
 
-.edit-product-footer button {
+.edit-modal-actions button {
+    min-width: 125px;
     padding: 11px 20px;
     border: none;
-    border-radius: 8px;
+    border-radius: 7px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
+    transition: 0.2s ease;
 }
 
-.edit-cancel-btn {
-    background: #eee;
-    color: #333;
+.edit-modal-actions button:first-child {
+    background: #eeeeee;
+    color: #444444;
 }
 
-.edit-save-btn {
-    background: #e85b91;
-    color: white;
+.edit-modal-actions button:first-child:hover {
+    background: #dddddd;
 }
 
-@media (max-width: 600px) {
-    .edit-product-overlay {
+.edit-modal-actions button:last-child {
+    background: #a9572d;
+    color: #ffffff;
+}
+
+.edit-modal-actions button:last-child:hover {
+    background: #85401f;
+    transform: translateY(-1px);
+}
+
+/* =====================================
+   SCROLLBAR
+===================================== */
+
+.edit-modal form::-webkit-scrollbar {
+    width: 7px;
+}
+
+.edit-modal form::-webkit-scrollbar-track {
+    background: #f8f3ef;
+}
+
+.edit-modal form::-webkit-scrollbar-thumb {
+    background: #d5b9a6;
+    border-radius: 10px;
+}
+
+.edit-modal form::-webkit-scrollbar-thumb:hover {
+    background: #b98c70;
+}
+
+/* =====================================
+   RESPONSIVE DESIGN
+===================================== */
+
+@media (max-width: 768px) {
+    .edit-modal-overlay {
+        padding: 10px;
+        align-items: center;
+    }
+
+    .edit-modal {
+        max-height: 94vh;
+        border-radius: 10px;
+    }
+
+    .edit-modal-header {
+        padding: 15px 18px;
+    }
+
+    .edit-modal-header h2 {
+        font-size: 19px;
+    }
+
+    .edit-modal form {
+        padding: 18px;
+    }
+
+    .edit-modal .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .edit-addon-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .edit-addon-row button {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .edit-modal-overlay {
         padding: 7px;
     }
 
-    .edit-product-modal {
+    .edit-modal {
         max-height: 96vh;
     }
 
-    .edit-product-body {
-        padding: 16px;
+    .edit-modal form {
+        padding: 14px;
     }
 
-    .edit-form-row,
+    .edit-modal-header h2 {
+        font-size: 17px;
+    }
+
+    .edit-modal form h3 {
+        font-size: 15px;
+    }
+
     .edit-addon-row {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
+        padding: 10px;
     }
 
-    .edit-product-header,
-    .edit-product-footer {
-        padding: 15px;
+    .edit-addon-row button {
+        grid-column: auto;
+    }
+
+    .edit-modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .edit-modal-actions button {
+        width: 100%;
+    }
+
+    .edit-product-preview {
+        width: 110px;
+        height: 110px;
     }
 }
-

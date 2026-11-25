@@ -119,7 +119,7 @@ function Dashboard({ onLogout }) {
         selectPage("Manage Products");
     };
 
-    
+
     const handleDeleteProduct = (id) => {
         if (!window.confirm("Are you sure you want to delete this product?")) {
             return;
@@ -662,7 +662,7 @@ function Dashboard({ onLogout }) {
         : [];
 
     // =====================================
-    // MANAGE PRODUCTS
+    // MANAGE PRODUCTS------
     // =====================================
 
     const [productSearch, setProductSearch] = useState("");
@@ -1800,278 +1800,285 @@ function Dashboard({ onLogout }) {
                 <div className="admin-content">
                     {renderPage()}
                 </div>
+
+
+
             </main>
 
+
             {/* =====================================
-                FULL PRODUCT EDIT POPUP
-            ===================================== */}
+                    EDIT PRODUCT MODAL
+                ===================================== */}
 
             {showEditModal && editForm && (
-                <div
-                    className="edit-product-overlay"
-                    onMouseDown={e => {
-                        if (e.target === e.currentTarget) closeEditModal();
-                    }}
-                >
-                    <div
-                        className="edit-product-modal"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="edit-product-title"
-                    >
-                        <div className="edit-product-header">
-                            <div>
-                                <h2 id="edit-product-title">Edit Product</h2>
-                                <p>Update all product information.</p>
-                            </div>
+                <div className="edit-modal-overlay">
+                    <div className="edit-modal">
 
-                            <button type="button" onClick={closeEditModal}>×</button>
+                        <div className="edit-modal-header">
+                            <h2>Edit Product</h2>
+
+                            <button
+                                type="button"
+                                onClick={closeEditModal}
+                            >
+                                ✕
+                            </button>
                         </div>
 
                         <form onSubmit={saveEditedProduct}>
-                            <div className="edit-product-body">
 
-                                <h3>Basic Information</h3>
+                            {/* BASIC DETAILS */}
 
-                                <div className="edit-form-group">
-                                    <label>Product Name *</label>
+                            <h3>Product Information</h3>
+
+                            <div className="form-group">
+                                <label>Product Name *</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={editForm.name}
+                                    onChange={handleEditChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Description</label>
+                                <textarea
+                                    name="description"
+                                    value={editForm.description}
+                                    onChange={handleEditChange}
+                                    rows="5"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Flavour</label>
+                                <input
+                                    type="text"
+                                    name="flavour"
+                                    value={editForm.flavour}
+                                    onChange={handleEditChange}
+                                />
+                            </div>
+
+                            {/* CATEGORY */}
+
+                            <h3>Category Details</h3>
+
+                            <div className="form-group">
+                                <label>Category *</label>
+
+                                <select
+                                    value={editForm.categoryId}
+                                    onChange={handleEditCategoryChange}
+                                    required
+                                >
+                                    <option value="">Select Category</option>
+
+                                    {categories.map(category => (
+                                        <option
+                                            key={getCatId(category)}
+                                            value={getCatId(category)}
+                                        >
+                                            {getCatName(category)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Subcategory (Optional)</label>
+
+                                <select
+                                    value={editForm.subcategoryId}
+                                    onChange={handleEditSubcategoryChange}
+                                >
+                                    <option value="">Select Subcategory</option>
+
+                                    {editSubcategories.map(subcategory => (
+                                        <option
+                                            key={getSubId(subcategory)}
+                                            value={getSubId(subcategory)}
+                                        >
+                                            {getSubName(subcategory)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* STOCK AND RATING */}
+
+                            <h3>Inventory & Rating</h3>
+
+                            <div className="form-row">
+
+                                <div className="form-group">
+                                    <label>Stock</label>
                                     <input
-                                        name="name"
-                                        value={editForm.name}
+                                        type="number"
+                                        name="stock"
+                                        min="0"
+                                        value={editForm.stock}
+                                        onChange={handleEditChange}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Rating</label>
+                                    <input
+                                        type="number"
+                                        name="rating"
+                                        min="0"
+                                        max="5"
+                                        step="0.1"
+                                        value={editForm.rating}
+                                        onChange={handleEditChange}
+                                    />
+                                </div>
+
+                            </div>
+
+                            {/* PRICING */}
+
+                            <h3>Pricing Details</h3>
+
+                            <div className="form-row">
+
+                                <div className="form-group">
+                                    <label>Base Price (₹)</label>
+                                    <input
+                                        type="number"
+                                        name="price"
+                                        min="0"
+                                        step="0.01"
+                                        value={editForm.price}
                                         onChange={handleEditChange}
                                         required
                                     />
                                 </div>
 
-                                <div className="edit-form-group">
-                                    <label>Description</label>
-                                    <textarea
-                                        name="description"
-                                        value={editForm.description}
-                                        onChange={handleEditChange}
-                                        rows="3"
+                                <div className="form-group">
+                                    <label>Unit</label>
+                                    <select
+                                        name="unit"
+                                        value={editForm.pricing.unit}
+                                        onChange={handleEditPricingChange}
+                                    >
+                                        <option value="ml">ml</option>
+                                        <option value="kg">kg</option>
+                                    </select>
+                                </div>
+
+                            </div>
+
+                           
+
+                            <div className="form-group">
+                                <label>Available Weight Options</label>
+
+                                <input
+                                    type="text"
+                                    value={editForm.pricing.weightOptions.join(", ")}
+                                    onChange={e =>
+                                        handleEditWeightOptions(e.target.value)
+                                    }
+                                    placeholder="100, 250, 500, 1000"
+                                />
+
+                                <small>Enter quantities separated by commas.</small>
+                            </div>
+
+                            {/* IMAGE */}
+
+                            <h3>Product Image</h3>
+
+                            <div className="form-group">
+                                <label>Image URL</label>
+
+                                <input
+                                    type="text"
+                                    name="image"
+                                    value={editForm.image}
+                                    onChange={handleEditChange}
+                                    placeholder="Enter image URL"
+                                />
+
+                                {editForm.image && (
+                                    <img
+                                        src={editForm.image}
+                                        alt="Product Preview"
+                                        className="edit-product-preview"
                                     />
-                                </div>
+                                )}
+                            </div>
 
-                                <div className="edit-form-row">
-                                    <div className="edit-form-group">
-                                        <label>Main Category</label>
-                                        <select
-                                            value={editForm.categoryId}
-                                            onChange={handleEditCategoryChange}
-                                        >
-                                            <option value="">Select Category</option>
-                                            {categories.map(category => (
-                                                <option
-                                                    key={getCatId(category)}
-                                                    value={getCatId(category)}
-                                                >
-                                                    {getCatName(category)}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                            {/* ADDONS */}
 
-                                    <div className="edit-form-group">
-                                        <label>Subcategory</label>
-                                        <select
-                                            value={editForm.subcategoryId}
-                                            onChange={handleEditSubcategoryChange}
-                                            disabled={!editForm.categoryId}
-                                        >
-                                            <option value="">Select Subcategory</option>
-                                            {editSubcategories.map(subcategory => (
-                                                <option
-                                                    key={getSubId(subcategory)}
-                                                    value={getSubId(subcategory)}
-                                                >
-                                                    {getSubName(subcategory)}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
+                            <h3>Add-ons</h3>
 
-                                <div className="edit-form-row">
-                                    <div className="edit-form-group">
-                                        <label>Flavour</label>
-                                        <input
-                                            name="flavour"
-                                            value={editForm.flavour}
-                                            onChange={handleEditChange}
-                                        />
-                                    </div>
+                            {editForm.addons.map((addon, index) => (
+                                <div className="edit-addon-row" key={addon.id || index}>
 
-                                    <div className="edit-form-group">
-                                        <label>Rating (0–5)</label>
-                                        <input
-                                            type="number"
-                                            name="rating"
-                                            min="0"
-                                            max="5"
-                                            step="0.1"
-                                            value={editForm.rating}
-                                            onChange={handleEditChange}
-                                        />
-                                    </div>
-                                </div>
-
-                                <h3>Price and Inventory</h3>
-
-                                <div className="edit-form-row">
-                                    <div className="edit-form-group">
-                                        <label>Starting Price (₹) *</label>
-                                        <input
-                                            type="number"
-                                            name="price"
-                                            min="0"
-                                            step="0.01"
-                                            value={editForm.price}
-                                            onChange={handleEditChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="edit-form-group">
-                                        <label>Stock Quantity</label>
-                                        <input
-                                            type="number"
-                                            name="stock"
-                                            min="0"
-                                            step="1"
-                                            value={editForm.stock}
-                                            onChange={handleEditChange}
-                                        />
-                                    </div>
-                                </div>
-
-                                <h3>Product Image</h3>
-
-                                <div className="edit-form-group">
-                                    <label>Image URL or Base64</label>
                                     <input
-                                        name="image"
-                                        value={editForm.image}
-                                        onChange={handleEditChange}
-                                        placeholder="Paste image URL or Base64 data"
+                                        type="text"
+                                        placeholder="Addon name"
+                                        value={addon.name}
+                                        onChange={e =>
+                                            updateAddon(index, "name", e.target.value)
+                                        }
                                     />
 
-                                    {editForm.image && (
-                                        <img
-                                            src={editForm.image}
-                                            alt="Product preview"
-                                            className="edit-product-preview"
-                                        />
-                                    )}
-                                </div>
-
-                                <h3>Weight / Size Pricing</h3>
-
-                                <div className="edit-form-row">
-                                    <div className="edit-form-group">
-                                        <label>Pricing Unit</label>
-                                        <select
-                                            name="unit"
-                                            value={editForm.pricing.unit}
-                                            onChange={handleEditPricingChange}
-                                        >
-                                            <option value="ml">ml</option>
-                                            <option value="g">g</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="edit-form-group">
-                                        <label>Base Quantity</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            name="baseQuantity"
-                                            value={editForm.pricing.baseQuantity}
-                                            onChange={handleEditPricingChange}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="edit-form-group">
-                                    <label>Price Per Base Quantity (₹)</label>
                                     <input
                                         type="number"
                                         min="0"
                                         step="0.01"
-                                        name="pricePerBaseUnit"
-                                        value={editForm.pricing.pricePerBaseUnit}
-                                        onChange={handleEditPricingChange}
+                                        placeholder="Price"
+                                        value={addon.price}
+                                        onChange={e =>
+                                            updateAddon(index, "price", e.target.value)
+                                        }
                                     />
+
+                                    <button
+                                        type="button"
+                                        onClick={() => removeEditAddon(index)}
+                                    >
+                                        Remove
+                                    </button>
+
                                 </div>
+                            ))}
 
-                                <div className="edit-form-group">
-                                    <label>Weight Options (comma separated)</label>
-                                    <input
-                                        value={editForm.pricing.weightOptions.join(", ")}
-                                        onChange={e => handleEditWeightOptions(e.target.value)}
-                                        placeholder="100, 250, 500, 1000"
-                                    />
-                                    <small>Example: 100, 250, 500, 1000</small>
-                                </div>
+                            <button
+                                type="button"
+                                onClick={addEditAddon}
+                            >
+                                + Add Add-on
+                            </button>
 
-                                <h3>Add-ons</h3>
+                            {/* ACTIONS */}
 
-                                {editForm.addons.map((addon, index) => (
-                                    <div className="edit-addon-row" key={addon.id || index}>
-                                        <input
-                                            value={addon.name || ""}
-                                            placeholder="Add-on name"
-                                            onChange={e =>
-                                                updateAddon(index, "name", e.target.value)
-                                            }
-                                        />
-
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={addon.price ?? 0}
-                                            placeholder="Price"
-                                            onChange={e =>
-                                                updateAddon(index, "price", Number(e.target.value))
-                                            }
-                                        />
-
-                                        <button
-                                            type="button"
-                                            onClick={() => removeEditAddon(index)}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="edit-modal-actions">
 
                                 <button
                                     type="button"
-                                    className="edit-add-addon-btn"
-                                    onClick={addEditAddon}
-                                >
-                                    + Add New Add-on
-                                </button>
-                            </div>
-
-                            <div className="edit-product-footer">
-                                <button
-                                    type="button"
-                                    className="edit-cancel-btn"
                                     onClick={closeEditModal}
                                 >
                                     Cancel
                                 </button>
 
-                                <button type="submit" className="edit-save-btn">
+                                <button type="submit">
                                     Save Changes
                                 </button>
+
                             </div>
+
                         </form>
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

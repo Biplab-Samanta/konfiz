@@ -133,6 +133,9 @@
     position: sticky;
     top: 100px;
     align-self: start;
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 15px;
 }
 
 /* MAIN IMAGE PANEL */
@@ -163,7 +166,7 @@
     z-index: 3;
     display: flex;
     justify-content: space-between;
-    color: #806c5b;
+    color: #fffefe;
     font-size: 10px;
     letter-spacing: 2px;
     font-weight: 700;
@@ -206,7 +209,6 @@
     z-index: 1;
     width: 100%;
     height: 100%;
-    padding: 65px 35px 55px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -216,7 +218,7 @@
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     filter: drop-shadow(0 20px 18px rgba(70, 45, 25, 0.12));
     transition: transform 0.5s ease, opacity 0.3s ease;
 }
@@ -231,28 +233,13 @@
     font-size: 25px;
 }
 
-/* IMAGE CAPTION */
-
-.pd-image-caption {
-    position: absolute;
-    bottom: 20px;
-    left: 24px;
-    right: 24px;
-    z-index: 2;
-    display: flex;
-    justify-content: space-between;
-    color: #967e68;
-    font-size: 9px;
-    letter-spacing: 1.8px;
-    font-weight: 600;
-}
 
 /* WISHLIST */
 
 .pd-wishlist {
     position: absolute;
-    top: 58px;
-    right: 22px;
+    top: 8px;
+    right: 8px;
     z-index: 4;
     width: 42px;
     height: 42px;
@@ -277,39 +264,38 @@
 /* DISCOUNT */
 
 .pd-discount-badge {
-    position: absolute;
+     position: absolute;
     z-index: 4;
-    top: 110px;
-    left: 22px;
+    bottom: 0;
+    left: 84%;
     background: #a84d36;
     color: white;
     padding: 8px 12px;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 1px;
+
 }
 
 /* THUMBNAILS */
 
 .pd-image-thumbnails {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(189px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
     gap: 12px;
-    margin-top: 14px;
     padding: 2px 0 7px;
     overflow-x: auto;
+    width: 100px;
 }
 
 .pd-image-thumbnails button {
     /* flex: 0 0 76px;
     height: 76px; */
-    padding: 5px;
     border: 1px solid #e9dfd5;
-    border-radius: 3px;
+    border-radius: 8px;
     background: #faf7f3;
     cursor: pointer;
     transition: 0.25s ease;
-    max-height: 250px;
 }
 
 .pd-image-thumbnails button.active {
@@ -414,11 +400,7 @@
         font-size: 8px;
     }
 
-    .pd-image-caption {
-        left: 15px;
-        right: 15px;
-        font-size: 7px;
-    }
+
 
     .pd-gallery-editorial {
         gap: 12px;
@@ -446,12 +428,6 @@
     margin-bottom: 12px;
 }
 
-.pd-brand-line>span:first-child {
-    color: var(--pd-secondary);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 2px;
-}
 
 .pd-brand-line .in-stock {
     color: var(--pd-success);
@@ -1599,4 +1575,10 @@ section.pd-highlights {
         min-width: 80px;
     }
 
+}
+.pd-selection-section-wrap {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    justify-content: space-between;
 }

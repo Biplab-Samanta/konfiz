@@ -1,12 +1,15 @@
 
 import React, { useState } from "react";
 import "../../style/login.css";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/authContext";
 
 function Login({ onLogin }) {
+    // const location = useLocation();
+
     const { login } = useAuth();
     const navigate = useNavigate();
+    const routeLocation = useLocation();
 
     // =====================================
     // MASTER ADMIN CREDENTIALS
@@ -106,8 +109,10 @@ function Login({ onLogin }) {
     // COMPLETE LOGIN
     // =====================================
 
-    const completeLogin = (user, destination) => {
-        // Never pass password into AuthContext
+
+    const completeLogin = (user, fallbackDestination) => {
+
+        // Never store password in the login session
         const sessionUser = { ...user };
         delete sessionUser.password;
 
@@ -119,8 +124,24 @@ function Login({ onLogin }) {
             onLogin(sessionUser);
         }
 
+        // Return customer to the page they originally requested
+        const requestedPage = routeLocation.state?.from;
+
+        const destination =
+            sessionUser.role === "customer"
+                ? (
+                    typeof requestedPage === "string"
+                        ? requestedPage
+                        : requestedPage?.pathname
+                            ? `${requestedPage.pathname}${requestedPage.search || ""}${requestedPage.hash || ""}`
+                            : fallbackDestination || "/products"
+                )
+                : fallbackDestination;
+
         navigate(destination, { replace: true });
+
     };
+
 
     // =====================================
     // ADMIN LOGIN
@@ -250,7 +271,7 @@ function Login({ onLogin }) {
 
         const destination =
             selectedRole === "customer"
-                ? "/products"
+                ? (routeLocation.state?.from || "/products")
                 : "/vendor/dashboard";
 
         completeLogin(newUser, destination);
@@ -296,7 +317,7 @@ function Login({ onLogin }) {
 
         const destination =
             selectedRole === "customer"
-                ? "/products"
+                ? (routeLocation.state?.from || "/products")
                 : "/vendor/dashboard";
 
         completeLogin(matchedUser, destination);

@@ -1,4 +1,3 @@
-
 /* =========================================
    CART PAGE
 ========================================= */
@@ -292,134 +291,7 @@
   color: #fff;
 }
 
-/* =========================================
-   ORDER SUMMARY - RIGHT SECTION
-========================================= */
 
-.cart-page.cart-summary {
-  width: 100%;
-  padding: 18px;
-  box-sizing: border-box;
-  border: 1px solid #e8e5e1;
-  border-radius: 17px;
-  background: #fff;
-  box-shadow: none;
-  flex-direction: column;
-}
-
-.cart-summary h3 {
-  margin: 0 0 22px;
-  padding: 0;
-  border: none;
-  color: #171717;
-  font-size: 19px;
-  font-weight: 700;
-}
-
-/* =========================================
-   SUMMARY ROWS
-========================================= */
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin: 18px 0;
-  color: #85817d;
-  font-size: 14px;
-}
-
-.summary-row strong {
-  color: #171717;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-/* =========================================
-   GST SELECTOR
-========================================= */
-
-.gst-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 18px 0;
-}
-
-.gst-selector label {
-  color: #77736f;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.gst-selector select {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #e9e6e3;
-  border-radius: 25px;
-  outline: none;
-  background: #f8f7f5;
-  color: #333;
-  font-size: 13px;
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-}
-
-.gst-selector select:focus {
-  border-color: #777;
-}
-
-/* =========================================
-   GRAND TOTAL
-========================================= */
-
-.summary-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 17px;
-  border-top: 1px solid #e9e6e3;
-  color: #171717;
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.summary-total strong {
-  color: #111;
-  font-size: 21px;
-  font-weight: 750;
-}
-
-/* =========================================
-   CHECKOUT BUTTON
-========================================= */
-
-.checkout-btn {
-  display: block;
-  width: 100%;
-  margin-top: 22px;
-  padding: 15px 18px;
-  border: none;
-  border-radius: 30px;
-  background: #050505;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.25s ease, transform 0.25s ease;
-}
-
-.checkout-btn:hover {
-  background: #333;
-  transform: translateY(-2px);
-}
-
-.checkout-btn:active {
-  transform: translateY(0);
-}
 
 /* =========================================
    CART NOTE
@@ -436,7 +308,14 @@
 /* =========================================
    EMPTY CART
 ========================================= */
-
+button.checkout-btn {
+    background: #000;
+    padding: 10px 25px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+}
 .empty-cart {
   width: 100%;
   padding: 65px 20px;
@@ -669,5 +548,233 @@
 
   .cart-summary {
     padding: 15px;
+  }
+}
+
+
+/* =====================================
+   KONFIZ - ORDER SUMMARY
+===================================== */
+
+.cart-page.cart-summary {
+  width: 100%;
+  max-width: 430px;
+  min-height: 650px;
+  padding: 30px 24px 25px;
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+
+  background: #ffffff;
+  border-radius: 18px;
+  box-sizing: border-box;
+
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.04);
+  font-family: inherit;
+}
+
+/* Heading */
+
+.cart-page.cart-summary h3 {
+  font-size: 23px;
+  font-weight: 700;
+  color: #252936;
+
+  margin: 0 0 32px;
+  padding: 0;
+
+  border: none;
+}
+
+/* Summary Rows */
+
+.cart-page.cart-summary .summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 13px 0;
+  margin: 0;
+
+  border-bottom: 1px solid #eeeeef;
+
+  font-size: 14px;
+  color: #777b85;
+}
+
+.cart-page.cart-summary .summary-row strong {
+  color: #292d38;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* GST Selector */
+
+.cart-page.cart-summary .gst-selector {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 12px;
+  padding: 15px 0;
+  margin: 0;
+
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #eeeeef;
+  border-radius: 0;
+}
+
+.cart-page.cart-summary .gst-selector label {
+  font-size: 14px;
+  color: #777b85;
+  font-weight: 400;
+}
+
+.cart-page.cart-summary .gst-selector select {
+  width: auto;
+  max-width: 180px;
+
+  padding: 8px 10px;
+
+  background: #ffffff;
+  border: 1px solid #e5e5e8;
+  border-radius: 6px;
+
+  color: #292d38;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Grand Total Section */
+
+.cart-page.cart-summary .summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: auto;
+  padding: 22px 0 25px;
+
+  background: transparent;
+  border: none;
+  border-top: 2px dashed #eeeeef;
+  border-radius: 0;
+}
+
+.cart-page.cart-summary .summary-total span {
+  font-size: 17px;
+  font-weight: 600;
+  color: #17191f;
+}
+
+.cart-page.cart-summary .summary-total strong {
+  font-size: 19px;
+  font-weight: 800;
+  color: #17191f;
+}
+
+/* Checkout Button */
+
+.cart-page.cart-summary .checkout-btn {
+  width: 100%;
+  min-height: 49px;
+
+  padding: 14px 20px;
+  margin: 0;
+
+  background: #252936;
+  color: #ffffff;
+
+  border: none;
+  border-radius: 35px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: 0 5px 15px rgba(37, 41, 54, 0.15);
+
+  transition: all 0.3s ease;
+}
+
+.cart-page.cart-summary .checkout-btn:hover {
+  background: #111522;
+  transform: translateY(-2px);
+}
+
+.cart-page.cart-summary .checkout-btn:active {
+  transform: scale(0.98);
+}
+
+/* Cart Note */
+
+.cart-page.cart-summary .cart-note {
+  margin: 15px 0 0;
+
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+
+  color: #999ca5;
+}
+
+/* =====================================
+   TABLET
+===================================== */
+
+@media (max-width: 768px) {
+  .cart-page.cart-summary {
+    max-width: 100%;
+    min-height: 600px;
+    padding: 25px 20px;
+  }
+}
+
+/* =====================================
+   MOBILE
+===================================== */
+
+@media (max-width: 480px) {
+  .cart-page.cart-summary {
+    min-height: 620px;
+    padding: 24px 18px;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .cart-page.cart-summary h3 {
+    font-size: 22px;
+    margin-bottom: 28px;
+  }
+
+  .cart-page.cart-summary .summary-row {
+    padding: 13px 0;
+    font-size: 13px;
+  }
+
+  .cart-page.cart-summary .summary-row strong {
+    font-size: 13px;
+  }
+
+  .cart-page.cart-summary .summary-total {
+    padding: 20px 0 25px;
+  }
+
+  .cart-page.cart-summary .summary-total span {
+    font-size: 16px;
+  }
+
+  .cart-page.cart-summary .summary-total strong {
+    font-size: 19px;
+  }
+
+  .cart-page.cart-summary .checkout-btn {
+    min-height: 49px;
+    font-size: 14px;
   }
 }

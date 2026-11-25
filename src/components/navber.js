@@ -8,6 +8,7 @@ import { useAuth } from "../context/authContext";
 import DynamicIcon from "./dynamicIcon";
 import CartDrawer from "./CartDrawer";
 import Marquee from "react-fast-marquee";
+// import { FaArrowUp } from "react-icons/fa";
 
 // import "../App.css";
 import "../style/navbar.css";
@@ -27,32 +28,32 @@ const productCategories = [
         category: "tubs"
     },
     {
-        name: "Sorbet",
+        name: "sorbet",
         description: "Cup",
         category: "family-packs"
     },
     {
-        name: "Popsicles",
+        name: "popsicles",
         description: "Mini · Big · Real Fruit",
         category: "sundaes"
     },
     {
-        name: "Chocolate",
+        name: "chocolate",
         description: "All Chocolate Products",
         category: "sticks"
     },
     {
-        name: "Breads & Buns",
+        name: "bread-&-buns",
         description: "All Bakery Products",
         category: "milkshakes"
     },
     {
-        name: "Cookies",
+        name: "cookies",
         description: "All Cookie Products",
         category: "cookies"
     },
     {
-        name: "Dips & Spreads",
+        name: "dips-&-spread",
         description: "Hummus · Pesto · Hazelnut · Biskia · Magnum Spread",
         category: "dips-spreads"
     }
@@ -91,7 +92,7 @@ function MobileNavLink({ to, children, onNavigate }) {
     return (
         <Link to={to} onClick={onNavigate}>
             <span>{children}</span>
-            <DynamicIcon name="arrow-right" size={17} />
+            <DynamicIcon name="arrowRight" size={17} />
         </Link>
     );
 }
@@ -110,6 +111,14 @@ function Navbar() {
     const { user, logout } = useAuth();
 
     const navigate = useNavigate();
+    // const handleCategoryClick = (category) => {
+    //     const categoryId = category
+    //         .toLowerCase()
+    //         .trim()
+    //         .replace(/\s+/g, "-");
+
+    //     navigate(`/products#${categoryId}`);
+    // };
     const location = useLocation();
 
     const userRole = String(user?.role || "").toLowerCase().trim();
@@ -146,23 +155,23 @@ function Navbar() {
     // SCROLL STATE
     // =====================================
 
-    const [isScrolled, setIsScrolled] = useState(false);
+    // const [isScrolled, setIsScrolled] = useState(false);
 
-    useEffect(() => {
+    // useEffect(() => {
 
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 80);
-        };
+    //     const handleScroll = () => {
+    //         setIsScrolled(window.scrollY > 80);
+    //     };
 
-        window.addEventListener("scroll", handleScroll, {
-            passive: true
-        });
+    //     window.addEventListener("scroll", handleScroll, {
+    //         passive: true
+    //     });
 
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
+    //     return () => {
+    //         window.removeEventListener("scroll", handleScroll);
+    //     };
 
-    }, []);
+    // }, []);
 
 
     // =====================================
@@ -191,7 +200,43 @@ function Navbar() {
         setMobileProductsOpen(prev => !prev);
     };
 
+    // scroll to top 
+    // =====================================
+// SCROLL STATE + SCROLL TO TOP
+// =====================================
 
+const [isScrolled, setIsScrolled] = useState(false);
+const [showScrollTop, setShowScrollTop] = useState(false);
+
+useEffect(() => {
+
+    const handleScroll = () => {
+        const scrollPosition = window.scrollY;
+
+        setIsScrolled(scrollPosition > 80);
+        setShowScrollTop(scrollPosition > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll, {
+        passive: true
+    });
+
+    // Check initial scroll position
+    handleScroll();
+
+    return () => {
+        window.removeEventListener("scroll", handleScroll);
+    };
+
+}, []);
+
+const scrollToTop = () => {
+    window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth"
+    });
+};
     // =====================================
     // BODY SCROLL LOCK
     // =====================================
@@ -500,16 +545,16 @@ function Navbar() {
                                         {isAdmin
                                             ? "Administrator"
                                             : customer?.name ||
-                                              customer?.fullName ||
-                                              "Customer"}
+                                            customer?.fullName ||
+                                            "Customer"}
                                     </strong>
 
                                     <small>
                                         {isAdmin
                                             ? "Admin"
                                             : customer?.customerId ||
-                                              customer?.id ||
-                                              "Customer"}
+                                            customer?.id ||
+                                            "Customer"}
                                     </small>
 
                                 </div>
@@ -526,8 +571,8 @@ function Navbar() {
                                         {isAdmin
                                             ? user?.name || "Administrator"
                                             : customer?.name ||
-                                              customer?.fullName ||
-                                              "Customer"}
+                                            customer?.fullName ||
+                                            "Customer"}
                                     </p>
 
                                     <p>
@@ -650,17 +695,15 @@ function Navbar() {
             ===================================== */}
 
             <div
-                className={`mobile-menu-overlay ${
-                    mobileMenuOpen ? "active" : ""
-                }`}
+                className={`mobile-menu-overlay ${mobileMenuOpen ? "active" : ""
+                    }`}
                 onClick={closeMobileMenu}
                 aria-hidden={!mobileMenuOpen}
             >
 
                 <aside
-                    className={`mobile-offcanvas ${
-                        mobileMenuOpen ? "active" : ""
-                    }`}
+                    className={`mobile-offcanvas ${mobileMenuOpen ? "active" : ""
+                        }`}
                     onClick={event => event.stopPropagation()}
                     aria-label="Mobile navigation"
                     aria-modal="true"
@@ -803,8 +846,8 @@ function Navbar() {
                                             {isAdmin
                                                 ? "Administrator"
                                                 : customer?.name ||
-                                                  customer?.fullName ||
-                                                  "Customer"}
+                                                customer?.fullName ||
+                                                "Customer"}
                                         </strong>
 
                                         <small>
@@ -887,9 +930,8 @@ function Navbar() {
 
                 <Link
                     to="/"
-                    className={`mobile-bottom-item ${
-                        isHomeActive ? "active" : ""
-                    }`}
+                    className={`mobile-bottom-item ${isHomeActive ? "active" : ""
+                        }`}
                 >
                     <DynamicIcon
                         name="home"
@@ -904,9 +946,8 @@ function Navbar() {
 
                 <Link
                     to="/products"
-                    className={`mobile-bottom-item ${
-                        isProductsActive ? "active" : ""
-                    }`}
+                    className={`mobile-bottom-item ${isProductsActive ? "active" : ""
+                        }`}
                 >
                     <DynamicIcon
                         name="shoppingBag"
@@ -949,9 +990,8 @@ function Navbar() {
 
                 <button
                     type="button"
-                    className={`mobile-bottom-item ${
-                        isAccountActive ? "active" : ""
-                    }`}
+                    className={`mobile-bottom-item ${isAccountActive ? "active" : ""
+                        }`}
                     onClick={openAccount}
                 >
 
@@ -965,7 +1005,16 @@ function Navbar() {
                 </button>
 
             </div>
-
+            {showScrollTop && (
+                <button
+                    className="scroll-to-top"
+                    onClick={scrollToTop}
+                    aria-label="Scroll to top"
+                    title="Scroll to top"
+                >
+                  <DynamicIcon name="rocket" size={22} />
+                </button>
+            )}
 
             {/* =====================================
                 GLOBAL CART DRAWER

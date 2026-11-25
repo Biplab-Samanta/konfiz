@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import "../style/product.css";
 import Navbar from "../components/navber";
 import { useCart } from "../context/cartcontext";
-// import { useLocation } from "react-router-dom";
 
 // =====================================
 // HELPERS
@@ -108,40 +107,128 @@ const getAddonId = (addon) =>
 // WEIGHT HELPERS
 
 const getWeightOptions = (product) => {
-    const options = product?.pricing?.weightOptions;
+    const options =
+        product?.pricing?.sizes ||
+        product?.sizes ||
+        product?.pricing?.weightOptions ||
+        product?.weightOptions ||
+        [];
 
-    if (Array.isArray(options) && options.length) {
-        return options;
+    if (!Array.isArray(options) || options.length === 0) {
+        return [null];
     }
 
-    return [null];
+    return options.map(option => {
+        if (typeof option === "object" && option !== null) {
+            return Number(
+                option.weight ??
+                option.quantity ??
+                option.size
+            );
+        }
+
+        return Number(option);
+    });
 };
 
 const getUnit = (product) =>
-    product?.pricing?.unit || product?.unit || "ml";
+    product?.pricing?.unit ||
+    product?.unit ||
+    "ml";
 
-const getBasePrice = (product, weight) => {
-    const pricing = product?.pricing;
+// get price 
+const getBasePrice = (product, weight = null) => {
+    if (!product) return 0;
 
-    if (
-        pricing &&
-        weight !== null &&
-        weight !== undefined &&
-        Number(pricing.baseQuantity) > 0
-    ) {
-        const rate = Number(
-            pricing.pricePerBaseUnit ?? product.price ?? 0
-        );
+    const sizes =
+        product?.pricing?.sizes ||
+        product?.sizes ||
+        [];
 
-        return (
-            rate *
-            Number(weight) /
-            Number(pricing.baseQuantity)
-        );
+    if (Array.isArray(sizes) && sizes.length > 0) {
+        const selectedOption =
+            sizes.find(
+                (option) =>
+                    Number(option.weight) === Number(weight)
+            ) || (weight === null ? sizes[0] : null);
+
+        if (selectedOption) {
+            return Number(
+                selectedOption.offerPrice ??
+                selectedOption.price ??
+                0
+            );
+        }
     }
 
-    return Number(product?.price) || 0;
+    return Number(product.offerPrice ?? product.price ?? 0);
 };
+// =====================================
+// REGULAR PRICE AND OFFER PRICE
+// =====================================
+
+const getPriceDetails = (product, weight) => {
+    const regularBasePrice = getBasePrice(product, weight);
+
+    const weightOptions =
+        product?.pricing?.sizes ||
+        product?.sizes ||
+        [];
+
+    // Find the selected size's price information
+    const selectedOption = weightOptions.find(option => {
+        const optionWeight =
+            typeof option === "object"
+                ? option.weight ?? option.quantity ?? option.size
+                : option;
+
+        return Number(optionWeight) === Number(weight);
+    });
+
+    const regularPrice = Number(
+        selectedOption?.regularPrice ??
+        selectedOption?.mrp ??
+        selectedOption?.price ??
+        product?.regularPrice ??
+        product?.mrp ??
+        regularBasePrice
+    );
+
+    const possibleOfferPrice =
+        selectedOption?.offerPrice ??
+        selectedOption?.salePrice ??
+        product?.offerPrice ??
+        product?.discountPrice ??
+        product?.salePrice ??
+        product?.pricing?.offerPrice;
+
+    const offerPrice = Number(possibleOfferPrice);
+
+    // Only show an offer when it is valid and lower than regular price
+    const hasOffer =
+        Number.isFinite(offerPrice) &&
+        offerPrice > 0 &&
+        offerPrice < regularPrice;
+
+    const sellingPrice = hasOffer
+        ? offerPrice
+        : regularPrice;
+
+    const discount = hasOffer
+        ? Math.round(
+            ((regularPrice - offerPrice) / regularPrice) * 100
+        )
+        : 0;
+
+    return {
+        regularPrice,
+        offerPrice: hasOffer ? offerPrice : null,
+        sellingPrice,
+        hasOffer,
+        discount
+    };
+};
+
 
 // FLAVOUR HELPERS
 
@@ -218,6 +305,8 @@ function Product() {
         user?.customerId ||
         user?.id ||
         user?._id;
+
+
 
     // =====================================
     // WISHLIST
@@ -421,13 +510,42 @@ function Product() {
     }, [categories]);
 
     // =====================================
-    // NORMALIZE SUBCATEGORIES
+    //location
     // =====================================
+    const location = useLocation();
 
+    useEffect(() => {
+        const categoryId = location.hash.slice(1);
 
-    // =====================================
-    // NORMALIZE SUBCATEGORIES
-    // =====================================
+        if (!categoryId) return;
+
+        let attempts = 0;
+        let timer;
+
+        const scrollToCategory = () => {
+            const categoryElement = document.getElementById(categoryId);
+
+            if (categoryElement) {
+                categoryElement.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+
+                return;
+            }
+
+            attempts++;
+
+            if (attempts < 30) {
+                timer = setTimeout(scrollToCategory, 100);
+            }
+        };
+
+        timer = setTimeout(scrollToCategory, 100);
+
+        return () => clearTimeout(timer);
+    }, [location.hash]);
+
 
     const normalizedSubcategories = useMemo(() => {
         // Get subcategories nested inside admin categories
@@ -759,11 +877,14 @@ function Product() {
         quantity,
         selectedAddonIds = []
     ) => {
-        const addons = (product.addons || [])
+        const availableAddons = Array.isArray(product.addons)
+            ? product.addons
+            : [];
+
+        // Get selected add-on details
+        const addons = availableAddons
             .filter(addon =>
-                selectedAddonIds.includes(
-                    getAddonId(addon)
-                )
+                selectedAddonIds.includes(getAddonId(addon))
             )
             .map(addon => ({
                 id: getAddonId(addon),
@@ -771,57 +892,75 @@ function Product() {
                 price: Number(addon.price) || 0
             }));
 
-        const basePrice = getBasePrice(
-            product,
-            weight
-        );
+        // Calculate prices
+        const priceDetails = getPriceDetails(product, weight);
+
+        const basePrice = priceDetails.sellingPrice;
 
         const addonPrice = addons.reduce(
-            (total, addon) =>
-                total + addon.price,
+            (total, addon) => total + addon.price,
             0
         );
 
-        const totalPrice =
-            basePrice + addonPrice;
+        const unitPrice = basePrice + addonPrice;
 
         const productId = getProductId(product);
 
+        // Different add-on combinations become separate cart items
         const cartItemId = [
             productId,
             weight ?? "standard",
             addons
                 .map(addon => addon.id)
                 .sort()
-                .join("-")
+                .join("-") || "no-addon"
         ].join("__");
 
+        // Submit product and add-on information to CartContext
         addProductToCart({
             id: cartItemId,
             cartItemId,
             productId,
+
             name: product.name,
             image: product.image || null,
+
             category: getProductCategoryName(product),
             subcategory: getProductSubcategoryName(product),
             subcategoryId: getProductSubcategoryId(product),
+
             weight,
             unit: getUnit(product),
+
             addons,
+
             basePrice,
             addonPrice,
-            price: totalPrice,
-            quantity
+
+            price: unitPrice,
+            quantity,
+
+            totalPrice: unitPrice * quantity
         });
 
         closeAddonPopup();
     };
 
     const handleAddToCart = (product) => {
+
+        // If customer is not logged in, redirect to login
+        if (!user || !user.authenticated) {
+            navigate("/login", {
+                state: {
+                    from: location.pathname + location.search + location.hash
+                }
+            });
+            return;
+        }
+
         const productId = getProductId(product);
 
-        const selected =
-            selections[productId] || {};
+        const selected = selections[productId] || {};
 
         const options = getWeightOptions(product);
 
@@ -837,10 +976,11 @@ function Product() {
 
         if (!getStock(product)) return;
 
-        if (
-            Array.isArray(product.addons) &&
-            product.addons.length > 0
-        ) {
+        const availableAddons = Array.isArray(product.addons)
+            ? product.addons
+            : [];
+
+        if (availableAddons.length > 0) {
             setAddonPopup({
                 open: true,
                 product,
@@ -859,7 +999,6 @@ function Product() {
             []
         );
     };
-
     // =====================================
     // WISHLIST
     // =====================================
@@ -1078,10 +1217,10 @@ function Product() {
     // =====================================
 
     const popupBasePrice = addonPopup.product
-        ? getBasePrice(
+        ? getPriceDetails(
             addonPopup.product,
             addonPopup.weight
-        )
+        ).sellingPrice
         : 0;
 
     const popupAddonPrice = addonPopup.product
@@ -1731,13 +1870,15 @@ function Product() {
                                             const quantity =
                                                 selections[productId]?.quantity || 1;
 
-                                            const basePrice = getBasePrice(
+                                            const priceDetails = getPriceDetails(
                                                 product,
                                                 selectedWeight
                                             );
 
-                                            const productCategoryName =
-                                                getProductCategoryName(product);
+                                            const basePrice = priceDetails.sellingPrice;
+
+                                            // const productCategoryName =
+                                            //     getProductCategoryName(product);
 
                                             const inWishlist =
                                                 isInWishlist(productId);
@@ -1784,11 +1925,15 @@ function Product() {
                                                             </div>
                                                         )}
 
-                                                        {productCategoryName && (
-                                                            <span className="product-category">
-                                                                {productCategoryName}
-                                                            </span>
-                                                        )}
+                                                        {(
+                                                            product.isPremium ||
+                                                            product.premium ||
+                                                            product.featured
+                                                        ) && (
+                                                                <span className="product-premium-badge">
+                                                                    ★ PREMIUM
+                                                                </span>
+                                                            )}
 
                                                         {product.isNew && (
                                                             <span className="product-badge">
@@ -1863,15 +2008,35 @@ function Product() {
 
                                                         <div className="product-card-bottom">
 
+
                                                             <div className="product-price">
 
-                                                                <span>Starting price</span>
+                                                                <span className="price-label">
+                                                                    {priceDetails.hasOffer ? "Special Offer Price" : "Price"}
+                                                                </span>
 
-                                                                <strong>
-                                                                    ₹{basePrice.toFixed(2)}
-                                                                </strong>
+                                                                <div className="product-price-line">
+
+                                                                    <strong className="product-price-current">
+                                                                        ₹{priceDetails.sellingPrice.toFixed(2)}
+                                                                    </strong>
+
+                                                                    {priceDetails.hasOffer && (
+                                                                        <>
+                                                                            <del className="product-price-original">
+                                                                                ₹{priceDetails.regularPrice.toFixed(2)}
+                                                                            </del>
+
+                                                                            <span className="product-discount-badge">
+                                                                                {priceDetails.discount}% OFF
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+
+                                                                </div>
 
                                                             </div>
+
 
                                                             <div className="quantity-controls">
 
@@ -1933,9 +2098,11 @@ function Product() {
                                                                 type="button"
                                                                 className="add-cart-btn"
                                                                 disabled={!getStock(product)}
-                                                                onClick={() =>
-                                                                    handleAddToCart(product)
-                                                                }
+                                                                onClick={() => handleAddToCart(product)}
+                                                            // onClick={() => {
+                                                            //     console.log("ADD TO CART CLICKED", product);
+                                                            //     handleAddToCart(product);
+                                                            // }}
                                                             >
                                                                 {!getStock(product)
                                                                     ? "Out of Stock"
@@ -2301,3 +2468,8 @@ function Product() {
 }
 
 export default Product;
+
+
+
+
+

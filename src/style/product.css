@@ -545,7 +545,7 @@ p.product-description.card-description {
 .product-price span {
   display: block;
   font-size: 10px;
-  color: #928176;
+  color: #ffffff;
 }
 
 .product-price strong {
@@ -1336,4 +1336,99 @@ p.product-description.card-description {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
+}
+
+
+/* =========================================
+   KONFiZ PREMIUM PRODUCT BADGE
+========================================= */
+
+.product-premium-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 3;
+
+    padding: 7px 13px;
+    border-radius: 30px;
+
+    background: var(--accent-color, var(--accent, #e85d75));
+    color: #ffffff;
+
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* =========================================
+   PRODUCT PRICE DESIGN
+========================================= */
+
+.product-price {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.price-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #858585;
+    letter-spacing: 0.4px;
+}
+
+.product-price-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
+.product-price-current {
+    font-size: 23px;
+    font-weight: 800;
+    color: var(--accent-color, var(--accent, #e85d75));
+    line-height: 1.2;
+}
+
+.product-price-original {
+    font-size: 14px;
+    font-weight: 500;
+    color: #929292;
+    text-decoration: line-through;
+}
+
+.product-discount-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+
+    border-radius: 5px;
+
+    background: var(--accent-color, var(--accent, #e85d75));
+    color: #ffffff;
+
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+/* =========================================
+   RESPONSIVE PRICE
+========================================= */
+
+@media (max-width: 480px) {
+    .product-price-current {
+        font-size: 20px;
+    }
+
+    .product-price-original {
+        font-size: 12px;
+    }
+
+    .product-discount-badge {
+        font-size: 9px;
+    }
 }

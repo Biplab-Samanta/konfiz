@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 
 // =====================================================
 // KONFiZ CENTRAL PRODUCT STORE
-// All product data operations should go through this file
+// All product operations go through this file
 // =====================================================
 
 const STORAGE_KEY = "konfizProducts";
-const UPDATE_EVENT = "konfiz-products-updated";
+const UPDATE_EVENT = "konfizProductsUpdated";
 
 // =====================================================
 // DEFAULT PRODUCTS
@@ -22,8 +22,7 @@ const initialProducts = [
         category: "Ice Cream",
         categoryId: "",
         subcategory: "Chocolate",
-        description:
-            "Rich and creamy Belgian chocolate ice cream made with premium cocoa and fresh dairy ingredients.",
+        description: "Rich and creamy Belgian chocolate ice cream made with premium cocoa and fresh dairy ingredients.",
         shortDescription: "Rich Belgian chocolate flavour.",
         flavour: "Chocolate",
         ingredients: "Milk, cream, sugar, cocoa powder, chocolate.",
@@ -61,6 +60,7 @@ const initialProducts = [
         available: true,
         status: "active",
         featured: true,
+        isPopular: true,
 
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -73,8 +73,7 @@ const initialProducts = [
         category: "Ice Cream",
         categoryId: "",
         subcategory: "Fruit",
-        description:
-            "A refreshing strawberry ice cream prepared with creamy dairy and delicious strawberry flavour.",
+        description: "A refreshing strawberry ice cream prepared with creamy dairy and delicious strawberry flavour.",
         shortDescription: "Fresh and fruity strawberry flavour.",
         flavour: "Strawberry",
         ingredients: "Milk, cream, sugar, strawberry pulp.",
@@ -108,6 +107,7 @@ const initialProducts = [
         available: true,
         status: "active",
         featured: true,
+        isPopular: true,
 
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -120,8 +120,7 @@ const initialProducts = [
         category: "Ice Cream",
         categoryId: "",
         subcategory: "Vanilla",
-        description:
-            "Smooth and delicious vanilla ice cream made with creamy milk and rich vanilla flavour.",
+        description: "Smooth and delicious vanilla ice cream made with creamy milk and rich vanilla flavour.",
         shortDescription: "Classic creamy vanilla flavour.",
         flavour: "Vanilla",
         ingredients: "Milk, cream, sugar, vanilla extract.",
@@ -155,6 +154,7 @@ const initialProducts = [
         available: true,
         status: "active",
         featured: true,
+        isPopular: true,
 
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -172,10 +172,12 @@ const readProducts = () => {
         if (storedProducts !== null) {
             const parsedProducts = JSON.parse(storedProducts);
 
-            return Array.isArray(parsedProducts) ? parsedProducts : [];
+            return Array.isArray(parsedProducts)
+                ? parsedProducts
+                : [];
         }
 
-        // Initialize default products only on first use
+        // Initialize defaults only on first use
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(initialProducts)
@@ -191,10 +193,10 @@ const readProducts = () => {
 
 // =====================================================
 // SAVE PRODUCTS
-// All product changes pass through this function
+// Single source of truth for all product changes
 // =====================================================
 
-const saveProducts = (products) => {
+export const saveProducts = (products) => {
     try {
         if (!Array.isArray(products)) {
             throw new Error("Product data must be an array.");
@@ -282,11 +284,14 @@ export const addProduct = (productData) => {
             return null;
         }
 
-        const updatedProducts = [...products, newProduct];
+        const updatedProducts = [
+            ...products,
+            newProduct
+        ];
 
-        const saved = saveProducts(updatedProducts);
-
-        return saved ? newProduct : null;
+        return saveProducts(updatedProducts)
+            ? newProduct
+            : null;
 
     } catch (error) {
         console.error("KONFiZ: Add product failed:", error);
@@ -314,6 +319,7 @@ export const updateProduct = (id, updatedData) => {
         let updatedProduct = null;
 
         const updatedProducts = products.map(product => {
+
             if (String(product.id) !== String(id)) {
                 return product;
             }
@@ -323,23 +329,23 @@ export const updateProduct = (id, updatedData) => {
                 ...updatedData,
 
                 id: product.id,
-
                 createdAt: product.createdAt,
-
                 updatedAt: new Date().toISOString()
             };
 
             if (updatedData.stock !== undefined) {
                 updatedProduct.stock = Number(updatedData.stock);
-                updatedProduct.inStock = Number(updatedData.stock) > 0;
+
+                updatedProduct.inStock =
+                    Number(updatedData.stock) > 0;
             }
 
             return updatedProduct;
         });
 
-        const saved = saveProducts(updatedProducts);
-
-        return saved ? updatedProduct : null;
+        return saveProducts(updatedProducts)
+            ? updatedProduct
+            : null;
 
     } catch (error) {
         console.error("KONFiZ: Update product failed:", error);
@@ -408,7 +414,8 @@ export const getFeaturedProducts = () => {
 export const getActiveProducts = () => {
     return readProducts().filter(
         product =>
-            product.status === "active" &&
+            product.status !== "inactive" &&
+            product.status !== false &&
             product.available !== false
     );
 };
@@ -418,7 +425,7 @@ export const getActiveProducts = () => {
 // =====================================================
 
 export const getProductsByCategory = (category) => {
-    return readProducts().filter(
+    return getActiveProducts().filter(
         product =>
             String(product.category).toLowerCase() ===
             String(category).toLowerCase()
@@ -430,13 +437,15 @@ export const getProductsByCategory = (category) => {
 // =====================================================
 
 export const searchProducts = (searchText) => {
-    const search = String(searchText || "").toLowerCase().trim();
+    const search = String(searchText || "")
+        .toLowerCase()
+        .trim();
 
     if (!search) {
-        return readProducts();
+        return getActiveProducts();
     }
 
-    return readProducts().filter(product =>
+    return getActiveProducts().filter(product =>
         [
             product.name,
             product.sku,
@@ -458,20 +467,41 @@ export const searchProducts = (searchText) => {
 // =====================================================
 
 export const useProducts = () => {
-    const [products, setProducts] = useState(() => readProducts());
+
+    const [products, setProducts] = useState(
+        () => readProducts()
+    );
 
     useEffect(() => {
+
         const refreshProducts = () => {
             setProducts(readProducts());
         };
 
-        window.addEventListener(UPDATE_EVENT, refreshProducts);
-        window.addEventListener("storage", refreshProducts);
+        window.addEventListener(
+            UPDATE_EVENT,
+            refreshProducts
+        );
+
+        window.addEventListener(
+            "storage",
+            refreshProducts
+        );
 
         return () => {
-            window.removeEventListener(UPDATE_EVENT, refreshProducts);
-            window.removeEventListener("storage", refreshProducts);
+
+            window.removeEventListener(
+                UPDATE_EVENT,
+                refreshProducts
+            );
+
+            window.removeEventListener(
+                "storage",
+                refreshProducts
+            );
+
         };
+
     }, []);
 
     return products;
@@ -482,5 +512,9 @@ export const useProducts = () => {
 // =====================================================
 
 export const refreshProducts = () => {
-    window.dispatchEvent(new Event(UPDATE_EVENT));
+
+    window.dispatchEvent(
+        new Event(UPDATE_EVENT)
+    );
+
 };

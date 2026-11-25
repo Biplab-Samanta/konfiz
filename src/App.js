@@ -43,7 +43,7 @@ import ProductDetails from "./pages/productdetails";
 import Loader from "./components/loader";
 
 // =====================================
-// AUTH HELPER
+// AUTH HELPERS
 // =====================================
 
 const isUserAuthenticated = (user) => {
@@ -54,7 +54,6 @@ const getUserRole = (user) => {
     return String(user?.role || "").trim().toLowerCase();
 };
 
-
 // =====================================
 // LOGIN ROUTE PROTECTION
 // =====================================
@@ -62,8 +61,7 @@ const getUserRole = (user) => {
 function LoginRoute() {
 
     const { user } = useAuth();
-
-
+    const location = useLocation();
 
     if (isUserAuthenticated(user)) {
 
@@ -74,7 +72,18 @@ function LoginRoute() {
         }
 
         if (role === "customer") {
-            return <Navigate to="/customer/dashboard" replace />;
+
+            // Return to the originally requested page if available
+            const requestedPage = location.state?.from;
+
+            const destination =
+                typeof requestedPage === "string"
+                    ? requestedPage
+                    : requestedPage?.pathname
+                        ? `${requestedPage.pathname}${requestedPage.search || ""}${requestedPage.hash || ""}`
+                        : "/customer/dashboard";
+
+            return <Navigate to={destination} replace />;
         }
 
         return <Navigate to="/" replace />;
@@ -83,7 +92,6 @@ function LoginRoute() {
     return <Login />;
 }
 
-
 // =====================================
 // GLOBAL ROLE-BASED ROUTE PROTECTION
 // =====================================
@@ -91,10 +99,23 @@ function LoginRoute() {
 function ProtectedRoute({ children, allowedRoles = [] }) {
 
     const { user } = useAuth();
+    const location = useLocation();
 
-    // Check login
+    // Save the page the customer tried to access
     if (!isUserAuthenticated(user)) {
-        return <Navigate to="/login" replace />;
+
+        return (
+            <Navigate
+                to="/login"
+                replace
+                state={{
+                    from:
+                        location.pathname +
+                        location.search +
+                        location.hash
+                }}
+            />
+        );
     }
 
     // Normalize role
@@ -108,7 +129,6 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
     return children;
 }
 
-
 // =====================================
 // APP ROUTES
 // =====================================
@@ -116,8 +136,6 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
 function AppRoutes() {
 
     const { user } = useAuth();
-
-
     const location = useLocation();
 
     useEffect(() => {
@@ -181,6 +199,7 @@ function AppRoutes() {
                     path="/products/details/:productId"
                     element={<ProductDetails />}
                 />
+
                 {/* =====================================
                     CUSTOMER + ADMIN PAGES
                 ===================================== */}
@@ -218,7 +237,6 @@ function AppRoutes() {
                     }
                 />
 
-
                 {/* =====================================
                     CUSTOMER ONLY
                 ===================================== */}
@@ -233,7 +251,6 @@ function AppRoutes() {
                         </ProtectedRoute>
                     }
                 />
-
 
                 {/* =====================================
                     ADMIN ONLY
@@ -250,7 +267,6 @@ function AppRoutes() {
                     }
                 />
 
-
                 {/* =====================================
                     404 PAGE
                 ===================================== */}
@@ -265,7 +281,6 @@ function AppRoutes() {
         </CartProvider>
     );
 }
-
 
 // =====================================
 // GLOBAL LOADER
@@ -292,7 +307,6 @@ function GlobalLoader() {
     return <Loader />;
 }
 
-
 // =====================================
 // MAIN APP
 // =====================================
@@ -305,11 +319,7 @@ function App() {
 
             <BrowserRouter>
 
-                {/* GLOBAL LOADER */}
-
                 <GlobalLoader />
-
-                {/* APPLICATION ROUTES */}
 
                 <AppRoutes />
 

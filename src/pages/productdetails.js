@@ -40,17 +40,57 @@ const subcategoryName = (p) => {
 };
 
 const unit = (p) =>
-    p?.pricing?.unit || p?.unit || "ml";
+    p?.weightUnit ||
+    p?.pricing?.unit ||
+    p?.sizes?.[0]?.unit ||
+    p?.baseUnit ||
+    p?.unit ||
+    "ml";
 
 const weights = (p) => {
-    const list = p?.pricing?.weightOptions;
+
+    // Latest AddProduct structure
+    if (Array.isArray(p?.sizes) && p.sizes.length) {
+        return p.sizes.map(size => Number(size.weight));
+    }
+
+    // Older product structure
+    const list =
+        p?.weightOptions ||
+        p?.pricing?.weightOptions;
 
     return Array.isArray(list) && list.length
         ? list
         : [null];
 };
 
+// Find the saved size object matching the selected weight
+const getSelectedSize = (p, weight) => {
+
+    if (!Array.isArray(p?.sizes)) return null;
+
+    return p.sizes.find(
+        size => Number(size.weight) === Number(weight)
+    ) || null;
+};
+
+// Actual selling price for the selected size
 const basePrice = (p, weight) => {
+
+    const selectedSize = getSelectedSize(p, weight);
+
+    if (selectedSize) {
+
+        const offerPrice = Number(selectedSize.offerPrice);
+
+        if (offerPrice > 0) {
+            return offerPrice;
+        }
+
+        return Number(selectedSize.price) || 0;
+    }
+
+    // Older pricing structure
     const pricing = p?.pricing;
 
     if (
@@ -67,6 +107,24 @@ const basePrice = (p, weight) => {
     }
 
     return Number(p?.price) || 0;
+};
+
+// Regular price for discount calculation
+const getRegularPrice = (p, weight) => {
+
+    const selectedSize = getSelectedSize(p, weight);
+
+    if (selectedSize) {
+        return Number(selectedSize.price) || 0;
+    }
+
+    return Number(
+        p?.originalPrice ??
+        p?.mrp ??
+        p?.compareAtPrice ??
+        p?.price ??
+        0
+    );
 };
 
 const addonId = (a) =>
@@ -235,18 +293,17 @@ function ProductDetails() {
     // DISCOUNT
     // =====================================
 
-    const regularPrice = Number(
-        product?.originalPrice ??
-        product?.mrp ??
-        product?.compareAtPrice ??
-        0
-    );
+    const regularPrice = product
+        ? getRegularPrice(product, selectedWeight)
+        : 0;
 
     const discount = regularPrice > unitPrice
         ? Math.round(
             ((regularPrice - unitPrice) / regularPrice) * 100
         )
         : 0;
+
+
 
     // =====================================
     // WISHLIST
@@ -546,7 +603,6 @@ function ProductDetails() {
                         <div className="pd-image-panel">
 
                             <div className="pd-gallery-topline">
-                                <span>KONFiZ COLLECTION</span>
                                 <span>
                                     {String(activeImage + 1).padStart(2, "0")} / {String(images.length).padStart(2, "0")}
                                 </span>
@@ -581,10 +637,7 @@ function ProductDetails() {
                                 )}
                             </div>
 
-                            <div className="pd-image-caption">
-                                <span>CRAFTED FOR YOUR CRAVINGS</span>
-                                <span>EST. KONFiZ</span>
-                            </div>
+
 
                         </div>
 
@@ -608,7 +661,7 @@ function ProductDetails() {
 
                         {/* EDITORIAL PRODUCT INTRODUCTION */}
 
-                        
+
 
                     </div>
 
@@ -617,7 +670,6 @@ function ProductDetails() {
                     <div className="pd-information">
 
                         <div className="pd-brand-line">
-                            <span>KONFiZ</span>
                             <span className={inStock ? "in-stock" : "out-stock"}>
                                 ● {inStock ? "Available" : "Out of Stock"}
                             </span>
@@ -625,7 +677,7 @@ function ProductDetails() {
 
                         <h1>{product.name}</h1>
 
-                       
+
 
                         <p className="pd-long-description">
                             {product.description ||
@@ -639,7 +691,7 @@ function ProductDetails() {
                                 {/* {product.reviewCount || product.reviewsCount
                                     ? `${product.reviewCount || product.reviewsCount} Reviews`
                                     : "Freshly made with love"} */}
-                                      {product.flavour || product.flavor || "Freshly made with love"}
+                                {product.flavour || product.flavor || "Freshly made with love"}
                             </span>
                         </div>
 
@@ -667,82 +719,83 @@ function ProductDetails() {
                         </div>
 
                         {/* WEIGHT */}
+                        <div className="pd-selection-section-wrap">
 
-                        <div className="pd-selection-section">
-
-                            <h3>Choose Your Pack Size</h3>
-
-                            <div className="pd-weight-options">
-                                {weightOptions.map((weight, index) => (
-                                    <button
-                                        type="button"
-                                        key={index}
-                                        className={
-                                            String(selectedWeight) === String(weight)
-                                                ? "active"
-                                                : ""
-                                        }
-                                        onClick={() => setSelectedWeight(weight)}
-                                    >
-                                        <strong>
-                                            {weight === null
-                                                ? "Standard"
-                                                : `${weight} ${unit(product)}`}
-                                        </strong>
-                                        <span>
-                                            ₹{formatPrice(
-                                                basePrice(product, weight)
-                                            )}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-
-                        </div>
-
-                        {/* ADDONS */}
-
-                        {addons.length > 0 && (
                             <div className="pd-selection-section">
 
-                                <h3>Customize Your Ice Cream</h3>
+                                <h3>Choose Your Pack Size</h3>
 
-                                <div className="pd-addon-grid">
-                                    {addons.map((addon, index) => {
-                                        const id = addonId(addon);
-
-                                        return (
-                                            <label
-                                                className="pd-addon-item"
-                                                key={`${id}-${index}`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedAddons.includes(id)}
-                                                    onChange={e =>
-                                                        setSelectedAddons(previous =>
-                                                            e.target.checked
-                                                                ? [...previous, id]
-                                                                : previous.filter(
-                                                                    item => item !== id
-                                                                )
-                                                        )
-                                                    }
-                                                />
-
-                                                <span>{addon.name}</span>
-
-                                                <strong>
-                                                    +₹{formatPrice(addon.price)}
-                                                </strong>
-                                            </label>
-                                        );
-                                    })}
+                                <div className="pd-weight-options">
+                                    {weightOptions.map((weight, index) => (
+                                        <button
+                                            type="button"
+                                            key={index}
+                                            className={
+                                                String(selectedWeight) === String(weight)
+                                                    ? "active"
+                                                    : ""
+                                            }
+                                            onClick={() => setSelectedWeight(weight)}
+                                        >
+                                            <strong>
+                                                {weight === null
+                                                    ? "Standard"
+                                                    : `${weight} ${unit(product)}`}
+                                            </strong>
+                                            <span>
+                                                ₹{formatPrice(
+                                                    basePrice(product, weight)
+                                                )}
+                                            </span>
+                                        </button>
+                                    ))}
                                 </div>
 
                             </div>
-                        )}
 
+                            {/* ADDONS */}
+
+                            {addons.length > 0 && (
+                                <div className="pd-selection-section">
+
+                                    <h3>Customize Your Ice Cream</h3>
+
+                                    <div className="pd-addon-grid">
+                                        {addons.map((addon, index) => {
+                                            const id = addonId(addon);
+
+                                            return (
+                                                <label
+                                                    className="pd-addon-item"
+                                                    key={`${id}-${index}`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedAddons.includes(id)}
+                                                        onChange={e =>
+                                                            setSelectedAddons(previous =>
+                                                                e.target.checked
+                                                                    ? [...previous, id]
+                                                                    : previous.filter(
+                                                                        item => item !== id
+                                                                    )
+                                                            )
+                                                        }
+                                                    />
+
+                                                    <span>{addon.name}</span>
+
+                                                    <strong>
+                                                        +₹{formatPrice(addon.price)}
+                                                    </strong>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+
+                                </div>
+                            )}
+                        </div>
                         {/* QUANTITY */}
 
                         <div className="pd-quantity-row">
@@ -819,7 +872,7 @@ function ProductDetails() {
 
                         </div>
                         {/* ------------------------- */}
-                        <div className="delivery-check">
+                        {/* <div className="delivery-check">
 
                             <h4>Check Delivery Availability</h4>
 
@@ -871,18 +924,18 @@ function ProductDetails() {
                                 </div>
                             )}
 
-                        </div>
+                        </div> */}
                         {/* ------------------------- */}
 
                     </div>
 
                 </section>
 
-               
 
-        
 
-             
+
+
+
 
                 {/* SIMILAR PRODUCTS */}
 
@@ -981,7 +1034,7 @@ function ProductDetails() {
                     )}
 
                 </section>
- {/* HIGHLIGHTS */}
+                {/* HIGHLIGHTS */}
 
                 <section className="pd-highlights">
 

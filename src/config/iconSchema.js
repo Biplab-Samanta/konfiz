@@ -36,7 +36,10 @@ import {
     ShoppingBag,
     Bell,
     Check,
-    X
+    X,
+    Rocket,
+    ArrowUp,
+    ArrowUpCircle,
 } from "lucide-react";
 
 
@@ -86,6 +89,9 @@ const iconSchema = {
     dropdown: ChevronDown,
     next: ChevronRight,
     arrowRight: ArrowRight,
+    arrowUp: ArrowUp,
+    arrowUpCircle: ArrowUpCircle,
+    rocket: Rocket,
 
     // OTHER
     rating: Star,
