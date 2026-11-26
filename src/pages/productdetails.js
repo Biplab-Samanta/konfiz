@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 
+
 import Navbar from "../components/navber";
 import { useAuth } from "../context/authContext";
 import { useCart } from "../context/cartcontext";
@@ -173,7 +174,7 @@ const formatPrice = (price) =>
 // =====================================
 
 function ProductDetails() {
-
+    const [showFullDescription, setShowFullDescription] = useState(false);
     const { productId } = useParams();
     const navigate = useNavigate();
 
@@ -261,6 +262,7 @@ function ProductDetails() {
     const [selectedWeight, setSelectedWeight] = useState(null);
     const [selectedAddons, setSelectedAddons] = useState([]);
     const [quantity, setQuantity] = useState(1);
+    const [showAddonPopup, setShowAddonPopup] = useState(false);
 
     const weightOptions = useMemo(
         () => product ? weights(product) : [null],
@@ -276,6 +278,15 @@ function ProductDetails() {
     }, [productId, product, weightOptions]);
 
     const addons = product?.addons || [];
+    const toggleAddon = (addon) => {
+        const id = addonId(addon);
+
+        setSelectedAddons(previous =>
+            previous.includes(id)
+                ? previous.filter(item => item !== id)
+                : [...previous, id]
+        );
+    };
 
     const currentBasePrice = product
         ? basePrice(product, selectedWeight)
@@ -386,16 +397,23 @@ function ProductDetails() {
     // CART
     // =====================================
 
-    const handleCart = (buyNow = false) => {
+    const handleCart = (buyNow = false, addonsToAdd = selectedAddons) => {
         if (!product || !stockAvailable(product)) return;
 
         const selectedAddonObjects = addons
-            .filter(a => selectedAddons.includes(addonId(a)))
+            .filter(a => addonsToAdd.includes(addonId(a)))
             .map(a => ({
                 id: addonId(a),
                 name: a.name,
                 price: Number(a.price) || 0
             }));
+
+        const addonTotal = selectedAddonObjects.reduce(
+            (sum, addon) => sum + addon.price,
+            0
+        );
+
+        const finalUnitPrice = currentBasePrice + addonTotal;
 
         const id = getId(product);
 
@@ -420,10 +438,12 @@ function ProductDetails() {
             unit: unit(product),
             addons: selectedAddonObjects,
             basePrice: currentBasePrice,
-            addonPrice: currentAddonPrice,
-            price: unitPrice,
+            addonPrice: addonTotal,
+            price: finalUnitPrice,
             quantity
         });
+
+        setShowAddonPopup(false);
 
         if (buyNow) {
             navigate("/cart");
@@ -433,46 +453,46 @@ function ProductDetails() {
     // =====================================
     // delivery pin 
     // =====
-    const [pinCode, setPinCode] = useState("");
-    const [deliveryMessage, setDeliveryMessage] = useState("");
-    const [deliveryDate, setDeliveryDate] = useState("");
+    // const [pinCode, setPinCode] = useState("");
+    // const [deliveryMessage, setDeliveryMessage] = useState("");
+    // const [deliveryDate, setDeliveryDate] = useState("");
 
-    const checkDelivery = () => {
-        if (pinCode.length !== 6) {
-            setDeliveryMessage("Please enter a valid 6-digit PIN code.");
-            setDeliveryDate("");
-            return;
-        }
+    // const checkDelivery = () => {
+    //     if (pinCode.length !== 6) {
+    //         setDeliveryMessage("Please enter a valid 6-digit PIN code.");
+    //         setDeliveryDate("");
+    //         return;
+    //     }
 
-        // Approximate delivery estimation
-        const firstDigit = Number(pinCode.charAt(0));
+    //     // Approximate delivery estimation
+    //     const firstDigit = Number(pinCode.charAt(0));
 
-        let deliveryDays;
+    //     let deliveryDays;
 
-        if ([7, 8].includes(firstDigit)) {
-            deliveryDays = 3;
-        } else if ([1, 2, 3, 4, 5, 6].includes(firstDigit)) {
-            deliveryDays = 4;
-        } else {
-            deliveryDays = 5;
-        }
+    //     if ([7, 8].includes(firstDigit)) {
+    //         deliveryDays = 3;
+    //     } else if ([1, 2, 3, 4, 5, 6].includes(firstDigit)) {
+    //         deliveryDays = 4;
+    //     } else {
+    //         deliveryDays = 5;
+    //     }
 
-        // Calculate estimated delivery date
-        const estimatedDate = new Date();
-        estimatedDate.setDate(estimatedDate.getDate() + deliveryDays);
+    //     // Calculate estimated delivery date
+    //     const estimatedDate = new Date();
+    //     estimatedDate.setDate(estimatedDate.getDate() + deliveryDays);
 
-        const formattedDate = estimatedDate.toLocaleDateString("en-IN", {
-            weekday: "short",
-            day: "numeric",
-            month: "short"
-        });
+    //     const formattedDate = estimatedDate.toLocaleDateString("en-IN", {
+    //         weekday: "short",
+    //         day: "numeric",
+    //         month: "short"
+    //     });
 
-        setDeliveryDate(formattedDate);
+    //     setDeliveryDate(formattedDate);
 
-        setDeliveryMessage(
-            `Great news! Delivery is available to ${pinCode}.`
-        );
-    };
+    //     setDeliveryMessage(
+    //         `Great news! Delivery is available to ${pinCode}.`
+    //     );
+    // };
     // =====================================
     // SIMILAR PRODUCTS - MINIMUM 8 TARGET
     // =====================================
@@ -521,24 +541,24 @@ function ProductDetails() {
     // DETAILS / SPECIFICATIONS
     // =====================================
 
-    const specifications = product
-        ? [
-            ["Product Name", product.name],
-            ["Product ID", getId(product)],
-            ["Category", categoryName(product)],
-            ["Subcategory", subcategoryName(product)],
-            ["Flavour", product.flavour || product.flavor || product.taste],
-            ["Unit", unit(product)],
-            ["SKU", product.sku || product.SKU],
-            ["Brand", product.brand || "KONFiZ"],
-            ["Stock Status", stockAvailable(product) ? "Available" : "Out of Stock"],
-            ["Shelf Life", product.shelfLife],
-            ["Storage Instructions", product.storageInstructions || product.storage],
-            ["Manufacturer", product.manufacturer]
-        ].filter(([, value]) =>
-            value !== undefined && value !== null && value !== ""
-        )
-        : [];
+    // const specifications = product
+    //     ? [
+    //         ["Product Name", product.name],
+    //         ["Product ID", getId(product)],
+    //         ["Category", categoryName(product)],
+    //         ["Subcategory", subcategoryName(product)],
+    //         ["Flavour", product.flavour || product.flavor || product.taste],
+    //         ["Unit", unit(product)],
+    //         ["SKU", product.sku || product.SKU],
+    //         ["Brand", product.brand || "KONFiZ"],
+    //         ["Stock Status", stockAvailable(product) ? "Available" : "Out of Stock"],
+    //         ["Shelf Life", product.shelfLife],
+    //         ["Storage Instructions", product.storageInstructions || product.storage],
+    //         ["Manufacturer", product.manufacturer]
+    //     ].filter(([, value]) =>
+    //         value !== undefined && value !== null && value !== ""
+    //     )
+    //     : [];
 
     // =====================================
     // LOADING
@@ -679,45 +699,34 @@ function ProductDetails() {
 
 
 
-                        <p className="pd-long-description">
-                            {product.description ||
-                                "Enjoy the delightful taste of this KONFiZ creation."}
-                        </p>
+                        <div className="pd-description-wrapper">
+                            <p className={`pd-long-description ${showFullDescription ? "expanded" : ""}`}>
+                                {product.description ||
+                                    "Enjoy the delightful taste of this KONFiZ creation."}
+                            </p>
+
+                            {product.description?.length > 150 && (
+                                <button
+                                    type="button"
+                                    className="pd-see-more-btn"
+                                    onClick={() => setShowFullDescription(!showFullDescription)}
+                                >
+                                    {showFullDescription ? "See Less" : "See More"}
+                                </button>
+                            )}
+
+                        </div>
+                        {/* rating  */}
                         <div className="pd-rating-row">
                             <span className="pd-rating">
                                 ★ {Number(product.rating || 0).toFixed(1)}
                             </span>
-                            <span>
-                                {/* {product.reviewCount || product.reviewsCount
-                                    ? `${product.reviewCount || product.reviewsCount} Reviews`
-                                    : "Freshly made with love"} */}
+                            <span className="pd-flavourChoco Mint Delight Ice Cream">
+
                                 {product.flavour || product.flavor || "Freshly made with love"}
                             </span>
                         </div>
-
                         <div className="pd-divider"></div>
-
-                        {/* PRICE */}
-
-                        <div className="pd-price-section">
-
-                            <div className="pd-current-price">
-                                ₹{formatPrice(unitPrice)}
-                            </div>
-
-                            {regularPrice > unitPrice && (
-                                <>
-                                    <del>₹{formatPrice(regularPrice)}</del>
-                                    <span className="pd-save">
-                                        {discount}% OFF
-                                    </span>
-                                </>
-                            )}
-
-                            <p>Price per selected unit, excluding any separately applicable charges.</p>
-
-                        </div>
-
                         {/* WEIGHT */}
                         <div className="pd-selection-section-wrap">
 
@@ -755,7 +764,7 @@ function ProductDetails() {
 
                             {/* ADDONS */}
 
-                            {addons.length > 0 && (
+                            {/* {addons.length > 0 && (
                                 <div className="pd-selection-section">
 
                                     <h3>Customize Your Ice Cream</h3>
@@ -794,82 +803,101 @@ function ProductDetails() {
                                     </div>
 
                                 </div>
-                            )}
+                            )} */}
                         </div>
-                        {/* QUANTITY */}
+                        <div className="pd-divider"></div>
 
-                        <div className="pd-quantity-row">
-                            <strong>Quantity</strong>
+                        <div className="pd-rating-price-wrap">
 
-                            <div className="pd-quantity-control">
+                            {/* PRICE */}
+
+                            <div className="pd-price-section">
+
+                                <div className="pd-current-price">
+                                    ₹{formatPrice(unitPrice)}
+                                </div>
+
+                                {regularPrice > unitPrice && (
+                                    <>
+                                        <del>₹{formatPrice(regularPrice)}</del>
+                                        <span className="pd-save">  {discount}% OFF </span>
+                                    </>
+                                )}
+
+                                <p>Price per selected unit, excluding any separately applicable charges.</p>
+
+                            </div>
+
+                            <div className="wrap">
+
+
+
+                                {/* QUANTITY */}
+
+                                <div className="pd-quantity-row">
+                                    <strong>Quantity</strong>
+                                    <div className="pd-quantity-control">
+                                        <button type="button" onClick={() => setQuantity(q => Math.max(1, q - 1))}> − </button>
+                                        <span>{quantity}</span>
+                                        <button type="button" onClick={() => setQuantity(q => q + 1)} > + </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <div className="total-action-wrap">
+                            {/* TOTAL */}
+
+                            <div className="pd-total-box">
+                                <div>
+                                    <span>Base price</span>
+                                    <strong>₹{formatPrice(currentBasePrice)}</strong>
+                                </div>
+
+                                <div>
+                                    <span>Add-ons</span>
+                                    <strong>₹{formatPrice(currentAddonPrice)}</strong>
+                                </div>
+
+                                <div>
+                                    <span>Quantity</span>
+                                    <strong>{quantity}</strong>
+                                </div>
+
+                                <div className="pd-grand-total">
+                                    <span>Total Amount</span>
+                                    <strong>₹{formatPrice(totalPrice)}</strong>
+                                </div>
+                            </div>
+
+                            {/* BUTTONS */}
+
+                            <div className="pd-action-buttons">
+
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        setQuantity(q => Math.max(1, q - 1))
-                                    }
+                                    className="pd-add-cart"
+                                    disabled={!inStock}
+                                    onClick={() => handleCart(false)}
                                 >
-                                    −
+                                    <span>🛒</span> Add to Cart
                                 </button>
-
-                                <span>{quantity}</span>
 
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        setQuantity(q => q + 1)
-                                    }
+                                    className="pd-buy-now"
+                                    disabled={!inStock}
+                                    onClick={() => {
+                                        setSelectedAddons([]);
+                                        setShowAddonPopup(true);
+                                    }}
                                 >
-                                    +
+                                    Buy Now
                                 </button>
+
                             </div>
-                        </div>
-
-                        {/* TOTAL */}
-
-                        <div className="pd-total-box">
-                            <div>
-                                <span>Base price</span>
-                                <strong>₹{formatPrice(currentBasePrice)}</strong>
-                            </div>
-
-                            <div>
-                                <span>Add-ons</span>
-                                <strong>₹{formatPrice(currentAddonPrice)}</strong>
-                            </div>
-
-                            <div>
-                                <span>Quantity</span>
-                                <strong>{quantity}</strong>
-                            </div>
-
-                            <div className="pd-grand-total">
-                                <span>Total Amount</span>
-                                <strong>₹{formatPrice(totalPrice)}</strong>
-                            </div>
-                        </div>
-
-                        {/* BUTTONS */}
-
-                        <div className="pd-action-buttons">
-
-                            <button
-                                type="button"
-                                className="pd-add-cart"
-                                disabled={!inStock}
-                                onClick={() => handleCart(false)}
-                            >
-                                <span>🛒</span> Add to Cart
-                            </button>
-
-                            <button
-                                type="button"
-                                className="pd-buy-now"
-                                disabled={!inStock}
-                                onClick={() => handleCart(true)}
-                            >
-                                Buy Now
-                            </button>
-
                         </div>
                         {/* ------------------------- */}
                         {/* <div className="delivery-check">
@@ -965,11 +993,12 @@ function ProductDetails() {
                                 );
 
                                 return (
+
                                     <article
                                         className="pd-product-card"
                                         key={getId(item)}
                                     >
-
+                                        {/* PRODUCT IMAGE */}
                                         <Link
                                             to={`/products/details/${getId(item)}`}
                                             className="pd-card-image"
@@ -981,21 +1010,20 @@ function ProductDetails() {
                                                     loading="lazy"
                                                 />
                                             ) : (
-                                                <span>🍨</span>
+                                                <div className="pd-card-placeholder">
+                                                    🍨
+                                                </div>
                                             )}
 
                                             {item.isNew && (
-                                                <span className="pd-card-new">
-                                                    NEW
-                                                </span>
+                                                <span className="pd-card-new">NEW</span>
                                             )}
+
+                                            {/* <span className="pd-card-heart">♥</span> */}
                                         </Link>
 
+                                        {/* PRODUCT INFORMATION */}
                                         <div className="pd-card-content">
-
-                                            <span className="pd-card-category">
-                                                {categoryName(item)}
-                                            </span>
 
                                             <Link
                                                 to={`/products/details/${getId(item)}`}
@@ -1004,24 +1032,71 @@ function ProductDetails() {
                                                 {item.name}
                                             </Link>
 
-                                            <div className="pd-card-rating">
-                                                ★ {Number(item.rating || 0).toFixed(1)}
+                                            {/* PRODUCT TAGS */}
+                                            <div className="pd-card-tags">
+                                                <span>{categoryName(item) || "Ice Cream"}</span>
+
+                                                {item.flavour && (
+                                                    <span>{item.flavour}</span>
+                                                )}
+
+                                                {item.isNew && (
+                                                    <span>New Arrival</span>
+                                                )}
                                             </div>
 
-                                            <div className="pd-card-price">
-                                                ₹{formatPrice(itemPrice)}
-                                            </div>
+                                            {/* DESCRIPTION */}
+                                            <p className="pd-card-description">
+                                                {item.description ||
+                                                    item.flavour ||
+                                                    "A delicious treat crafted for your happiness."}
+                                            </p>
 
-                                            <Link
-                                                to={`/products/details/${getId(item)}`}
-                                                className="pd-card-button"
-                                            >
-                                                View Details →
-                                            </Link>
+                                            {/* ADDONS / TOPPINGS */}
+                                            {Array.isArray(item.addons) && item.addons.length > 0 && (
+                                                <div className="pd-card-toppings">
+                                                    <span className="pd-card-topping-label">
+                                                        Toppings
+                                                    </span>
+
+                                                    {item.addons.slice(0, 3).map((addon, index) => (
+                                                        <span
+                                                            className="pd-card-topping"
+                                                            key={addon._id || addon.id || index}
+                                                        >
+                                                            {addon.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* PRICE AND BUTTON */}
+                                            <div className="pd-card-bottom">
+
+                                                <div className="pd-card-price-wrap">
+                                                    <span className="pd-card-price">
+                                                        ₹{formatPrice(itemPrice)}
+                                                    </span>
+
+                                                    <span className="pd-card-price-label">
+                                                        Starting price
+                                                    </span>
+                                                </div>
+
+                                                <Link
+                                                    to={`/products/details/${getId(item)}`}
+                                                    className="pd-card-button"
+                                                    aria-label={`View ${item.name}`}
+                                                >
+                                                    <span>View Details</span>
+                                                    <span className="pd-card-arrow">↗</span>
+                                                </Link>
+
+                                            </div>
 
                                         </div>
-
                                     </article>
+
                                 );
                             })}
 
@@ -1095,6 +1170,181 @@ function ProductDetails() {
             </div>
 
             {/* STICKY CART BAR */}
+
+            {/* =====================================
+    BUY NOW ADDON POPUP
+===================================== */}
+
+            {showAddonPopup && (
+                <div
+                    className="pd-addon-overlay"
+                    onClick={() => setShowAddonPopup(false)}
+                >
+                    <div
+                        className="pd-addon-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+
+                        {/* HEADER */}
+
+                        <div className="pd-addon-header">
+
+                            <div>
+                                <span>MAKE IT SPECIAL</span>
+                                <h2>Customize Your Ice Cream</h2>
+                                <p>Choose your favourite toppings</p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowAddonPopup(false)}
+                            >
+                                ×
+                            </button>
+
+                        </div>
+
+                        {/* PRODUCT INFORMATION */}
+
+                        <div className="pd-addon-product">
+
+                            <div className="pd-addon-product-image">
+                                {images.length > 0 && (
+                                    <img src={images[0]} alt={product.name} />
+                                )}
+                            </div>
+
+                            <div>
+                                <h3>{product.name}</h3>
+
+                                <p>
+                                    {selectedWeight
+                                        ? `${selectedWeight} ${unit(product)}`
+                                        : "Standard"}
+                                </p>
+
+                                <strong>
+                                    ₹{formatPrice(currentBasePrice)}
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        {/* ADDONS */}
+
+                        <div className="pd-addon-content">
+
+                            <h3>Available Add-ons</h3>
+
+                            {addons.length > 0 ? (
+
+                                <div className="pd-addon-list">
+
+                                    {addons.map((addon, index) => {
+
+                                        const id = addonId(addon);
+
+                                        const checked = selectedAddons.includes(id);
+
+                                        return (
+                                            <label
+                                                key={`${id}-${index}`}
+                                                className={`pd-addon-option ${checked ? "selected" : ""}`}
+                                            >
+
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() => toggleAddon(addon)}
+                                                />
+
+                                                <span className="pd-addon-check">
+                                                    {checked ? "✓" : "+"}
+                                                </span>
+
+                                                <span className="pd-addon-name">
+                                                    {addon.name}
+                                                </span>
+
+                                                <strong>
+                                                    + ₹{formatPrice(addon.price)}
+                                                </strong>
+
+                                            </label>
+                                        );
+                                    })}
+
+                                </div>
+
+                            ) : (
+
+                                <div className="pd-addon-empty">
+                                    <span>🍨</span>
+                                    <p>No additional toppings available.</p>
+                                </div>
+
+                            )}
+
+                        </div>
+
+                        {/* PRICE SUMMARY */}
+
+                        <div className="pd-addon-summary">
+
+                            <div>
+                                <span>Base Price</span>
+                                <strong>
+                                    ₹{formatPrice(currentBasePrice)}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>Selected Add-ons</span>
+                                <strong>
+                                    ₹{formatPrice(currentAddonPrice)}
+                                </strong>
+                            </div>
+
+                            <div className="pd-addon-total">
+                                <span>Total per item</span>
+                                <strong>
+                                    ₹{formatPrice(currentBasePrice + currentAddonPrice)}
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        {/* FOOTER */}
+
+                        <div className="pd-addon-footer">
+
+                            <button
+                                type="button"
+                                className="pd-addon-skip"
+                                onClick={() => {
+                                    handleCart(true, []);
+                                }}
+                            >
+                                Skip Add-ons
+                            </button>
+
+                            <button
+                                type="button"
+                                className="pd-addon-confirm"
+                                onClick={() => {
+                                    handleCart(true, selectedAddons);
+                                }}
+                            >
+                                Continue · ₹{formatPrice(
+                                    (currentBasePrice + currentAddonPrice) * quantity
+                                )}
+                            </button>
+
+                        </div>
+
+                    </div>
+                </div>
+            )}
 
             <div className="pd-sticky-cart">
 

@@ -1,10 +1,12 @@
 * {
     box-sizing: border-box;
 }
-.container{
+
+.container {
     max-width: 1320px;
     margin: auto;
 }
+
 .admin-layout {
     min-height: 100vh;
     display: flex;
@@ -19,7 +21,15 @@
     color: white;
     padding: 25px 17px;
     flex-shrink: 0;
-    min-height: 100vh;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    /* Lets sidebar scroll internally if its own links overflow 100vh */
+    scroll-behavior: smooth;
+     /* Firefox thin dark scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #4a3f6b #211b35;
 }
 
 .admin-brand {
@@ -350,9 +360,11 @@
 .products-grid .product-card {
     padding: 20px;
 }
+
 .products-grid .product-card img {
     max-height: 200px;
 }
+
 @media(max-width: 1100px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -566,7 +578,7 @@
     margin-top: 17px;
 }
 
-.subcategory-list > p {
+.subcategory-list>p {
     margin: 0;
     color: #a49a9a;
     font-size: 13px;
@@ -1793,6 +1805,7 @@
         height: 210px;
     }
 }
+
 /* order */
 
 /* =========================================
@@ -2116,6 +2129,7 @@
         font-size: 12px;
     }
 }
+
 /* customer  */
 
 /* ======================================
@@ -2228,7 +2242,7 @@
     box-shadow: 0 0 0 3px rgba(189, 128, 94, 0.12);
 }
 
-.customer-search > span {
+.customer-search>span {
     color: #a87960;
     font-size: 21px;
 }
@@ -2670,7 +2684,7 @@
    ADD ADD-ON BUTTON
 ===================================== */
 
-.edit-modal form > button[type="button"] {
+.edit-modal form>button[type="button"] {
     padding: 10px 16px;
     margin: 4px 0 20px;
     border: 1px dashed #b76b3d;
@@ -2683,7 +2697,7 @@
     transition: 0.2s ease;
 }
 
-.edit-modal form > button[type="button"]:hover {
+.edit-modal form>button[type="button"]:hover {
     background: #ffeadc;
 }
 

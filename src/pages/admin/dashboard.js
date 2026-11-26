@@ -377,17 +377,7 @@ function Dashboard({ onLogout }) {
                                         >
                                             <span>{getSubName(subcategory)}</span>
 
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    deleteSubcategory(
-                                                        categoryId,
-                                                        getSubId(subcategory)
-                                                    )
-                                                }
-                                            >
-                                                ×
-                                            </button>
+                                            <button  type="button" onClick={() => deleteSubcategory(categoryId, getSubId(subcategory) )} > ×</button>
                                         </div>
                                     ))
                                 ) : (
@@ -410,57 +400,118 @@ function Dashboard({ onLogout }) {
     const [editForm, setEditForm] = useState(null);
 
     const openEditProduct = (product) => {
-        const matchingCategory = categories.find(category =>
-            getCatName(category).toLowerCase() ===
-            String(product.category || "").toLowerCase()
+        const matchingCategory = categories.find(
+            category =>
+                getCatName(category).toLowerCase() ===
+                String(product.category || "").toLowerCase()
         );
 
-        const categoryId =
+        const categoryId = String(
             product.categoryId ||
-            (matchingCategory ? getCatId(matchingCategory) : "");
+            (matchingCategory ? getCatId(matchingCategory) : "")
+        );
 
         const categoryObject = categories.find(
-            category => getCatId(category) === String(categoryId)
+            category => getCatId(category) === categoryId
         );
 
-        const subcategories = categoryObject && typeof categoryObject !== "string"
-            ? categoryObject.subcategories || []
-            : [];
+        const categorySubcategories =
+            categoryObject && typeof categoryObject !== "string"
+                ? categoryObject.subcategories || []
+                : [];
 
-        const matchingSubcategory = subcategories.find(item =>
-            getSubName(item).toLowerCase() ===
-            String(product.subcategory || product.subcategoryName || "").toLowerCase()
-        );
+        const oldSubcategoryIds = Array.isArray(product.subcategoryIds)
+            ? product.subcategoryIds.map(String)
+            : product.subcategoryId
+                ? [String(product.subcategoryId)]
+                : [];
+
+        const subcategoryIds = oldSubcategoryIds.length
+            ? oldSubcategoryIds
+            : categorySubcategories
+                .filter(item =>
+                    String(getSubName(item)).toLowerCase() ===
+                    String(product.subcategory || product.subcategoryName || "").toLowerCase()
+                )
+                .map(getSubId);
+
+        const unit = product.unit || product.pricing?.unit || "ml";
+
+        const existingSizes = Array.isArray(product.sizes)
+            ? product.sizes
+            : Array.isArray(product.pricing?.sizes)
+                ? product.pricing.sizes
+                : (product.weightOptions || [100, 250, 500, 1000]).map(
+                    weight => ({
+                        weight,
+                        unit,
+                        price: product.price || 0,
+                        offerPrice: product.offerPrice || product.price || 0
+                    })
+                );
+
+        const sizes = existingSizes.map((size, index) => ({
+            id: size.id || index + 1,
+            weight: Number(size.weight),
+            unit: size.unit || unit,
+            price: String(size.price ?? ""),
+            offerPrice: String(size.offerPrice ?? "")
+        }));
 
         setEditProduct(product);
 
         setEditForm({
             ...product,
+
             name: product.name || "",
+            sku: product.sku || "",
             description: product.description || "",
-            price: product.price ?? 0,
-            categoryId: String(categoryId || ""),
-            category: product.category || (categoryObject ? getCatName(categoryObject) : ""),
-            subcategoryId: String(
-                product.subcategoryId ||
-                (matchingSubcategory ? getSubId(matchingSubcategory) : "")
-            ),
-            subcategory: product.subcategory || product.subcategoryName || "",
             flavour: product.flavour || product.flavor || "",
-            rating: product.rating ?? 0,
-            stock: product.stock ?? 0,
+            servingSuggestion: product.servingSuggestion || "",
+
+            categoryId,
+            category: product.category || "",
+
+            subcategoryIds,
+            subcategoryId: subcategoryIds[0] || "",
+            subcategories: product.subcategories || [],
+            subcategory: product.subcategory || "",
+            subcategoryName: product.subcategoryName || "",
+
+            rating: String(product.rating ?? 0),
+            stock: String(product.stock ?? 0),
+
+            isPremium: Boolean(product.isPremium ?? product.premium),
+
+            unit,
+            weightOptions: sizes.map(size => size.weight),
+            sizes,
+
+            price: String(product.price ?? sizes[0]?.price ?? 0),
+            offerPrice: String(
+                product.offerPrice ?? sizes[0]?.offerPrice ?? 0
+            ),
+
             image: product.image || "",
-            pricing: {
-                unit: product.pricing?.unit || "ml",
-                baseQuantity: product.pricing?.baseQuantity ?? 100,
-                pricePerBaseUnit: product.pricing?.pricePerBaseUnit ?? product.price ?? 0,
-                weightOptions: Array.isArray(product.pricing?.weightOptions)
-                    ? [...product.pricing.weightOptions]
-                    : [100, 250, 500, 1000]
-            },
+            images: Array.isArray(product.images)
+                ? [...product.images]
+                : product.image
+                    ? [product.image]
+                    : [],
+
+            hasAddons: Boolean(
+                product.hasAddons || product.addons?.length
+            ),
+
             addons: Array.isArray(product.addons)
-                ? product.addons.map(item => ({ ...item }))
-                : []
+                ? product.addons.map(addon => ({
+                    ...addon,
+                    price: String(addon.price ?? 0),
+                    active: addon.active !== false
+                }))
+                : [],
+
+            status: product.status || "active"
         });
 
         setShowEditModal(true);
@@ -480,7 +531,258 @@ function Dashboard({ onLogout }) {
             [name]: value
         }));
     };
+    // =====================================
+    // EDIT PRODUCT - SUBCATEGORIES
+    // =====================================
 
+    const handleEditSubcategoryToggle = (id) => {
+        setEditForm(previous => {
+            const current = previous.subcategoryIds || [];
+
+            const updated = current.includes(id)
+                ? current.filter(item => item !== id)
+                : current.length < 2
+                    ? [...current, id]
+                    : current;
+
+            const names = editSubcategories
+                .filter(item => updated.includes(getSubId(item)))
+                .map(getSubName);
+
+            return {
+                ...previous,
+                subcategoryIds: updated,
+                subcategoryId: updated[0] || "",
+                subcategories: names,
+                subcategory: names[0] || "",
+                subcategoryName: names[0] || ""
+            };
+        });
+    };
+
+    // =====================================
+    // EDIT PRODUCT - PACK SIZES
+    // =====================================
+
+    const addEditWeight = (weight) => {
+        const value = Number(weight);
+
+        if (!Number.isFinite(value) || value <= 0) {
+            alert("Enter a valid pack size.");
+            return;
+        }
+
+        if (editForm.weightOptions.includes(value)) {
+            alert("This pack size already exists.");
+            return;
+        }
+
+        setEditForm(previous => {
+            const sizes = [
+                ...previous.sizes,
+                {
+                    id: Date.now(),
+                    weight: value,
+                    unit: previous.unit,
+                    price: "",
+                    offerPrice: ""
+                }
+            ].sort((a, b) => a.weight - b.weight);
+
+            return {
+                ...previous,
+                sizes,
+                weightOptions: sizes.map(size => size.weight)
+            };
+        });
+    };
+
+    const removeEditWeight = (weight) => {
+        setEditForm(previous => {
+            const sizes = previous.sizes.filter(
+                size => size.weight !== weight
+            );
+
+            return {
+                ...previous,
+                sizes,
+                weightOptions: sizes.map(size => size.weight)
+            };
+        });
+    };
+
+    const handleEditSizePrice = (weight, field, value) => {
+        setEditForm(previous => ({
+            ...previous,
+            sizes: previous.sizes.map(size =>
+                size.weight === weight
+                    ? { ...size, [field]: value }
+                    : size
+            )
+        }));
+    };
+
+    // =====================================
+    // EDIT PRODUCT - ADDONS
+    // =====================================
+
+    const updateAddon = (index, field, value) => {
+        setEditForm(previous => ({
+            ...previous,
+            addons: previous.addons.map((addon, i) =>
+                i === index
+                    ? { ...addon, [field]: value }
+                    : addon
+            )
+        }));
+    };
+
+    const addEditAddon = () => {
+        setEditForm(previous => ({
+            ...previous,
+            hasAddons: true,
+            addons: [
+                ...previous.addons,
+                {
+                    id: `ADD-${Date.now()}`,
+                    name: "",
+                    price: "0",
+                    active: true
+                }
+            ]
+        }));
+    };
+
+    const removeEditAddon = (index) => {
+        setEditForm(previous => ({
+            ...previous,
+            addons: previous.addons.filter(
+                (_, i) => i !== index
+            )
+        }));
+    };
+
+    // =====================================
+    // EDIT PRODUCT - IMAGE UPLOAD
+    // =====================================
+
+    const readEditImage = (file) => {
+        return new Promise((resolve, reject) => {
+            if (!file || !file.type.startsWith("image/")) {
+                reject(new Error("Please select a valid image."));
+                return;
+            }
+
+            const image = new Image();
+            const url = URL.createObjectURL(file);
+
+            image.onload = () => {
+                const canvas = document.createElement("canvas");
+
+                const scale = Math.min(
+                    1200 / image.width,
+                    1200 / image.height,
+                    1
+                );
+
+                canvas.width = Math.round(image.width * scale);
+                canvas.height = Math.round(image.height * scale);
+
+                const context = canvas.getContext("2d");
+
+                context.drawImage(
+                    image,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
+                const result = canvas.toDataURL("image/webp", 0.75);
+
+                URL.revokeObjectURL(url);
+                resolve(result);
+            };
+
+            image.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error("Unable to process image."));
+            };
+
+            image.src = url;
+        });
+    };
+
+    const handleEditMainImage = async (e) => {
+        const file = e.target.files?.[0];
+
+        if (!file) return;
+
+        try {
+            const image = await readEditImage(file);
+
+            setEditForm(previous => ({
+                ...previous,
+                image,
+                images: [
+                    image,
+                    ...previous.images.filter(
+                        item => item !== previous.image
+                    )
+                ]
+            }));
+        } catch (error) {
+            alert(error.message);
+        }
+
+        e.target.value = "";
+    };
+
+    const handleEditGalleryImages = async (e) => {
+        const files = Array.from(e.target.files || []);
+
+        if (!files.length) return;
+
+        const currentGallery = editForm.images.filter(
+            image => image !== editForm.image
+        );
+
+        if (currentGallery.length + files.length > 4) {
+            alert("You can upload a maximum of four additional images.");
+            e.target.value = "";
+            return;
+        }
+
+        try {
+            const images = await Promise.all(
+                files.map(readEditImage)
+            );
+
+            setEditForm(previous => ({
+                ...previous,
+                images: [
+                    previous.image,
+                    ...previous.images.filter(
+                        item => item !== previous.image
+                    ),
+                    ...images
+                ].filter(Boolean)
+            }));
+        } catch (error) {
+            alert(error.message);
+        }
+
+        e.target.value = "";
+    };
+
+    const removeEditGalleryImage = (image) => {
+        setEditForm(previous => ({
+            ...previous,
+            images: previous.images.filter(
+                item => item !== image
+            )
+        }));
+    };
     const handleEditCategoryChange = (e) => {
         const categoryId = e.target.value;
         const category = categories.find(
@@ -497,160 +799,235 @@ function Dashboard({ onLogout }) {
         }));
     };
 
-    const handleEditSubcategoryChange = (e) => {
-        const subcategoryId = e.target.value;
-        const category = categories.find(
-            item => getCatId(item) === editForm.categoryId
-        );
-
-        const subcategories = category && typeof category !== "string"
-            ? category.subcategories || []
-            : [];
-
-        const subcategory = subcategories.find(
-            item => getSubId(item) === subcategoryId
-        );
-
-        const name = subcategory ? getSubName(subcategory) : "";
-
-        setEditForm(previous => ({
-            ...previous,
-            subcategoryId,
-            subcategory: name,
-            subcategoryName: name
-        }));
-    };
-
-    const handleEditPricingChange = (e) => {
-        const { name, value } = e.target;
-
-        setEditForm(previous => ({
-            ...previous,
-            pricing: {
-                ...previous.pricing,
-                [name]: value
-            }
-        }));
-    };
-
-    const handleEditWeightOptions = (value) => {
-        setEditForm(previous => ({
-            ...previous,
-            pricing: {
-                ...previous.pricing,
-                weightOptions: value
-                    .split(",")
-                    .map(item => Number(item.trim()))
-                    .filter(item => Number.isFinite(item) && item > 0)
-            }
-        }));
-    };
-
-    const updateAddon = (index, field, value) => {
-        setEditForm(previous => ({
-            ...previous,
-            addons: previous.addons.map((addon, i) =>
-                i === index
-                    ? {
-                        ...addon,
-                        [field]: field === "price" ? value : value
-                    }
-                    : addon
-            )
-        }));
-    };
-
-    const addEditAddon = () => {
-        setEditForm(previous => ({
-            ...previous,
-            addons: [
-                ...previous.addons,
-                {
-                    id: `ADD-${Date.now()}`,
-                    name: "",
-                    price: 0
-                }
-            ]
-        }));
-    };
-
-    const removeEditAddon = (index) => {
-        setEditForm(previous => ({
-            ...previous,
-            addons: previous.addons.filter((_, i) => i !== index)
-        }));
-    };
-
     const saveEditedProduct = (e) => {
         e.preventDefault();
 
         if (!editProduct || !editForm) return;
 
-        if (!String(editForm.name || "").trim()) {
-            alert("Product name is required.");
+        const requiredText = [
+            ["name", "Product name is required."],
+            ["sku", "Product SKU is required."],
+            ["description", "Product description is required."],
+            ["flavour", "Product flavour is required."]
+        ];
+
+        for (const [field, message] of requiredText) {
+            if (!String(editForm[field] || "").trim()) {
+                alert(message);
+                return;
+            }
+        }
+
+        // UNIQUE SKU VALIDATION
+        const duplicateSKU = products.some(product =>
+            String(product.id) !== String(editProduct.id) &&
+            String(product.sku || "").toLowerCase() ===
+            String(editForm.sku).trim().toLowerCase()
+        );
+
+        if (duplicateSKU) {
+            alert("This SKU already belongs to another product.");
             return;
         }
 
-        const price = Number(editForm.price);
-        const stock = Number(editForm.stock);
+        // CATEGORY VALIDATION
+        const category = categories.find(
+            item => getCatId(item) === editForm.categoryId
+        );
+
+        if (!category) {
+            alert("Please select a valid category.");
+            return;
+        }
+
+        // RATING VALIDATION
         const rating = Number(editForm.rating);
-
-        if (!Number.isFinite(price) || price < 0) {
-            alert("Please enter a valid product price.");
-            return;
-        }
-
-        if (!Number.isFinite(stock) || stock < 0) {
-            alert("Please enter a valid stock quantity.");
-            return;
-        }
 
         if (!Number.isFinite(rating) || rating < 0 || rating > 5) {
             alert("Rating must be between 0 and 5.");
             return;
         }
 
+        // STOCK VALIDATION
+        const stock = Number(editForm.stock);
+
+        if (!Number.isInteger(stock) || stock < 0) {
+            alert("Please enter valid available stock.");
+            return;
+        }
+
+        // PACK VALIDATION
+        if (!editForm.sizes?.length) {
+            alert("Add at least one pack size.");
+            return;
+        }
+
+        const sizes = editForm.sizes.map((size, index) => {
+            const price = Number(size.price);
+            const offerPrice = Number(size.offerPrice);
+
+            if (
+                !Number.isFinite(price) ||
+                price <= 0 ||
+                size.price === ""
+            ) {
+                throw new Error(
+                    `Enter a valid regular price for ${size.weight} ${editForm.unit}.`
+                );
+            }
+
+            if (
+                !Number.isFinite(offerPrice) ||
+                offerPrice <= 0 ||
+                size.offerPrice === ""
+            ) {
+                throw new Error(
+                    `Enter a valid offer price for ${size.weight} ${editForm.unit}.`
+                );
+            }
+
+            if (offerPrice > price) {
+                throw new Error(
+                    `Offer price cannot exceed regular price for ${size.weight} ${editForm.unit}.`
+                );
+            }
+
+            return {
+                id: size.id || index + 1,
+                weight: Number(size.weight),
+                unit: editForm.unit,
+                price,
+                offerPrice
+            };
+        });
+
+        // SUBCATEGORIES
+        const categorySubcategories =
+            typeof category === "string"
+                ? []
+                : category.subcategories || [];
+
+        const validSubcategories = categorySubcategories.filter(
+            item => editForm.subcategoryIds.includes(getSubId(item))
+        );
+
+        // ADDONS
+        const addons = editForm.hasAddons
+            ? editForm.addons.map(addon => {
+                const price = Number(addon.price);
+
+                if (!String(addon.name || "").trim()) {
+                    throw new Error("Every add-on must have a name.");
+                }
+
+                if (!Number.isFinite(price) || price < 0) {
+                    throw new Error(
+                        `Invalid price for add-on ${addon.name}.`
+                    );
+                }
+
+                return {
+                    ...addon,
+                    name: addon.name.trim(),
+                    price,
+                    active: addon.active !== false
+                };
+            })
+            : [];
+
+        // IMAGE VALIDATION
+        if (!editForm.image) {
+            alert("Please upload a main product image.");
+            return;
+        }
+
         const updatedProduct = {
             ...editProduct,
             ...editForm,
+
             id: editProduct.id,
+
             name: editForm.name.trim(),
-            price,
-            stock,
+            sku: editForm.sku.trim().toUpperCase(),
+
+            description: editForm.description.trim(),
+            flavour: editForm.flavour.trim(),
+
             rating,
+            stock,
+
             categoryId: editForm.categoryId,
-            category: editForm.category,
-            subcategoryId: editForm.subcategoryId,
-            subcategory: editForm.subcategory,
-            subcategoryName: editForm.subcategory,
-            flavour: editForm.flavour,
-            description: editForm.description,
-            image: editForm.image,
+            category: getCatName(category),
+
+            subcategoryIds: validSubcategories.map(getSubId),
+            subcategories: validSubcategories.map(getSubName),
+
+            subcategoryId: validSubcategories[0]
+                ? getSubId(validSubcategories[0])
+                : "",
+
+            subcategory: validSubcategories[0]
+                ? getSubName(validSubcategories[0])
+                : "",
+
+            subcategoryName: validSubcategories[0]
+                ? getSubName(validSubcategories[0])
+                : "",
+
+            isPremium: Boolean(editForm.isPremium),
+            premium: Boolean(editForm.isPremium),
+            featured: Boolean(editForm.isPremium),
+
+            unit: editForm.unit,
+            weightOptions: sizes.map(size => size.weight),
+            sizes,
+
+            price: sizes[0].price,
+            offerPrice: sizes[0].offerPrice,
+
             pricing: {
-                ...editForm.pricing,
-                unit: editForm.pricing.unit || "ml",
-                baseQuantity: Number(editForm.pricing.baseQuantity) || 100,
-                pricePerBaseUnit:
-                    Number(editForm.pricing.pricePerBaseUnit) || 0,
-                weightOptions: editForm.pricing.weightOptions
+                unit: editForm.unit,
+                sizes
             },
-            addons: editForm.addons.map(addon => ({
-                ...addon,
-                name: String(addon.name || "").trim(),
-                price: Number(addon.price) || 0
-            })).filter(addon => addon.name)
+
+            image: editForm.image,
+            images: [
+                editForm.image,
+                ...editForm.images.filter(
+                    image => image !== editForm.image
+                )
+            ],
+
+            hasAddons: Boolean(editForm.hasAddons),
+            addons,
+
+            servingSuggestion: editForm.servingSuggestion.trim(),
+
+            inStock: stock > 0,
+            available: stock > 0,
+
+            status: editForm.status || "active",
+
+            updatedAt: new Date().toISOString()
         };
 
-        setProducts(previous =>
-            previous.map(product =>
-                String(product.id) === String(editProduct.id)
-                    ? updatedProduct
-                    : product
-            )
-        );
+        try {
+            setProducts(previous =>
+                previous.map(product =>
+                    String(product.id) === String(editProduct.id)
+                        ? updatedProduct
+                        : product
+                )
+            );
 
-        closeEditModal();
-        alert("Product updated successfully.");
+            closeEditModal();
+
+            alert("Product updated successfully!");
+
+        } catch (error) {
+            console.error("Product update error:", error);
+            alert(error.message || "Unable to update product.");
+        }
     };
 
     const editCategory = categories.find(
@@ -731,11 +1108,7 @@ function Dashboard({ onLogout }) {
                         <p>Organise your ice cream collection and update product details.</p>
                     </div>
 
-                    <button
-                        type="button"
-                        className="manage-add-product-btn"
-                        onClick={() => selectPage("Add Product")}
-                    >
+                    <button type="button" className="manage-add-product-btn" onClick={() => selectPage("Add Product")} >
                         ＋ Add New Product
                     </button>
                 </div>
@@ -1812,253 +2185,541 @@ function Dashboard({ onLogout }) {
 
             {showEditModal && editForm && (
                 <div className="edit-modal-overlay">
-                    <div className="edit-modal">
+                    <div className="edit-modal edit-modal-large">
 
+                        {/* HEADER */}
                         <div className="edit-modal-header">
-                            <h2>Edit Product</h2>
+                            <div>
+                                <h2>Edit Product</h2>
+                                <p>Update your KONFiZ product information.</p>
+                            </div>
 
-                            <button
-                                type="button"
-                                onClick={closeEditModal}
-                            >
+                            <button type="button" onClick={closeEditModal}>
                                 ✕
                             </button>
                         </div>
 
                         <form onSubmit={saveEditedProduct}>
 
-                            {/* BASIC DETAILS */}
+                            {/* BASIC INFORMATION */}
+                            <section className="edit-form-section">
+                                <h3>Basic Product Information</h3>
 
-                            <h3>Product Information</h3>
+                                <div className="form-grid">
 
-                            <div className="form-group">
-                                <label>Product Name *</label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={editForm.name}
-                                    onChange={handleEditChange}
-                                    required
-                                />
-                            </div>
+                                    <div className="form-group">
+                                        <label>Product Name *</label>
+                                        <input
+                                            name="name"
+                                            value={editForm.name}
+                                            onChange={handleEditChange}
+                                            required
+                                        />
+                                    </div>
 
-                            <div className="form-group">
-                                <label>Description</label>
-                                <textarea
-                                    name="description"
-                                    value={editForm.description}
-                                    onChange={handleEditChange}
-                                    rows="5"
-                                />
-                            </div>
+                                    <div className="form-group">
+                                        <label>Product SKU *</label>
+                                        <input
+                                            name="sku"
+                                            value={editForm.sku}
+                                            onChange={handleEditChange}
+                                            placeholder="KON-BIS-001"
+                                            required
+                                        />
+                                    </div>
 
-                            <div className="form-group">
-                                <label>Flavour</label>
-                                <input
-                                    type="text"
-                                    name="flavour"
-                                    value={editForm.flavour}
-                                    onChange={handleEditChange}
-                                />
-                            </div>
-
-                            {/* CATEGORY */}
-
-                            <h3>Category Details</h3>
-
-                            <div className="form-group">
-                                <label>Category *</label>
-
-                                <select
-                                    value={editForm.categoryId}
-                                    onChange={handleEditCategoryChange}
-                                    required
-                                >
-                                    <option value="">Select Category</option>
-
-                                    {categories.map(category => (
-                                        <option
-                                            key={getCatId(category)}
-                                            value={getCatId(category)}
+                                    <div className="form-group">
+                                        <label>Main Category *</label>
+                                        <select
+                                            value={editForm.categoryId}
+                                            onChange={handleEditCategoryChange}
+                                            required
                                         >
-                                            {getCatName(category)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                                            <option value="">Select Category</option>
 
-                            <div className="form-group">
-                                <label>Subcategory (Optional)</label>
+                                            {categories.map(category => (
+                                                <option
+                                                    key={getCatId(category)}
+                                                    value={getCatId(category)}
+                                                >
+                                                    {getCatName(category)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                <select
-                                    value={editForm.subcategoryId}
-                                    onChange={handleEditSubcategoryChange}
-                                >
-                                    <option value="">Select Subcategory</option>
+                                    <div className="form-group">
+                                        <label>Subcategories (Maximum 2)</label>
 
-                                    {editSubcategories.map(subcategory => (
-                                        <option
-                                            key={getSubId(subcategory)}
-                                            value={getSubId(subcategory)}
-                                        >
-                                            {getSubName(subcategory)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                                        <div className="subcategory-checkbox-list">
 
-                            {/* STOCK AND RATING */}
+                                            {editSubcategories.length ? (
+                                                editSubcategories.map(subcategory => {
+                                                    const id = getSubId(subcategory);
 
-                            <h3>Inventory & Rating</h3>
+                                                    return (
+                                                        <label
+                                                            key={id}
+                                                            className="subcategory-checkbox-item"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={(
+                                                                    editForm.subcategoryIds || []
+                                                                ).includes(id)}
+                                                                disabled={
+                                                                    !(editForm.subcategoryIds || []).includes(id) &&
+                                                                    (editForm.subcategoryIds || []).length >= 2
+                                                                }
+                                                                onChange={() =>
+                                                                    handleEditSubcategoryToggle(id)
+                                                                }
+                                                            />
 
-                            <div className="form-row">
+                                                            <span>{getSubName(subcategory)}</span>
+                                                        </label>
+                                                    );
+                                                })
+                                            ) : (
+                                                <small>
+                                                    No subcategories available.
+                                                </small>
+                                            )}
 
-                                <div className="form-group">
-                                    <label>Stock</label>
-                                    <input
-                                        type="number"
-                                        name="stock"
-                                        min="0"
-                                        value={editForm.stock}
-                                        onChange={handleEditChange}
-                                    />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group full-width">
+                                        <label>Flavours *</label>
+                                        <input
+                                            name="flavour"
+                                            value={editForm.flavour}
+                                            onChange={handleEditChange}
+                                            placeholder="Belgian Chocolate, Vanilla, Strawberry"
+                                            required
+                                        />
+                                        <small>Separate multiple flavours with commas.</small>
+                                    </div>
+
+                                    <div className="form-group full-width">
+                                        <label className="addon-toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={editForm.isPremium}
+                                                onChange={e =>
+                                                    setEditForm(previous => ({
+                                                        ...previous,
+                                                        isPremium: e.target.checked
+                                                    }))
+                                                }
+                                            />
+                                            <span>Premium Product</span>
+                                        </label>
+                                    </div>
+
                                 </div>
+                            </section>
+
+                            {/* DESCRIPTION */}
+                            <section className="edit-form-section">
+                                <h3>Product Description</h3>
 
                                 <div className="form-group">
-                                    <label>Rating</label>
-                                    <input
-                                        type="number"
-                                        name="rating"
-                                        min="0"
-                                        max="5"
-                                        step="0.1"
-                                        value={editForm.rating}
-                                        onChange={handleEditChange}
-                                    />
-                                </div>
-
-                            </div>
-
-                            {/* PRICING */}
-
-                            <h3>Pricing Details</h3>
-
-                            <div className="form-row">
-
-                                <div className="form-group">
-                                    <label>Base Price (₹)</label>
-                                    <input
-                                        type="number"
-                                        name="price"
-                                        min="0"
-                                        step="0.01"
-                                        value={editForm.price}
+                                    <label>Complete Product Description *</label>
+                                    <textarea
+                                        name="description"
+                                        rows="8"
+                                        value={editForm.description}
                                         onChange={handleEditChange}
                                         required
                                     />
                                 </div>
 
+                                <div className="form-grid">
+
+                                    <div className="form-group">
+                                        <label>Product Rating (0–5)</label>
+                                        <input
+                                            type="number"
+                                            name="rating"
+                                            min="0"
+                                            max="5"
+                                            step="0.1"
+                                            value={editForm.rating}
+                                            onChange={handleEditChange}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Available Stock</label>
+                                        <input
+                                            type="number"
+                                            name="stock"
+                                            min="0"
+                                            step="1"
+                                            value={editForm.stock}
+                                            onChange={handleEditChange}
+                                        />
+                                    </div>
+
+                                    <div className="form-group full-width">
+                                        <label>Serving Suggestion</label>
+                                        <textarea
+                                            name="servingSuggestion"
+                                            rows="3"
+                                            value={editForm.servingSuggestion}
+                                            onChange={handleEditChange}
+                                            placeholder="Enter serving instructions..."
+                                        />
+                                    </div>
+
+                                </div>
+                            </section>
+
+                            {/* PRODUCT IMAGES */}
+                            <section className="edit-form-section">
+                                <h3>Product Images</h3>
+
                                 <div className="form-group">
-                                    <label>Unit</label>
+                                    <label>Main Product Image *</label>
+
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        onChange={handleEditMainImage}
+                                    />
+
+                                    {editForm.image && (
+                                        <div className="product-image-preview main-image-preview">
+                                            <img
+                                                src={editForm.image}
+                                                alt="Main product"
+                                            />
+
+                                            <span>Main Image</span>
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setEditForm(previous => ({
+                                                        ...previous,
+                                                        image: "",
+                                                        images: previous.images.filter(
+                                                            image => image !== previous.image
+                                                        )
+                                                    }))
+                                                }
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Additional Images (Maximum 4)</label>
+
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        multiple
+                                        disabled={
+                                            editForm.images.filter(
+                                                image => image !== editForm.image
+                                            ).length >= 4
+                                        }
+                                        onChange={handleEditGalleryImages}
+                                    />
+
+                                    <small>
+                                        {editForm.images.filter(
+                                            image => image !== editForm.image
+                                        ).length}/4 additional images
+                                    </small>
+
+                                    <div className="product-gallery-preview">
+
+                                        {editForm.images
+                                            .filter(image => image !== editForm.image)
+                                            .map((image, index) => (
+                                                <div
+                                                    className="product-image-preview"
+                                                    key={index}
+                                                >
+                                                    <img
+                                                        src={image}
+                                                        alt={`Gallery ${index + 1}`}
+                                                    />
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            removeEditGalleryImage(image)
+                                                        }
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            ))}
+
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* PACK SIZE AND PRICING */}
+                            <section className="edit-form-section">
+                                <h3>Unit, Pack Size & Pricing</h3>
+
+                                <div className="form-group">
+                                    <label>Measurement Unit *</label>
+
                                     <select
-                                        name="unit"
-                                        value={editForm.pricing.unit}
-                                        onChange={handleEditPricingChange}
+                                        value={editForm.unit}
+                                        onChange={e =>
+                                            setEditForm(previous => ({
+                                                ...previous,
+                                                unit: e.target.value,
+                                                sizes: previous.sizes.map(size => ({
+                                                    ...size,
+                                                    unit: e.target.value
+                                                }))
+                                            }))
+                                        }
                                     >
-                                        <option value="ml">ml</option>
-                                        <option value="kg">kg</option>
+                                        <option value="ml">Millilitre (ml)</option>
+                                        <option value="g">Gram (g)</option>
                                     </select>
                                 </div>
 
-                            </div>
+                                <div className="form-group">
+                                    <label>Available Pack Sizes</label>
 
-                           
+                                    <div className="pack-size-admin-list">
 
-                            <div className="form-group">
-                                <label>Available Weight Options</label>
+                                        {editForm.sizes.map(size => (
+                                            <div
+                                                className="pack-size-admin-item"
+                                                key={size.weight}
+                                            >
+                                                <strong>
+                                                    {size.weight} {editForm.unit}
+                                                </strong>
 
-                                <input
-                                    type="text"
-                                    value={editForm.pricing.weightOptions.join(", ")}
-                                    onChange={e =>
-                                        handleEditWeightOptions(e.target.value)
-                                    }
-                                    placeholder="100, 250, 500, 1000"
-                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeEditWeight(size.weight)
+                                                    }
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))}
 
-                                <small>Enter quantities separated by commas.</small>
-                            </div>
+                                    </div>
 
-                            {/* IMAGE */}
+                                    <div className="add-weight-row">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            id="editCustomWeight"
+                                            placeholder={`Enter size in ${editForm.unit}`}
+                                        />
 
-                            <h3>Product Image</h3>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const input = document.getElementById(
+                                                    "editCustomWeight"
+                                                );
 
-                            <div className="form-group">
-                                <label>Image URL</label>
+                                                addEditWeight(input.value);
+                                                input.value = "";
+                                            }}
+                                        >
+                                            + Add Pack Size
+                                        </button>
+                                    </div>
+                                </div>
 
-                                <input
-                                    type="text"
-                                    name="image"
-                                    value={editForm.image}
-                                    onChange={handleEditChange}
-                                    placeholder="Enter image URL"
-                                />
+                                <div className="form-group">
+                                    <h4>Individual Price Configuration</h4>
 
-                                {editForm.image && (
-                                    <img
-                                        src={editForm.image}
-                                        alt="Product Preview"
-                                        className="edit-product-preview"
-                                    />
-                                )}
-                            </div>
+                                    <div className="pack-price-preview">
+
+                                        <div className="price-config-header">
+                                            <strong>Pack Size</strong>
+                                            <strong>Regular Price (₹)</strong>
+                                            <strong>Offer Price (₹)</strong>
+                                        </div>
+
+                                        {editForm.sizes.map(size => (
+                                            <div
+                                                className="price-config-row"
+                                                key={size.weight}
+                                            >
+                                                <strong>
+                                                    {size.weight} {editForm.unit}
+                                                </strong>
+
+                                                <input
+                                                    type="number"
+                                                    min="0.01"
+                                                    step="0.01"
+                                                    value={size.price}
+                                                    placeholder="Regular price"
+                                                    onChange={e =>
+                                                        handleEditSizePrice(
+                                                            size.weight,
+                                                            "price",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+
+                                                <input
+                                                    type="number"
+                                                    min="0.01"
+                                                    step="0.01"
+                                                    value={size.offerPrice}
+                                                    placeholder="Offer price"
+                                                    onChange={e =>
+                                                        handleEditSizePrice(
+                                                            size.weight,
+                                                            "offerPrice",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                        ))}
+
+                                    </div>
+                                </div>
+                            </section>
 
                             {/* ADDONS */}
+                            <section className="edit-form-section">
 
-                            <h3>Add-ons</h3>
+                                <div className="addon-section-heading">
+                                    <div>
+                                        <h3>Optional Product Add-ons</h3>
+                                        <p className="section-description">
+                                            Manage extras available to customers.
+                                        </p>
+                                    </div>
 
-                            {editForm.addons.map((addon, index) => (
-                                <div className="edit-addon-row" key={addon.id || index}>
-
-                                    <input
-                                        type="text"
-                                        placeholder="Addon name"
-                                        value={addon.name}
-                                        onChange={e =>
-                                            updateAddon(index, "name", e.target.value)
-                                        }
-                                    />
-
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        placeholder="Price"
-                                        value={addon.price}
-                                        onChange={e =>
-                                            updateAddon(index, "price", e.target.value)
-                                        }
-                                    />
-
-                                    <button
-                                        type="button"
-                                        onClick={() => removeEditAddon(index)}
-                                    >
-                                        Remove
-                                    </button>
-
+                                    <label className="addon-toggle">
+                                        <input
+                                            type="checkbox"
+                                            checked={editForm.hasAddons}
+                                            onChange={e =>
+                                                setEditForm(previous => ({
+                                                    ...previous,
+                                                    hasAddons: e.target.checked
+                                                }))
+                                            }
+                                        />
+                                        <span>Enable Add-ons</span>
+                                    </label>
                                 </div>
-                            ))}
 
-                            <button
-                                type="button"
-                                onClick={addEditAddon}
-                            >
-                                + Add Add-on
-                            </button>
+                                {editForm.hasAddons && (
+                                    <>
+                                        {editForm.addons.map((addon, index) => (
+                                            <div
+                                                className="edit-addon-row"
+                                                key={addon.id || index}
+                                            >
+                                                <input
+                                                    type="text"
+                                                    placeholder="Add-on name"
+                                                    value={addon.name}
+                                                    onChange={e =>
+                                                        updateAddon(
+                                                            index,
+                                                            "name",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    placeholder="Price ₹"
+                                                    value={addon.price}
+                                                    onChange={e =>
+                                                        updateAddon(
+                                                            index,
+                                                            "price",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={addon.active !== false}
+                                                        onChange={e =>
+                                                            updateAddon(
+                                                                index,
+                                                                "active",
+                                                                e.target.checked
+                                                            )
+                                                        }
+                                                    />
+                                                    Active
+                                                </label>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeEditAddon(index)
+                                                    }
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))}
+
+                                        <button
+                                            type="button"
+                                            onClick={addEditAddon}
+                                        >
+                                            + Add Add-on
+                                        </button>
+                                    </>
+                                )}
+
+                                {!editForm.hasAddons && (
+                                    <p className="addon-disabled-note">
+                                        Add-ons are disabled for this product.
+                                    </p>
+                                )}
+                            </section>
+
+                            {/* PRODUCT STATUS */}
+                            <section className="edit-form-section">
+                                <h3>Product Status</h3>
+
+                                <div className="form-group">
+                                    <label>Availability Status</label>
+
+                                    <select
+                                        name="status"
+                                        value={editForm.status}
+                                        onChange={handleEditChange}
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                            </section>
 
                             {/* ACTIONS */}
-
                             <div className="edit-modal-actions">
 
                                 <button

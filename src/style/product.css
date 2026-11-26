@@ -124,7 +124,9 @@
 .product-search-section {
   margin: 15px 0;
 }
-
+input[type="search"]::-webkit-search-cancel-button{
+  display: none;
+}
 .search-box {
   display: flex;
   align-items: center;

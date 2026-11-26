@@ -7,6 +7,7 @@ const DEFAULT_WEIGHTS = [100, 250, 500, 1000];
 
 const initialForm = {
     name: "",
+    sku: "",
     description: "",
     flavour: "",
     servingSuggestion: "",
@@ -325,28 +326,67 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
     // IMAGE HANDLERS
     // =====================================
 
+
     const readImage = (file) => {
         return new Promise((resolve, reject) => {
-            if (
-                !file ||
-                !file.type.startsWith("image/")
-            ) {
-                reject(
-                    new Error("Please select a valid image.")
-                );
+            if (!file || !file.type.startsWith("image/")) {
+                reject(new Error("Please select a valid image."));
                 return;
             }
 
-            const reader = new FileReader();
+            const image = new Image();
+            const objectUrl = URL.createObjectURL(file);
 
-            reader.onload = () => resolve(reader.result);
+            image.onload = () => {
+                try {
+                    const canvas = document.createElement("canvas");
 
-            reader.onerror = () =>
-                reject(new Error("Unable to read image."));
+                    const MAX_WIDTH = 1200;
+                    const MAX_HEIGHT = 1200;
 
-            reader.readAsDataURL(file);
+                    let width = image.width;
+                    let height = image.height;
+
+                    const scale = Math.min(
+                        MAX_WIDTH / width,
+                        MAX_HEIGHT / height,
+                        1
+                    );
+
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext("2d");
+
+                    ctx.drawImage(image, 0, 0, width, height);
+
+                    const compressedImage = canvas.toDataURL(
+                        "image/webp",
+                        0.75
+                    );
+
+                    URL.revokeObjectURL(objectUrl);
+
+                    resolve(compressedImage);
+
+                } catch (error) {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(error);
+                }
+            };
+
+            image.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error("Unable to process image."));
+            };
+
+            image.src = objectUrl;
         });
     };
+
 
     const handleMainImageChange = async (e) => {
         const file = e.target.files?.[0];
@@ -475,7 +515,27 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
             setError("Please upload the main product image.");
             return;
         }
+        if (!formData.sku.trim()) {
+            setError("Please enter the product SKU.");
+            return;
+        }
 
+        const duplicateSKU = (() => {
+            const existing = JSON.parse(
+                localStorage.getItem("konfizProducts") || "[]"
+            );
+
+            return existing.some(
+                product =>
+                    String(product.sku || "").toLowerCase() ===
+                    formData.sku.trim().toLowerCase()
+            );
+        })();
+
+        if (duplicateSKU) {
+            setError("This SKU already exists.");
+            return;
+        }
         // RATING VALIDATION
 
         const rating = Number(formData.rating);
@@ -588,7 +648,7 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
 
             // BASIC INFORMATION
             name: formData.name.trim(),
-
+            sku: formData.sku.trim().toUpperCase(),
             description: formData.description.trim(),
 
             rating: Number(formData.rating),
@@ -680,7 +740,7 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
 
             if (!savedProduct) {
                 setError(
-                    "Unable to save product. Please check your product store."
+                    "Product could not be saved. Storage may be full. Please check the browser console."
                 );
                 return;
             }
@@ -753,6 +813,17 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
                                 placeholder="e.g. Belgian Chocolate Ice Cream"
                                 required
                             />
+                        </div>
+                        <div className="form-group">
+                            <label>Product SKU *</label>
+                            <input
+                                name="sku"
+                                value={formData.sku}
+                                onChange={handleChange}
+                                placeholder="e.g. KON-BIS-001"
+                                required
+                            />
+                            <small>Enter a unique product SKU.</small>
                         </div>
 
                         {/* MAIN CATEGORY */}

@@ -1463,7 +1463,7 @@ function Product() {
                     <h1>
                         {currentCategory
                             ? currentCategory.name
-                            : "Explore Our Ice Creams"}
+                            : "Explore a World of Delicious Flavours"}
                     </h1>
 
                     <p>
