@@ -73,6 +73,10 @@ const navigationLinks = [
         name: "Our Distinguished Flavours",
         path: "/distinguished-flavours"
     },
+     {
+        name: "Blog",
+        path: "/blog"
+    },
     {
         name: "We Make You Sell",
         path: "/we-make-you-sell"

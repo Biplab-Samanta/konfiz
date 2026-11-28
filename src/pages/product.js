@@ -10,6 +10,7 @@ import { useCart } from "../context/cartcontext";
 // HELPERS
 // =====================================
 
+const API_URL = "http://localhost:5000/api";
 
 const makeSlug = (value = "") =>
     String(value)
@@ -19,17 +20,19 @@ const makeSlug = (value = "") =>
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "");
 
-const getProductId = (product) =>
-    String(product?.id ?? product?._id ?? product?.name ?? "");
-
-// CATEGORY HELPERS
+const getProductId = (product) => {
+    return String(
+        product?._id ||
+        product?.id ||
+        product?.sku ||
+        ""
+    );
+};
 
 const getCategoryName = (category) => {
     if (!category) return "";
 
-    if (typeof category === "string") {
-        return category;
-    }
+    if (typeof category === "string") return category;
 
     return (
         category.name ||
@@ -40,9 +43,7 @@ const getCategoryName = (category) => {
 };
 
 const getCategoryId = (category) => {
-    if (!category || typeof category !== "object") {
-        return "";
-    }
+    if (!category || typeof category !== "object") return "";
 
     return String(
         category.id ??
@@ -57,14 +58,10 @@ const getProductCategoryName = (product) =>
     product?.categoryName ||
     "";
 
-// SUBCATEGORY HELPERS
-
 const getSubcategoryName = (subcategory) => {
     if (!subcategory) return "";
 
-    if (typeof subcategory === "string") {
-        return subcategory;
-    }
+    if (typeof subcategory === "string") return subcategory;
 
     return (
         subcategory.name ||
@@ -75,9 +72,7 @@ const getSubcategoryName = (subcategory) => {
 };
 
 const getSubcategoryId = (subcategory) => {
-    if (!subcategory || typeof subcategory !== "object") {
-        return "";
-    }
+    if (!subcategory || typeof subcategory !== "object") return "";
 
     return String(
         subcategory.id ??
@@ -94,17 +89,17 @@ const getProductSubcategoryName = (product) =>
 
 const getProductSubcategoryId = (product) =>
     String(
-        product?.subcategoryId ??
-        getSubcategoryId(product?.subcategory) ??
+        product?.subcategoryId ||
+        getSubcategoryId(product?.subcategory) ||
         ""
     );
-
-// ADD-ON HELPERS
 
 const getAddonId = (addon) =>
     String(addon?.id ?? addon?._id ?? addon?.name ?? "");
 
+// =====================================
 // WEIGHT HELPERS
+// =====================================
 
 const getWeightOptions = (product) => {
     const options =
@@ -118,16 +113,25 @@ const getWeightOptions = (product) => {
         return [null];
     }
 
-    return options.map(option => {
-        if (typeof option === "object" && option !== null) {
-            return Number(
+    return options.map((option) => {
+        if (option === null || option === undefined) return null;
+
+        if (typeof option === "object") {
+            const value =
                 option.weight ??
                 option.quantity ??
-                option.size
-            );
+                option.size;
+
+            if (value === undefined || value === null || value === "") {
+                return null;
+            }
+
+            const number = Number(value);
+            return Number.isFinite(number) ? number : null;
         }
 
-        return Number(option);
+        const number = Number(option);
+        return Number.isFinite(number) ? number : null;
     });
 };
 
@@ -136,63 +140,60 @@ const getUnit = (product) =>
     product?.unit ||
     "ml";
 
-// get price 
-const getBasePrice = (product, weight = null) => {
-    if (!product) return 0;
+// =====================================
+// PRICE HELPERS
+// =====================================
 
+const getSelectedSizeOption = (product, weight) => {
     const sizes =
         product?.pricing?.sizes ||
         product?.sizes ||
+        product?.pricing?.weightOptions ||
+        product?.weightOptions ||
         [];
 
-    if (Array.isArray(sizes) && sizes.length > 0) {
-        const selectedOption =
-            sizes.find(
-                (option) =>
-                    Number(option.weight) === Number(weight)
-            ) || (weight === null ? sizes[0] : null);
+    if (!Array.isArray(sizes) || sizes.length === 0) return null;
 
-        if (selectedOption) {
-            return Number(
-                selectedOption.offerPrice ??
-                selectedOption.price ??
-                0
-            );
+    return sizes.find((option) => {
+        if (option === null || option === undefined) {
+            return weight === null;
         }
-    }
 
-    return Number(product.offerPrice ?? product.price ?? 0);
-};
-// =====================================
-// REGULAR PRICE AND OFFER PRICE
-// =====================================
-
-const getPriceDetails = (product, weight) => {
-    const regularBasePrice = getBasePrice(product, weight);
-
-    const weightOptions =
-        product?.pricing?.sizes ||
-        product?.sizes ||
-        [];
-
-    // Find the selected size's price information
-    const selectedOption = weightOptions.find(option => {
         const optionWeight =
             typeof option === "object"
                 ? option.weight ?? option.quantity ?? option.size
                 : option;
 
-        return Number(optionWeight) === Number(weight);
-    });
+        if (weight === null || weight === undefined) {
+            return optionWeight === null || optionWeight === undefined;
+        }
 
-    const regularPrice = Number(
+        return Number(optionWeight) === Number(weight);
+    }) || (weight === null ? sizes[0] : null);
+};
+
+const getBasePrice = (product, weight = null) => {
+    if (!product) return 0;
+
+    const selectedOption = getSelectedSizeOption(product, weight);
+
+    const price =
         selectedOption?.regularPrice ??
         selectedOption?.mrp ??
         selectedOption?.price ??
         product?.regularPrice ??
         product?.mrp ??
-        regularBasePrice
-    );
+        product?.price ??
+        0;
+
+    const number = Number(price);
+    return Number.isFinite(number) ? number : 0;
+};
+
+const getPriceDetails = (product, weight) => {
+    const selectedOption = getSelectedSizeOption(product, weight);
+
+    const regularPrice = getBasePrice(product, weight);
 
     const possibleOfferPrice =
         selectedOption?.offerPrice ??
@@ -204,20 +205,16 @@ const getPriceDetails = (product, weight) => {
 
     const offerPrice = Number(possibleOfferPrice);
 
-    // Only show an offer when it is valid and lower than regular price
     const hasOffer =
         Number.isFinite(offerPrice) &&
         offerPrice > 0 &&
+        regularPrice > 0 &&
         offerPrice < regularPrice;
 
-    const sellingPrice = hasOffer
-        ? offerPrice
-        : regularPrice;
+    const sellingPrice = hasOffer ? offerPrice : regularPrice;
 
     const discount = hasOffer
-        ? Math.round(
-            ((regularPrice - offerPrice) / regularPrice) * 100
-        )
+        ? Math.round(((regularPrice - offerPrice) / regularPrice) * 100)
         : 0;
 
     return {
@@ -229,16 +226,15 @@ const getPriceDetails = (product, weight) => {
     };
 };
 
-
-// FLAVOUR HELPERS
+// =====================================
+// FLAVOUR AND STOCK HELPERS
+// =====================================
 
 const getFlavour = (product) =>
     product?.flavour ||
     product?.flavor ||
     product?.taste ||
     "";
-
-// STOCK HELPERS
 
 const getStock = (product) => {
     if (product?.inStock !== undefined) {
@@ -260,22 +256,20 @@ const getStock = (product) => {
     return true;
 };
 
+// =====================================
 // STORAGE HELPERS
+// =====================================
 
 const safeParse = (value, fallback = []) => {
     try {
-        return JSON.parse(
-            value || JSON.stringify(fallback)
-        );
+        return JSON.parse(value || JSON.stringify(fallback));
     } catch {
         return fallback;
     }
 };
 
 const normalizeList = (data, property) => {
-    if (Array.isArray(data)) {
-        return data;
-    }
+    if (Array.isArray(data)) return data;
 
     if (Array.isArray(data?.[property])) {
         return data[property];
@@ -291,6 +285,7 @@ const normalizeList = (data, property) => {
 function Product() {
     const { categorySlug } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const {
         addToCart: addProductToCart,
@@ -305,8 +300,6 @@ function Product() {
         user?.customerId ||
         user?.id ||
         user?._id;
-
-
 
     // =====================================
     // WISHLIST
@@ -328,42 +321,105 @@ function Product() {
                 []
             );
 
-            setWishlist(
-                Array.isArray(saved) ? saved : []
-            );
+            setWishlist(Array.isArray(saved) ? saved : []);
         };
 
         loadWishlist();
 
         window.addEventListener("storage", loadWishlist);
-
-        window.addEventListener(
-            "konfiz-wishlist-updated",
-            loadWishlist
-        );
+        window.addEventListener("konfiz-wishlist-updated", loadWishlist);
 
         return () => {
-            window.removeEventListener(
-                "storage",
-                loadWishlist
-            );
-
-            window.removeEventListener(
-                "konfiz-wishlist-updated",
-                loadWishlist
-            );
+            window.removeEventListener("storage", loadWishlist);
+            window.removeEventListener("konfiz-wishlist-updated", loadWishlist);
         };
     }, [customerId]);
 
     // =====================================
     // STORE DATA
+    // Products: MongoDB
+    // Categories/Subcategories: localStorage
     // =====================================
 
     const [productData, setProductData] = useState([]);
     const [categories, setCategories] = useState([]);
     const [subcategories, setSubcategories] = useState([]);
-
     const [storeLoaded, setStoreLoaded] = useState(false);
+    const [loadError, setLoadError] = useState("");
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadLocalCategories = () => {
+            const savedCategories = safeParse(
+                localStorage.getItem("konfizCategories"),
+                []
+            );
+
+            const savedSubcategories = safeParse(
+                localStorage.getItem("konfizSubcategories"),
+                []
+            );
+
+            if (isMounted) {
+                setCategories(normalizeList(savedCategories, "categories"));
+                setSubcategories(normalizeList(savedSubcategories, "subcategories"));
+            }
+        };
+
+        const loadProducts = async () => {
+            try {
+                setLoadError("");
+
+                const response = await fetch(`${API_URL}/products`);
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(
+                        result.message || "Unable to load products."
+                    );
+                }
+
+                if (isMounted) {
+                    setProductData(normalizeList(result, "products"));
+                }
+            } catch (error) {
+                console.error("Product loading error:", error);
+
+                if (isMounted) {
+                    setProductData([]);
+                    setLoadError(
+                        "Unable to load products. Please try again later."
+                    );
+                }
+            } finally {
+                if (isMounted) {
+                    setStoreLoaded(true);
+                }
+            }
+        };
+
+        loadLocalCategories();
+        loadProducts();
+
+        const handleLocalStoreUpdate = () => {
+            loadLocalCategories();
+        };
+
+        window.addEventListener("storage", handleLocalStoreUpdate);
+        window.addEventListener("focus", handleLocalStoreUpdate);
+        window.addEventListener("konfizStoreUpdated", handleLocalStoreUpdate);
+        window.addEventListener("konfizSubcategoriesUpdated", handleLocalStoreUpdate);
+
+        return () => {
+            isMounted = false;
+
+            window.removeEventListener("storage", handleLocalStoreUpdate);
+            window.removeEventListener("focus", handleLocalStoreUpdate);
+            window.removeEventListener("konfizStoreUpdated", handleLocalStoreUpdate);
+            window.removeEventListener("konfizSubcategoriesUpdated", handleLocalStoreUpdate);
+        };
+    }, []);
 
     // =====================================
     // FILTER STATES
@@ -402,83 +458,6 @@ function Product() {
     });
 
     // =====================================
-    // LOAD LOCAL STORAGE
-    // =====================================
-
-    useEffect(() => {
-        const loadStoreData = () => {
-            const savedProducts = safeParse(
-                localStorage.getItem("konfizProducts"),
-                []
-            );
-
-            const savedCategories = safeParse(
-                localStorage.getItem("konfizCategories"),
-                []
-            );
-
-            const savedSubcategories = safeParse(
-                localStorage.getItem("konfizSubcategories"),
-                []
-            );
-
-            setProductData(
-                normalizeList(savedProducts, "products")
-            );
-
-            setCategories(
-                normalizeList(savedCategories, "categories")
-            );
-
-            setSubcategories(
-                normalizeList(
-                    savedSubcategories,
-                    "subcategories"
-                )
-            );
-
-            setStoreLoaded(true);
-        };
-
-        loadStoreData();
-
-        window.addEventListener("storage", loadStoreData);
-        window.addEventListener("focus", loadStoreData);
-
-        window.addEventListener(
-            "konfizStoreUpdated",
-            loadStoreData
-        );
-
-        window.addEventListener(
-            "konfizSubcategoriesUpdated",
-            loadStoreData
-        );
-
-        return () => {
-            window.removeEventListener(
-                "storage",
-                loadStoreData
-            );
-
-            window.removeEventListener(
-                "focus",
-                loadStoreData
-            );
-
-            window.removeEventListener(
-                "konfizStoreUpdated",
-                loadStoreData
-            );
-
-            window.removeEventListener(
-                "konfizSubcategoriesUpdated",
-                loadStoreData
-            );
-        };
-    }, []);
-
-    // =====================================
     // NORMALIZE CATEGORIES
     // =====================================
 
@@ -486,38 +465,30 @@ function Product() {
         return categories
             .map((item, index) => {
                 const name = getCategoryName(item);
-
                 if (!name) return null;
 
                 return {
-                    id:
-                        getCategoryId(item) ||
-                        `category_${index}`,
-
+                    id: getCategoryId(item) || `category_${index}`,
                     name,
-
-                    slug: makeSlug(
-                        item.slug || name
-                    ),
-
-                    description:
-                        item.description ||
-                        item.details ||
-                        ""
+                    slug: makeSlug(item.slug || name),
+                    description: item.description || item.details || ""
                 };
             })
             .filter(Boolean);
     }, [categories]);
 
     // =====================================
-    //location
+    // SCROLL TO CATEGORY HASH
     // =====================================
-    const location = useLocation();
+
+    // =====================================
+    // SCROLL TO CATEGORY HASH
+    // =====================================
 
     useEffect(() => {
         const categoryId = location.hash.slice(1);
 
-        if (!categoryId) return;
+        if (!categoryId || !storeLoaded) return;
 
         let attempts = 0;
         let timer;
@@ -528,9 +499,8 @@ function Product() {
             if (categoryElement) {
                 categoryElement.scrollIntoView({
                     behavior: "smooth",
-                    block: "start",
+                    block: "start"
                 });
-
                 return;
             }
 
@@ -544,15 +514,15 @@ function Product() {
         timer = setTimeout(scrollToCategory, 100);
 
         return () => clearTimeout(timer);
-    }, [location.hash]);
+    }, [location.hash, storeLoaded]);
 
+    // =====================================
+    // NORMALIZE SUBCATEGORIES
+    // =====================================
 
     const normalizedSubcategories = useMemo(() => {
-        // Get subcategories nested inside admin categories
-        const nestedSubcategories = categories.flatMap(category => {
-            if (!category || typeof category !== "object") {
-                return [];
-            }
+        const nestedSubcategories = categories.flatMap((category) => {
+            if (!category || typeof category !== "object") return [];
 
             const categoryId = getCategoryId(category);
             const categoryName = getCategoryName(category);
@@ -563,7 +533,6 @@ function Product() {
 
             return children.map((item, index) => {
                 const name = getSubcategoryName(item);
-
                 if (!name) return null;
 
                 const id =
@@ -576,46 +545,29 @@ function Product() {
                     slug: makeSlug(item?.slug || name),
                     categoryId,
                     categoryName,
-                    image:
-                        item?.image ||
-                        item?.imageUrl ||
-                        item?.thumbnail ||
-                        ""
+                    image: item?.image || item?.imageUrl || item?.thumbnail || ""
                 };
             }).filter(Boolean);
         });
 
-        // Also support subcategories stored separately
         const separateSubcategories = subcategories.map((item, index) => {
             const name = getSubcategoryName(item);
-
             if (!name) return null;
 
             return {
-                id:
-                    getSubcategoryId(item) ||
-                    `subcategory_${index}`,
-
+                id: getSubcategoryId(item) || `subcategory_${index}`,
                 name,
                 slug: makeSlug(item.slug || name),
-
                 categoryId: String(
                     item.categoryId ??
                     getCategoryId(item.category) ??
                     ""
                 ),
-
                 categoryName: getCategoryName(item.category),
-
-                image:
-                    item.image ||
-                    item.imageUrl ||
-                    item.thumbnail ||
-                    ""
+                image: item.image || item.imageUrl || item.thumbnail || ""
             };
         }).filter(Boolean);
 
-        // Combine both sources and prevent duplicates
         const combined = [
             ...nestedSubcategories,
             ...separateSubcategories
@@ -623,7 +575,7 @@ function Product() {
 
         const unique = new Map();
 
-        combined.forEach(item => {
+        combined.forEach((item) => {
             const key = `${item.categoryId}__${item.slug}`;
 
             if (!unique.has(key)) {
@@ -638,32 +590,21 @@ function Product() {
     // CURRENT URL CATEGORY
     // =====================================
 
-    const normalizedUrlSlug = makeSlug(
-        categorySlug || ""
-    );
+    const normalizedUrlSlug = makeSlug(categorySlug || "");
 
     const currentCategory = useMemo(() => {
         if (!normalizedUrlSlug) return null;
 
-        return (
-            normalizedCategories.find(
-                category =>
-                    category.slug === normalizedUrlSlug
-            ) || null
-        );
-    }, [
-        normalizedCategories,
-        normalizedUrlSlug
-    ]);
+        return normalizedCategories.find(
+            (category) => category.slug === normalizedUrlSlug
+        ) || null;
+    }, [normalizedCategories, normalizedUrlSlug]);
 
     // =====================================
     // CATEGORY MATCHING
     // =====================================
 
-    const productMatchesCategory = (
-        product,
-        category
-    ) => {
+    const productMatchesCategory = (product, category) => {
         if (!category) return true;
 
         const name = getProductCategoryName(product);
@@ -686,45 +627,26 @@ function Product() {
     // SUBCATEGORY MATCHING
     // =====================================
 
-    const productMatchesSubcategory = (
-        product,
-        subcategory
-    ) => {
+    const productMatchesSubcategory = (product, subcategory) => {
         if (!subcategory) return true;
 
-        const productSubcategoryId =
-            getProductSubcategoryId(product);
+        const productSubcategoryId = getProductSubcategoryId(product);
+        const productSubcategoryName = getProductSubcategoryName(product);
 
-        const productSubcategoryName =
-            getProductSubcategoryName(product);
-
-        // Match using permanent ID first
         if (productSubcategoryId) {
-            return (
-                String(productSubcategoryId) ===
-                String(subcategory.id)
-            );
+            return String(productSubcategoryId) === String(subcategory.id);
         }
 
-        // Fallback for older products using names
-        return (
-            makeSlug(productSubcategoryName) ===
-            subcategory.slug
-        );
+        return makeSlug(productSubcategoryName) === subcategory.slug;
     };
 
     const currentSubcategory = useMemo(() => {
         if (!selectedSubcategory) return null;
 
-        return (
-            normalizedSubcategories.find(
-                item => item.slug === selectedSubcategory
-            ) || null
-        );
-    }, [
-        normalizedSubcategories,
-        selectedSubcategory
-    ]);
+        return normalizedSubcategories.find(
+            (item) => item.slug === selectedSubcategory
+        ) || null;
+    }, [normalizedSubcategories, selectedSubcategory]);
 
     // =====================================
     // DYNAMIC FLAVOURS
@@ -733,9 +655,7 @@ function Product() {
     const availableFlavours = useMemo(() => {
         return [
             ...new Set(
-                productData
-                    .map(getFlavour)
-                    .filter(Boolean)
+                productData.map(getFlavour).filter(Boolean)
             )
         ].sort();
     }, [productData]);
@@ -747,15 +667,10 @@ function Product() {
     const availableSizes = useMemo(() => {
         return [
             ...new Set(
-                productData.flatMap(product =>
+                productData.flatMap((product) =>
                     getWeightOptions(product)
-                        .filter(weight =>
-                            weight !== null &&
-                            weight !== undefined
-                        )
-                        .map(weight =>
-                            `${weight} ${getUnit(product)}`
-                        )
+                        .filter((weight) => weight !== null && weight !== undefined)
+                        .map((weight) => `${weight} ${getUnit(product)}`)
                 )
             )
         ].sort();
@@ -766,24 +681,21 @@ function Product() {
     // =====================================
 
     const priceLimits = useMemo(() => {
-        const prices = productData.map(product => {
-            const options = getWeightOptions(product);
+        const prices = productData
+            .map((product) => {
+                const options = getWeightOptions(product);
 
-            return Math.min(
-                ...options.map(weight =>
-                    getBasePrice(product, weight)
-                )
-            );
-        }).filter(Number.isFinite);
+                return Math.min(
+                    ...options.map((weight) =>
+                        getPriceDetails(product, weight).sellingPrice
+                    )
+                );
+            })
+            .filter((price) => Number.isFinite(price) && price >= 0);
 
         return {
-            min: prices.length
-                ? Math.floor(Math.min(...prices))
-                : 0,
-
-            max: prices.length
-                ? Math.ceil(Math.max(...prices))
-                : 500
+            min: prices.length ? Math.floor(Math.min(...prices)) : 0,
+            max: prices.length ? Math.ceil(Math.max(...prices)) : 500
         };
     }, [productData]);
 
@@ -817,38 +729,22 @@ function Product() {
     // WEIGHT AND QUANTITY
     // =====================================
 
-    const handleWeightChange = (
-        productId,
-        weight
-    ) => {
-        setSelections(previous => ({
+    const handleWeightChange = (productId, weight) => {
+        setSelections((previous) => ({
             ...previous,
-
             [productId]: {
                 ...previous[productId],
-
-                weight:
-                    weight === ""
-                        ? null
-                        : Number(weight)
+                weight: weight === "" ? null : Number(weight)
             }
         }));
     };
 
-    const handleQuantityChange = (
-        productId,
-        quantity
-    ) => {
-        setSelections(previous => ({
+    const handleQuantityChange = (productId, quantity) => {
+        setSelections((previous) => ({
             ...previous,
-
             [productId]: {
                 ...previous[productId],
-
-                quantity: Math.max(
-                    1,
-                    Number(quantity) || 1
-                )
+                quantity: Math.max(1, Number(quantity) || 1)
             }
         }));
     };
@@ -881,20 +777,17 @@ function Product() {
             ? product.addons
             : [];
 
-        // Get selected add-on details
         const addons = availableAddons
-            .filter(addon =>
+            .filter((addon) =>
                 selectedAddonIds.includes(getAddonId(addon))
             )
-            .map(addon => ({
+            .map((addon) => ({
                 id: getAddonId(addon),
                 name: addon.name,
                 price: Number(addon.price) || 0
             }));
 
-        // Calculate prices
         const priceDetails = getPriceDetails(product, weight);
-
         const basePrice = priceDetails.sellingPrice;
 
         const addonPrice = addons.reduce(
@@ -903,43 +796,30 @@ function Product() {
         );
 
         const unitPrice = basePrice + addonPrice;
-
         const productId = getProductId(product);
 
-        // Different add-on combinations become separate cart items
         const cartItemId = [
             productId,
             weight ?? "standard",
-            addons
-                .map(addon => addon.id)
-                .sort()
-                .join("-") || "no-addon"
+            addons.map((addon) => addon.id).sort().join("-") || "no-addon"
         ].join("__");
 
-        // Submit product and add-on information to CartContext
         addProductToCart({
             id: cartItemId,
             cartItemId,
             productId,
-
             name: product.name,
             image: product.image || null,
-
             category: getProductCategoryName(product),
             subcategory: getProductSubcategoryName(product),
             subcategoryId: getProductSubcategoryId(product),
-
             weight,
             unit: getUnit(product),
-
             addons,
-
             basePrice,
             addonPrice,
-
             price: unitPrice,
             quantity,
-
             totalPrice: unitPrice * quantity
         });
 
@@ -947,8 +827,6 @@ function Product() {
     };
 
     const handleAddToCart = (product) => {
-
-        // If customer is not logged in, redirect to login
         if (!user || !user.authenticated) {
             navigate("/login", {
                 state: {
@@ -959,9 +837,7 @@ function Product() {
         }
 
         const productId = getProductId(product);
-
         const selected = selections[productId] || {};
-
         const options = getWeightOptions(product);
 
         const weight =
@@ -969,10 +845,7 @@ function Product() {
                 ? selected.weight
                 : options[0];
 
-        const quantity = Math.max(
-            1,
-            Number(selected.quantity || 1)
-        );
+        const quantity = Math.max(1, Number(selected.quantity || 1));
 
         if (!getStock(product)) return;
 
@@ -988,25 +861,19 @@ function Product() {
                 quantity,
                 addons: []
             });
-
             return;
         }
 
-        completeAddToCart(
-            product,
-            weight,
-            quantity,
-            []
-        );
+        completeAddToCart(product, weight, quantity, []);
     };
+
     // =====================================
     // WISHLIST
     // =====================================
 
     const isInWishlist = (productId) => {
         return wishlist.some(
-            item =>
-                String(item.id) === String(productId)
+            (item) => String(item.id) === String(productId)
         );
     };
 
@@ -1017,17 +884,11 @@ function Product() {
         }
 
         const productId = getProductId(product);
-
-        const wishlistKey =
-            `konfiz_wishlist_${customerId}`;
-
+        const wishlistKey = `konfiz_wishlist_${customerId}`;
         const exists = isInWishlist(productId);
 
         const updatedWishlist = exists
-            ? wishlist.filter(
-                item =>
-                    String(item.id) !== productId
-            )
+            ? wishlist.filter((item) => String(item.id) !== productId)
             : [
                 ...wishlist,
                 {
@@ -1049,14 +910,9 @@ function Product() {
 
             setWishlist(updatedWishlist);
 
-            window.dispatchEvent(
-                new Event("konfiz-wishlist-updated")
-            );
+            window.dispatchEvent(new Event("konfiz-wishlist-updated"));
         } catch (error) {
-            console.error(
-                "Wishlist update failed:",
-                error
-            );
+            console.error("Wishlist update failed:", error);
         }
     };
 
@@ -1065,49 +921,32 @@ function Product() {
     // =====================================
 
     const filteredProducts = useMemo(() => {
-        if (
-            categorySlug &&
-            storeLoaded &&
-            !currentCategory
-        ) {
+        if (categorySlug && storeLoaded && !currentCategory) {
             return [];
         }
 
-        let result = productData.filter(product => {
-            const name = String(
-                product.name || ""
-            ).toLowerCase();
+        let result = productData.filter((product) => {
+            const name = String(product.name || "").toLowerCase();
+            const description = String(product.description || "").toLowerCase();
 
-            const description = String(
-                product.description || ""
-            ).toLowerCase();
+            const category = getProductCategoryName(product);
+            const subcategory = getProductSubcategoryName(product);
+            const flavour = String(getFlavour(product));
 
-            const category =
-                getProductCategoryName(product);
-
-            const subcategory =
-                getProductSubcategoryName(product);
-
-            const flavour = String(
-                getFlavour(product)
-            );
-
-            const searchTerm =
-                search.trim().toLowerCase();
+            const searchTerm = search.trim().toLowerCase();
 
             const matchesSearch =
                 !searchTerm ||
-                name.toLowerCase().includes(searchTerm) ||
-                description.toLowerCase().includes(searchTerm) ||
+                name.includes(searchTerm) ||
+                description.includes(searchTerm) ||
                 category.toLowerCase().includes(searchTerm) ||
                 subcategory.toLowerCase().includes(searchTerm) ||
                 flavour.toLowerCase().includes(searchTerm);
 
-            const matchesUrlCategory =
-                productMatchesCategory(
-                    product,
-                    currentCategory
-                );
+            const matchesUrlCategory = productMatchesCategory(
+                product,
+                currentCategory
+            );
 
             const matchesSelectedCategory =
                 !selectedCategory ||
@@ -1115,41 +954,31 @@ function Product() {
 
             const matchesSelectedSubcategory =
                 !currentSubcategory ||
-                productMatchesSubcategory(
-                    product,
-                    currentSubcategory
-                );
+                productMatchesSubcategory(product, currentSubcategory);
 
             const matchesFlavour =
                 !selectedFlavour ||
-                flavour.toLowerCase() ===
-                selectedFlavour.toLowerCase();
+                flavour.toLowerCase() === selectedFlavour.toLowerCase();
 
-            const weights =
-                getWeightOptions(product);
+            const weights = getWeightOptions(product);
 
-            const matchesPrice = weights.some(weight => {
-                const price = getBasePrice(
-                    product,
-                    weight
-                );
+            const matchesPrice = weights.some((weight) => {
+                const price = getPriceDetails(product, weight).sellingPrice;
 
                 return (
-                    (!minPrice ||
-                        price >= Number(minPrice)) &&
-                    (!maxPrice ||
-                        price <= Number(maxPrice))
+                    (!minPrice || price >= Number(minPrice)) &&
+                    (!maxPrice || price <= Number(maxPrice))
                 );
             });
 
             const matchesSize =
                 !selectedSize ||
-                weights.some(weight =>
-                    `${weight} ${getUnit(product)}` === selectedSize
+                weights.some(
+                    (weight) =>
+                        `${weight} ${getUnit(product)}` === selectedSize
                 );
 
-            const matchesStock =
-                !inStockOnly || getStock(product);
+            const matchesStock = !inStockOnly || getStock(product);
 
             return (
                 matchesSearch &&
@@ -1167,26 +996,21 @@ function Product() {
 
         if (sort === "low-high") {
             result.sort((a, b) =>
-                getBasePrice(a, getWeightOptions(a)[0]) -
-                getBasePrice(b, getWeightOptions(b)[0])
+                getPriceDetails(a, getWeightOptions(a)[0]).sellingPrice -
+                getPriceDetails(b, getWeightOptions(b)[0]).sellingPrice
             );
         } else if (sort === "high-low") {
             result.sort((a, b) =>
-                getBasePrice(b, getWeightOptions(b)[0]) -
-                getBasePrice(a, getWeightOptions(a)[0])
+                getPriceDetails(b, getWeightOptions(b)[0]).sellingPrice -
+                getPriceDetails(a, getWeightOptions(a)[0]).sellingPrice
             );
         } else if (sort === "rating") {
             result.sort(
-                (a, b) =>
-                    Number(b.rating || 0) -
-                    Number(a.rating || 0)
+                (a, b) => Number(b.rating || 0) - Number(a.rating || 0)
             );
         } else if (sort === "name") {
-            result.sort(
-                (a, b) =>
-                    String(a.name || "").localeCompare(
-                        String(b.name || "")
-                    )
+            result.sort((a, b) =>
+                String(a.name || "").localeCompare(String(b.name || ""))
             );
         }
 
@@ -1224,21 +1048,20 @@ function Product() {
         : 0;
 
     const popupAddonPrice = addonPopup.product
-        ? (addonPopup.product.addons || [])
-            .filter(addon =>
-                addonPopup.addons.includes(
-                    getAddonId(addon)
-                )
+        ? (Array.isArray(addonPopup.product.addons)
+            ? addonPopup.product.addons
+            : []
+        )
+            .filter((addon) =>
+                addonPopup.addons.includes(getAddonId(addon))
             )
             .reduce(
-                (total, addon) =>
-                    total + (Number(addon.price) || 0),
+                (total, addon) => total + (Number(addon.price) || 0),
                 0
             )
         : 0;
 
-    const popupUnitPrice =
-        popupBasePrice + popupAddonPrice;
+    const popupUnitPrice = popupBasePrice + popupAddonPrice;
 
     // =====================================
     // FILTER CONTENT
@@ -1249,10 +1072,7 @@ function Product() {
             <div className="filter-heading">
                 <h3>Filters</h3>
 
-                <button
-                    type="button"
-                    onClick={clearFilters}
-                >
+                <button type="button" onClick={clearFilters}>
                     Clear All
                 </button>
             </div>
@@ -1260,24 +1080,18 @@ function Product() {
             <div className="filter-group">
                 <h4>Category</h4>
 
-                {normalizedCategories.map(category => (
-                    <label
-                        className="filter-option"
-                        key={category.id}
-                    >
+                {normalizedCategories.map((category) => (
+                    <label className="filter-option" key={category.id}>
                         <input
                             type="radio"
                             name="filter-category"
-                            checked={
-                                selectedCategory === category.slug
-                            }
+                            checked={selectedCategory === category.slug}
                             onChange={() => {
                                 setSelectedCategory(
                                     selectedCategory === category.slug
                                         ? ""
                                         : category.slug
                                 );
-
                                 setSelectedSubcategory("");
                             }}
                         />
@@ -1287,20 +1101,19 @@ function Product() {
                 ))}
             </div>
 
-
             <div className="filter-group">
                 <h4>Subcategory</h4>
 
                 {normalizedSubcategories.length > 0 ? (
                     normalizedSubcategories
-                        .filter(subcategory =>
+                        .filter((subcategory) =>
                             !selectedCategory ||
                             subcategory.categoryId ===
                             normalizedCategories.find(
-                                category => category.slug === selectedCategory
+                                (category) => category.slug === selectedCategory
                             )?.id
                         )
-                        .map(subcategory => (
+                        .map((subcategory) => (
                             <label
                                 className="filter-option"
                                 key={subcategory.id}
@@ -1330,27 +1143,19 @@ function Product() {
                 )}
             </div>
 
-
             <div className="filter-group">
                 <h4>Flavour</h4>
 
                 {availableFlavours.length ? (
-                    availableFlavours.map(flavour => (
-                        <label
-                            className="filter-option"
-                            key={flavour}
-                        >
+                    availableFlavours.map((flavour) => (
+                        <label className="filter-option" key={flavour}>
                             <input
                                 type="radio"
                                 name="filter-flavour"
-                                checked={
-                                    selectedFlavour === flavour
-                                }
+                                checked={selectedFlavour === flavour}
                                 onChange={() =>
                                     setSelectedFlavour(
-                                        selectedFlavour === flavour
-                                            ? ""
-                                            : flavour
+                                        selectedFlavour === flavour ? "" : flavour
                                     )
                                 }
                             />
@@ -1374,9 +1179,7 @@ function Product() {
                         min="0"
                         placeholder="Min"
                         value={minPrice}
-                        onChange={e =>
-                            setMinPrice(e.target.value)
-                        }
+                        onChange={(e) => setMinPrice(e.target.value)}
                     />
 
                     <span>–</span>
@@ -1386,36 +1189,26 @@ function Product() {
                         min="0"
                         placeholder="Max"
                         value={maxPrice}
-                        onChange={e =>
-                            setMaxPrice(e.target.value)
-                        }
+                        onChange={(e) => setMaxPrice(e.target.value)}
                     />
                 </div>
 
                 <p className="filter-hint">
-                    Available range: ₹{priceLimits.min} – ₹
-                    {priceLimits.max}
+                    Available range: ₹{priceLimits.min} – ₹{priceLimits.max}
                 </p>
             </div>
 
             <div className="filter-group">
                 <h4>Size</h4>
 
-                {availableSizes.map(size => (
-                    <label
-                        className="filter-option"
-                        key={size}
-                    >
+                {availableSizes.map((size) => (
+                    <label className="filter-option" key={size}>
                         <input
                             type="radio"
                             name="filter-size"
                             checked={selectedSize === size}
                             onChange={() =>
-                                setSelectedSize(
-                                    selectedSize === size
-                                        ? ""
-                                        : size
-                                )
+                                setSelectedSize(selectedSize === size ? "" : size)
                             }
                         />
 
@@ -1431,9 +1224,7 @@ function Product() {
                     <input
                         type="checkbox"
                         checked={inStockOnly}
-                        onChange={e =>
-                            setInStockOnly(e.target.checked)
-                        }
+                        onChange={(e) => setInStockOnly(e.target.checked)}
                     />
 
                     <span>Our best selling products</span>
@@ -1442,20 +1233,18 @@ function Product() {
         </>
     );
 
-
-    // UI----------------------
-
+    // =====================================
+    // UI
+    // =====================================
 
     return (
         <div className="product-page">
-
             <Navbar />
 
             {/* PAGE BANNER */}
 
             <section className="product-banner">
                 <div className="product-container">
-
                     <span className="banner-eyebrow">
                         A LITTLE SCOOP OF HAPPINESS
                     </span>
@@ -1470,38 +1259,14 @@ function Product() {
                         {currentCategory?.description ||
                             "Discover delicious flavours made to make every moment sweeter."}
                     </p>
-
                 </div>
             </section>
 
             <main className="product-container product-main">
 
-                {/* CATEGORY SECTION */}
-
-                {/* <section className="category-section">
-
-                    <div className="section-heading">
-                        <div>
-                            <span className="section-eyebrow">
-                                EXPLORE
-                            </span>
-
-                            <h2>Shop By Category</h2>
-                        </div>
-
-                        <Link to="/products">
-                            View All Products →
-                        </Link>
-                    </div>
-
-                </section> */}
-
-                {/* =====================================
-                    ADMIN CREATED SUBCATEGORIES
-                ===================================== */}
+                {/* EXPLORE COLLECTIONS */}
 
                 <section className="subcategory-section">
-
                     <div className="section-heading">
                         <div>
                             <span className="section-eyebrow">
@@ -1512,66 +1277,12 @@ function Product() {
                         </div>
                     </div>
 
-                    {/* {normalizedSubcategories.length > 0 ? (
-
-                        <div className="subcategory-grid">
-
-                            {normalizedSubcategories.map(subcategory => {
-
-                                const isSelected =
-                                    selectedSubcategory === subcategory.slug;
-
-                                return (
-                                    <button
-                                        type="button"
-                                        key={subcategory.id}
-                                        className={`subcategory-card ${isSelected ? "active" : ""
-                                            }`}
-                                        onClick={() => {
-                                            setSelectedSubcategory(
-                                                isSelected
-                                                    ? ""
-                                                    : subcategory.slug
-                                            );
-
-                                            setSelectedFlavour("");
-                                        }}
-                                    >
-
-                                        {subcategory.image ? (
-                                            <img
-                                                src={subcategory.image}
-                                                alt={subcategory.name}
-                                                loading="lazy"
-                                            />
-                                        ) : (
-                                            <span className="subcategory-icon">
-                                                🍨
-                                            </span>
-                                        )}
-
-                                        <span className="subcategory-name">
-                                            {subcategory.name}
-                                        </span>
-
-                                    </button>
-                                );
-                            })}
-
-                        </div>
-
-                    ) : (
-                        <p className="filter-hint">
-                            No subcategories available yet.
-                        </p>
-                    )} */}
-
+                    
                 </section>
 
                 {/* SEARCH */}
 
                 <section className="product-search-section">
-
                     <div className="search-box">
                         <span>⌕</span>
 
@@ -1579,9 +1290,7 @@ function Product() {
                             type="search"
                             placeholder="Search ice cream, flavours..."
                             value={search}
-                            onChange={e =>
-                                setSearch(e.target.value)
-                            }
+                            onChange={(e) => setSearch(e.target.value)}
                         />
 
                         {search && (
@@ -1593,36 +1302,28 @@ function Product() {
                             </button>
                         )}
                     </div>
-
                 </section>
 
                 {/* QUICK FILTERS */}
 
                 <section className="quick-filter-section">
-
                     <span>Popular:</span>
 
                     {["Chocolate", "Vanilla", "Strawberry"]
-                        .filter(flavour =>
+                        .filter((flavour) =>
                             availableFlavours.some(
-                                item =>
-                                    item.toLowerCase() ===
-                                    flavour.toLowerCase()
+                                (item) =>
+                                    item.toLowerCase() === flavour.toLowerCase()
                             )
                         )
-                        .map(flavour => (
+                        .map((flavour) => (
                             <button
                                 type="button"
                                 key={flavour}
-                                className={`quick-filter ${selectedFlavour === flavour
-                                    ? "active"
-                                    : ""
-                                    }`}
+                                className={`quick-filter ${selectedFlavour === flavour ? "active" : ""}`}
                                 onClick={() =>
                                     setSelectedFlavour(
-                                        selectedFlavour === flavour
-                                            ? ""
-                                            : flavour
+                                        selectedFlavour === flavour ? "" : flavour
                                     )
                                 }
                             >
@@ -1632,15 +1333,11 @@ function Product() {
 
                     <button
                         type="button"
-                        className={`quick-filter ${inStockOnly ? "active" : ""
-                            }`}
-                        onClick={() =>
-                            setInStockOnly(!inStockOnly)
-                        }
+                        className={`quick-filter ${inStockOnly ? "active" : ""}`}
+                        onClick={() => setInStockOnly(!inStockOnly)}
                     >
                         Best selling
                     </button>
-
                 </section>
 
                 {/* PRODUCTS AND SIDEBAR */}
@@ -1658,7 +1355,6 @@ function Product() {
                         {/* TOOLBAR */}
 
                         <div className="results-toolbar">
-
                             <div>
                                 <h2>
                                     {currentSubcategory?.name ||
@@ -1672,13 +1368,10 @@ function Product() {
                             </div>
 
                             <div className="results-actions">
-
                                 <button
                                     type="button"
                                     className="mobile-filter-button"
-                                    onClick={() =>
-                                        setMobileFilterOpen(true)
-                                    }
+                                    onClick={() => setMobileFilterOpen(true)}
                                 >
                                     ☷ Filter
                                     {activeFilterCount > 0 &&
@@ -1686,40 +1379,20 @@ function Product() {
                                 </button>
 
                                 <label className="sort-control">
-
                                     <span>Sort By</span>
 
                                     <select
                                         value={sort}
-                                        onChange={e =>
-                                            setSort(e.target.value)
-                                        }
+                                        onChange={(e) => setSort(e.target.value)}
                                     >
-                                        <option value="default">
-                                            Recommended
-                                        </option>
-
-                                        <option value="low-high">
-                                            Price: Low to High
-                                        </option>
-
-                                        <option value="high-low">
-                                            Price: High to Low
-                                        </option>
-
-                                        <option value="rating">
-                                            Top Rated
-                                        </option>
-
-                                        <option value="name">
-                                            Name: A to Z
-                                        </option>
+                                        <option value="default">Recommended</option>
+                                        <option value="low-high">Price: Low to High</option>
+                                        <option value="high-low">Price: High to Low</option>
+                                        <option value="rating">Top Rated</option>
+                                        <option value="name">Name: A to Z</option>
                                     </select>
-
                                 </label>
-
                             </div>
-
                         </div>
 
                         {/* ACTIVE FILTER CHIPS */}
@@ -1731,18 +1404,14 @@ function Product() {
                             minPrice ||
                             maxPrice ||
                             inStockOnly) && (
-
                                 <div className="active-filter-list">
-
                                     {selectedCategory && (
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                setSelectedCategory("")
-                                            }
+                                            onClick={() => setSelectedCategory("")}
                                         >
                                             {normalizedCategories.find(
-                                                c => c.slug === selectedCategory
+                                                (c) => c.slug === selectedCategory
                                             )?.name || selectedCategory} ×
                                         </button>
                                     )}
@@ -1750,9 +1419,7 @@ function Product() {
                                     {selectedSubcategory && (
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                setSelectedSubcategory("")
-                                            }
+                                            onClick={() => setSelectedSubcategory("")}
                                         >
                                             {currentSubcategory?.name ||
                                                 selectedSubcategory} ×
@@ -1762,9 +1429,7 @@ function Product() {
                                     {selectedFlavour && (
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                setSelectedFlavour("")
-                                            }
+                                            onClick={() => setSelectedFlavour("")}
                                         >
                                             {selectedFlavour} ×
                                         </button>
@@ -1773,9 +1438,7 @@ function Product() {
                                     {selectedSize && (
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                setSelectedSize("")
-                                            }
+                                            onClick={() => setSelectedSize("")}
                                         >
                                             {selectedSize} ×
                                         </button>
@@ -1796,9 +1459,7 @@ function Product() {
                                     {inStockOnly && (
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                setInStockOnly(false)
-                                            }
+                                            onClick={() => setInStockOnly(false)}
                                         >
                                             In Stock ×
                                         </button>
@@ -1811,343 +1472,296 @@ function Product() {
                                     >
                                         Clear All
                                     </button>
-
                                 </div>
                             )}
 
-                        {/* PRODUCT GRID - CATEGORY WISE */}
+                        {/* PRODUCT GRID */}
 
                         <div className="category-products-container">
-
-                            {Object.entries(
-                                filteredProducts.reduce(
-                                    (groups, product) => {
+                            {filteredProducts.length > 0 && (
+                                Object.entries(
+                                    filteredProducts.reduce((groups, product) => {
                                         const categoryName =
-                                            getProductCategoryName(product) ||
-                                            "Other";
+                                            getProductCategoryName(product) || "Other";
 
                                         if (!groups[categoryName]) {
                                             groups[categoryName] = [];
                                         }
 
                                         groups[categoryName].push(product);
-
                                         return groups;
-                                    },
-                                    {}
-                                )
-                            ).map(([categoryName, categoryProducts]) => (
+                                    }, {})
+                                ).map(([categoryName, categoryProducts]) => (
+                                    <section
+                                        id={makeSlug(categoryName)}
+                                        className="product-category-section"
+                                        key={categoryName}
+                                    >
+                                        <div className="product-category-heading">
+                                            <h2>{categoryName}</h2>
 
-                                <section
-                                    id={`${categoryName.toLowerCase().replace(/\s+/g, "-")}`}
-                                    className="product-category-section"
-                                    key={categoryName}
-                                >
+                                            <span>
+                                                {categoryProducts.length} Products
+                                            </span>
+                                        </div>
 
-                                    <div className="product-category-heading">
-                                        <h2>{categoryName}</h2>
+                                        <div className="product-grid">
+                                            {categoryProducts.map((product) => {
+                                                const productId = getProductId(product);
+                                                const weightOptions = getWeightOptions(product);
 
-                                        <span>
-                                            {categoryProducts.length} Products
-                                        </span>
-                                    </div>
+                                                const selectedWeight =
+                                                    selections[productId]?.weight !== undefined
+                                                        ? selections[productId].weight
+                                                        : weightOptions[0];
 
-                                    <div className="product-grid">
+                                                const quantity =
+                                                    selections[productId]?.quantity || 1;
 
-                                        {categoryProducts.map(product => {
+                                                const priceDetails = getPriceDetails(
+                                                    product,
+                                                    selectedWeight
+                                                );
 
-                                            const productId =
-                                                getProductId(product);
+                                                const basePrice = priceDetails.sellingPrice;
+                                                const inWishlist = isInWishlist(productId);
 
-                                            const weightOptions =
-                                                getWeightOptions(product);
+                                                return (
+                                                    <article
+                                                        className="product-card"
+                                                        key={productId}
+                                                    >
 
-                                            const selectedWeight =
-                                                selections[productId]?.weight !== undefined
-                                                    ? selections[productId].weight
-                                                    : weightOptions[0];
+                                                        {/* PRODUCT IMAGE */}
 
-                                            const quantity =
-                                                selections[productId]?.quantity || 1;
-
-                                            const priceDetails = getPriceDetails(
-                                                product,
-                                                selectedWeight
-                                            );
-
-                                            const basePrice = priceDetails.sellingPrice;
-
-                                            // const productCategoryName =
-                                            //     getProductCategoryName(product);
-
-                                            const inWishlist =
-                                                isInWishlist(productId);
-
-                                            return (
-
-                                                <article
-                                                    className="product-card"
-                                                    key={productId}
-                                                >
-
-                                                    {/* PRODUCT IMAGE */}
-
-                                                    <div className="product-image-wrapper">
-
-                                                        <button
-                                                            type="button"
-                                                            className={`wishlist-btn ${inWishlist ? "active" : ""
-                                                                }`}
-                                                            onClick={() =>
-                                                                toggleWishlist(product)
-                                                            }
-                                                            aria-label={
-                                                                inWishlist
-                                                                    ? "Remove from wishlist"
-                                                                    : "Add to wishlist"
-                                                            }
-                                                        >
-                                                            {inWishlist ? "♥" : "♡"}
-                                                        </button>
-
-                                                        {product.image ? (
-                                                            <img
-                                                                src={product.image}
-                                                                alt={
-                                                                    product.name ||
-                                                                    "KONFiZ ice cream"
+                                                        <div className="product-image-wrapper">
+                                                            <button
+                                                                type="button"
+                                                                className={`wishlist-btn ${inWishlist ? "active" : ""}`}
+                                                                onClick={() =>
+                                                                    toggleWishlist(product)
                                                                 }
-                                                                loading="lazy"
-                                                            />
-                                                        ) : (
-                                                            <div className="product-image-placeholder">
-                                                                🍨
-                                                            </div>
-                                                        )}
-
-                                                        {(
-                                                            product.isPremium ||
-                                                            product.premium ||
-                                                            product.featured
-                                                        ) && (
-                                                                <span className="product-premium-badge">
-                                                                    ★ PREMIUM
-                                                                </span>
-                                                            )}
-
-                                                        {product.isNew && (
-                                                            <span className="product-badge">
-                                                                New
-                                                            </span>
-                                                        )}
-
-                                                    </div>
-
-                                                    {/* PRODUCT INFO */}
-
-                                                    <div className="product-info">
-
-                                                        <div className="product-title-row">
-
-                                                            <Link
-                                                                to={`/products/details/${productId}`}
-                                                                className="product-details-link"
-                                                            >
-                                                                <h3>{product.name}</h3>
-                                                            </Link>
-
-                                                            {Number(product.rating) > 0 && (
-                                                                <span className="product-rating">
-                                                                    ★ {Number(
-                                                                        product.rating
-                                                                    ).toFixed(1)}
-                                                                </span>
-                                                            )}
-
-                                                        </div>
-
-                                                        <p className="product-description card-description">
-                                                            {product.description ||
-                                                                "A delicious KONFiZ treat."}
-                                                        </p>
-
-                                                        {/* WEIGHT */}
-
-                                                        <div className="product-selection">
-
-                                                            <label>Select Size</label>
-
-                                                            <select
-                                                                value={selectedWeight ?? ""}
-                                                                onChange={e =>
-                                                                    handleWeightChange(
-                                                                        productId,
-                                                                        e.target.value
-                                                                    )
+                                                                aria-label={
+                                                                    inWishlist
+                                                                        ? "Remove from wishlist"
+                                                                        : "Add to wishlist"
                                                                 }
                                                             >
+                                                                {inWishlist ? "♥" : "♡"}
+                                                            </button>
 
-                                                                {weightOptions.map(
-                                                                    (weight, index) => (
-                                                                        <option
-                                                                            key={`${productId}-${index}`}
-                                                                            value={weight ?? ""}
-                                                                        >
-                                                                            {weight === null
-                                                                                ? "Standard"
-                                                                                : `${weight} ${getUnit(product)}`}
-                                                                        </option>
-                                                                    )
+                                                            {product.image ? (
+                                                                <img
+                                                                    src={product.image}
+                                                                    alt={
+                                                                        product.name ||
+                                                                        "KONFiZ ice cream"
+                                                                    }
+                                                                    loading="lazy"
+                                                                />
+                                                            ) : (
+                                                                <div className="product-image-placeholder">
+                                                                    🍨
+                                                                </div>
+                                                            )}
+
+                                                            {(product.isPremium ||
+                                                                product.premium ||
+                                                                product.featured) && (
+                                                                    <span className="product-premium-badge">
+                                                                        ★ PREMIUM
+                                                                    </span>
                                                                 )}
 
-                                                            </select>
-
-                                                        </div>
-
-                                                        {/* PRICE AND QUANTITY */}
-
-                                                        <div className="product-card-bottom">
-
-
-                                                            <div className="product-price">
-
-                                                                <span className="price-label">
-                                                                    {priceDetails.hasOffer ? "Special Offer Price" : "Price"}
+                                                            {product.isNew && (
+                                                                <span className="product-badge">
+                                                                    New
                                                                 </span>
-
-                                                                <div className="product-price-line">
-
-                                                                    <strong className="product-price-current">
-                                                                        ₹{priceDetails.sellingPrice.toFixed(2)}
-                                                                    </strong>
-
-                                                                    {priceDetails.hasOffer && (
-                                                                        <>
-                                                                            <del className="product-price-original">
-                                                                                ₹{priceDetails.regularPrice.toFixed(2)}
-                                                                            </del>
-
-                                                                            <span className="product-discount-badge">
-                                                                                {priceDetails.discount}% OFF
-                                                                            </span>
-                                                                        </>
-                                                                    )}
-
-                                                                </div>
-
-                                                            </div>
-
-
-                                                            <div className="quantity-controls">
-
-                                                                <button
-                                                                    type="button"
-                                                                    aria-label="Decrease quantity"
-                                                                    onClick={() =>
-                                                                        handleQuantityChange(
-                                                                            productId,
-                                                                            quantity - 1
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    −
-                                                                </button>
-
-                                                                <span>{quantity}</span>
-
-                                                                <button
-                                                                    type="button"
-                                                                    aria-label="Increase quantity"
-                                                                    onClick={() =>
-                                                                        handleQuantityChange(
-                                                                            productId,
-                                                                            quantity + 1
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    +
-                                                                </button>
-
-                                                            </div>
-
+                                                            )}
                                                         </div>
 
-                                                        {/* TOTAL */}
+                                                        {/* PRODUCT INFO */}
 
-                                                        <div className="product-total">
-
-                                                            Total: <strong>
-                                                                ₹{(
-                                                                    basePrice * quantity
-                                                                ).toFixed(2)}
-                                                            </strong>
-
-                                                        </div>
-
-                                                        <div className="pro-button-wrapper">
-                                                            <div className="pro-details-button">
+                                                        <div className="product-info">
+                                                            <div className="product-title-row">
                                                                 <Link
                                                                     to={`/products/details/${productId}`}
                                                                     className="product-details-link"
                                                                 >
-                                                                    View Product
+                                                                    <h3>{product.name}</h3>
                                                                 </Link>
+
+                                                                {Number(product.rating) > 0 && (
+                                                                    <span className="product-rating">
+                                                                        ★ {Number(
+                                                                            product.rating
+                                                                        ).toFixed(1)}
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            {/* ADD TO CART */}
-                                                            <button
-                                                                type="button"
-                                                                className="add-cart-btn"
-                                                                disabled={!getStock(product)}
-                                                                onClick={() => handleAddToCart(product)}
-                                                            // onClick={() => {
-                                                            //     console.log("ADD TO CART CLICKED", product);
-                                                            //     handleAddToCart(product);
-                                                            // }}
-                                                            >
-                                                                {!getStock(product)
-                                                                    ? "Out of Stock"
-                                                                    : "+ Add to Cart"}
-                                                            </button>
+
+                                                            <p className="product-description card-description">
+                                                                {product.description ||
+                                                                    "A delicious KONFiZ treat."}
+                                                            </p>
+
+                                                            {/* WEIGHT */}
+
+                                                            <div className="product-selection">
+                                                                <label>Select Size</label>
+
+                                                                <select
+                                                                    value={selectedWeight ?? ""}
+                                                                    onChange={(e) =>
+                                                                        handleWeightChange(
+                                                                            productId,
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {weightOptions.map(
+                                                                        (weight, index) => (
+                                                                            <option
+                                                                                key={`${productId}-${index}`}
+                                                                                value={weight ?? ""}
+                                                                            >
+                                                                                {weight === null
+                                                                                    ? "Standard"
+                                                                                    : `${weight} ${getUnit(product)}`}
+                                                                            </option>
+                                                                        )
+                                                                    )}
+                                                                </select>
+                                                            </div>
+
+                                                            {/* PRICE AND QUANTITY */}
+
+                                                            <div className="product-card-bottom">
+                                                                <div className="product-price">
+                                                                    <span className="price-label">
+                                                                        {priceDetails.hasOffer
+                                                                            ? "Special Offer Price"
+                                                                            : "Price"}
+                                                                    </span>
+
+                                                                    <div className="product-price-line">
+                                                                        <strong className="product-price-current">
+                                                                            ₹{priceDetails.sellingPrice.toFixed(2)}
+                                                                        </strong>
+
+                                                                        {priceDetails.hasOffer && (
+                                                                            <>
+                                                                                <del className="product-price-original">
+                                                                                    ₹{priceDetails.regularPrice.toFixed(2)}
+                                                                                </del>
+
+                                                                                <span className="product-discount-badge">
+                                                                                    {priceDetails.discount}% OFF
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="quantity-controls">
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label="Decrease quantity"
+                                                                        onClick={() =>
+                                                                            handleQuantityChange(
+                                                                                productId,
+                                                                                quantity - 1
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        −
+                                                                    </button>
+
+                                                                    <span>{quantity}</span>
+
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label="Increase quantity"
+                                                                        onClick={() =>
+                                                                            handleQuantityChange(
+                                                                                productId,
+                                                                                quantity + 1
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        +
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* TOTAL */}
+
+                                                            <div className="product-total">
+                                                                Total:{" "}
+                                                                <strong>
+                                                                    ₹{(
+                                                                        basePrice * quantity
+                                                                    ).toFixed(2)}
+                                                                </strong>
+                                                            </div>
+
+                                                            <div className="pro-button-wrapper">
+                                                                <div className="pro-details-button">
+                                                                  
+                                                                    <Link to={`/products/details/${encodeURIComponent(
+                                                                        product._id || product.id || product.sku
+                                                                    )}`}>
+                                                                        View Details
+                                                                    </Link>
+                                                                </div>
+
+                                                                <button
+                                                                    type="button"
+                                                                    className="add-cart-btn"
+                                                                    disabled={!getStock(product)}
+                                                                    onClick={() =>
+                                                                        handleAddToCart(product)
+                                                                    }
+                                                                >
+                                                                    {!getStock(product)
+                                                                        ? "Out of Stock"
+                                                                        : "+ Add to Cart"}
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-
-                                                </article>
-
-                                            );
-                                        })}
-
-                                    </div>
-
-                                </section>
-
-                            ))}
+                                                    </article>
+                                                );
+                                            })}
+                                        </div>
+                                    </section>
+                                ))
+                            )}
 
                             {filteredProducts.length === 0 && (
                                 <div className="no-products">
                                     <h3>We are cooked for you!</h3>
-                                    <p>try with ours others products</p>
+                                    <p>Try with our other products.</p>
                                 </div>
                             )}
-
                         </div>
 
                         {/* EMPTY STATE */}
 
                         {filteredProducts.length === 0 && (
-
                             <div className="empty-products">
-
                                 <div>🍦</div>
 
                                 <h3>
-                                    {invalidCategory
-                                        ? "Category Not Found"
-                                        : "we are cooked for you!"}
+                                    {loadError
+                                        ? "Unable to Load Products"
+                                        : invalidCategory
+                                            ? "Category Not Found"
+                                            : "We are cooked for you!"}
                                 </h3>
 
                                 <p>
-                                    Try changing your search or filters
-                                    to discover more flavours.
+                                    {loadError ||
+                                        "Try changing your search or filters to discover more flavours."}
                                 </p>
 
                                 <button
@@ -2162,46 +1776,32 @@ function Product() {
                                         View All Products
                                     </Link>
                                 )}
-
                             </div>
-
                         )}
-
                     </div>
-
                 </section>
-
             </main>
 
             {/* MOBILE FILTER DRAWER */}
 
             {mobileFilterOpen && (
-
                 <div
                     className="filter-drawer-overlay"
-                    onClick={() =>
-                        setMobileFilterOpen(false)
-                    }
+                    onClick={() => setMobileFilterOpen(false)}
                 >
-
                     <div
                         className="filter-drawer"
-                        onClick={e => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                     >
-
                         <div className="filter-drawer-header">
-
                             <h2>Filter Products</h2>
 
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setMobileFilterOpen(false)
-                                }
+                                onClick={() => setMobileFilterOpen(false)}
                             >
                                 ×
                             </button>
-
                         </div>
 
                         <div className="filter-drawer-content">
@@ -2209,7 +1809,6 @@ function Product() {
                         </div>
 
                         <div className="filter-drawer-footer">
-
                             <button
                                 type="button"
                                 className="drawer-clear"
@@ -2221,35 +1820,26 @@ function Product() {
                             <button
                                 type="button"
                                 className="drawer-apply"
-                                onClick={() =>
-                                    setMobileFilterOpen(false)
-                                }
+                                onClick={() => setMobileFilterOpen(false)}
                             >
                                 Show {filteredProducts.length} Products
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
-
             )}
 
             {/* ADD-ON POPUP */}
 
             {addonPopup.open && addonPopup.product && (
-
                 <div
                     className="addon-modal-overlay"
                     onClick={closeAddonPopup}
                 >
-
                     <div
                         className="addon-modal"
-                        onClick={e => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                     >
-
                         <button
                             type="button"
                             className="addon-modal-close"
@@ -2259,11 +1849,9 @@ function Product() {
                         </button>
 
                         <h2>Make It Extra Special! 🍨</h2>
-
                         <p>Choose your favourite toppings.</p>
 
                         <div className="addon-modal-product">
-
                             {addonPopup.product.image && (
                                 <img
                                     src={addonPopup.product.image}
@@ -2272,114 +1860,80 @@ function Product() {
                             )}
 
                             <div>
-
                                 <h3>{addonPopup.product.name}</h3>
 
                                 <p>
                                     {addonPopup.weight != null
-                                        ? `${addonPopup.weight} ${getUnit(
-                                            addonPopup.product
-                                        )}`
+                                        ? `${addonPopup.weight} ${getUnit(addonPopup.product)}`
                                         : "Standard"}
                                 </p>
 
-                                <p>
-                                    Quantity: {addonPopup.quantity}
-                                </p>
-
+                                <p>Quantity: {addonPopup.quantity}</p>
                             </div>
-
                         </div>
 
                         <h3>Choose Your Add-ons</h3>
 
                         <div className="addon-modal-list">
+                            {(Array.isArray(addonPopup.product.addons)
+                                ? addonPopup.product.addons
+                                : []
+                            ).map((addon, index) => {
+                                const addonId = getAddonId(addon);
 
-                            {(addonPopup.product.addons || []).map(
-                                (addon, index) => {
+                                return (
+                                    <label
+                                        key={`${addonId}-${index}`}
+                                        className="addon-modal-option"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={addonPopup.addons.includes(addonId)}
+                                            onChange={(e) => {
+                                                setAddonPopup((previous) => ({
+                                                    ...previous,
+                                                    addons: e.target.checked
+                                                        ? [...previous.addons, addonId]
+                                                        : previous.addons.filter(
+                                                            (id) => id !== addonId
+                                                        )
+                                                }));
+                                            }}
+                                        />
 
-                                    const addonId =
-                                        getAddonId(addon);
+                                        <span>{addon.name}</span>
 
-                                    return (
-
-                                        <label
-                                            key={`${addonId}-${index}`}
-                                            className="addon-modal-option"
-                                        >
-
-                                            <input
-                                                type="checkbox"
-                                                checked={addonPopup.addons.includes(
-                                                    addonId
-                                                )}
-                                                onChange={e => {
-                                                    setAddonPopup(previous => ({
-                                                        ...previous,
-
-                                                        addons: e.target.checked
-                                                            ? [
-                                                                ...previous.addons,
-                                                                addonId
-                                                            ]
-                                                            : previous.addons.filter(
-                                                                id => id !== addonId
-                                                            )
-                                                    }));
-                                                }}
-                                            />
-
-                                            <span>{addon.name}</span>
-
-                                            <strong>
-                                                + ₹{Number(
-                                                    addon.price || 0
-                                                ).toFixed(2)}
-                                            </strong>
-
-                                        </label>
-
-                                    );
-                                }
-                            )}
-
+                                        <strong>
+                                            + ₹{Number(addon.price || 0).toFixed(2)}
+                                        </strong>
+                                    </label>
+                                );
+                            })}
                         </div>
 
                         {/* ADD-ON TOTAL */}
 
                         <div className="addon-modal-total">
-
                             <span>Base price</span>
-
-                            <strong>
-                                ₹{popupBasePrice.toFixed(2)}
-                            </strong>
+                            <strong>₹{popupBasePrice.toFixed(2)}</strong>
 
                             <span>Add-ons</span>
-
-                            <strong>
-                                ₹{popupAddonPrice.toFixed(2)}
-                            </strong>
+                            <strong>₹{popupAddonPrice.toFixed(2)}</strong>
 
                             <span>Quantity</span>
-
                             <strong>{addonPopup.quantity}</strong>
 
                             <span>Order Total</span>
-
                             <strong>
                                 ₹{(
-                                    popupUnitPrice *
-                                    addonPopup.quantity
+                                    popupUnitPrice * addonPopup.quantity
                                 ).toFixed(2)}
                             </strong>
-
                         </div>
 
                         {/* ACTIONS */}
 
                         <div className="addon-modal-actions">
-
                             <button
                                 type="button"
                                 className="skip-addon-btn"
@@ -2409,67 +1963,37 @@ function Product() {
                             >
                                 Add to Cart
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
-
             )}
 
             {/* CART SUMMARY */}
 
             <div className="cart-summary">
-
                 <div>
-
-                    <p>
-                        Different Items: {cartCount}
-                    </p>
-
-                    <p>
-                        Total Quantity: {totalQuantity}
-                    </p>
+                    <p>Different Items: {cartCount}</p>
+                    <p>Total Quantity: {totalQuantity}</p>
 
                     <strong>
-                        Cart Total: ₹{Number(
-                            subTotal || 0
-                        ).toFixed(2)}
+                        Cart Total: ₹{Number(subTotal || 0).toFixed(2)}
                     </strong>
-
                 </div>
 
-                <Link
-                    to="/cart"
-                    className="view-cart-btn"
-                >
+                <Link to="/cart" className="view-cart-btn">
                     View Cart ({totalQuantity})
                 </Link>
-
             </div>
 
             {/* FOOTER */}
 
             <footer className="product-footer">
-
                 <h2>KONFiZ</h2>
-
                 <p>ICE CREAM & HAPPINESS</p>
-
-                <p>
-                    © 2026 KONFiZ. All rights reserved.
-                </p>
-
+                <p>© 2026 KONFiZ. All rights reserved.</p>
             </footer>
-
         </div>
     );
 }
 
 export default Product;
-
-
-
-
-

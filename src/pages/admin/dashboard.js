@@ -4,11 +4,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/authContext";
 import "../../style/dashboard.css";
 import AddProduct from "./addproduct";
+import Blog from "./blog";
 
 // =====================================
 // STORAGE HELPERS
 // =====================================
-
+const API_URL = "http://localhost:5000/api";
 const readStorage = (key, fallback = []) => {
     try {
         const data = localStorage.getItem(key);
@@ -52,6 +53,13 @@ const getOrderCustomer = (order) =>
 
 function Dashboard({ onLogout }) {
     const { user, logout } = useAuth();
+
+
+    // Dashboard states
+    const [products, setProducts] = useState([]);
+    const [productsLoading, setProductsLoading] = useState(true);
+    const [productsError, setProductsError] = useState("");
+
     const navigate = useNavigate();
 
     const isAdmin =
@@ -64,6 +72,70 @@ function Dashboard({ onLogout }) {
 
     const adminEmail = user?.email || "admin@konfiz.com";
 
+    // =====================================
+    // FETCH PRODUCTS FROM MONGODB
+    // =====================================
+
+    useEffect(() => {
+        if (!isAdmin) return;
+
+        const fetchProducts = async () => {
+            try {
+                setProductsLoading(true);
+                setProductsError("");
+
+                const response = await fetch(`${API_URL}/products`);
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Unable to fetch products. Server returned ${response.status}`
+                    );
+                }
+
+                const result = await response.json();
+
+                // Support different API response formats
+                const productList = Array.isArray(result)
+                    ? result
+                    : Array.isArray(result.products)
+                        ? result.products
+                        : Array.isArray(result.data)
+                            ? result.data
+                            : Array.isArray(result.data?.products)
+                                ? result.data.products
+                                : [];
+
+                // Normalize MongoDB IDs for your existing dashboard
+                const normalizedProducts = productList.map(product => ({
+                    ...product,
+                    id: String(product._id || product.id || product.productId),
+                    stock: Number(
+                        product.stock ?? product.quantity ?? 0
+                    ),
+                    price: Number(
+                        product.price ??
+                        product.sizes?.[0]?.price ??
+                        product.pricing?.sizes?.[0]?.price ??
+                        0
+                    ),
+                    image:
+                        product.image ||
+                        product.images?.[0] ||
+                        ""
+                }));
+
+                setProducts(normalizedProducts);
+
+            } catch (error) {
+                console.error("Dashboard product fetching error:", error);
+                setProductsError(error.message);
+            } finally {
+                setProductsLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, [isAdmin]);
     // =====================================
     // GENERAL NAVIGATION
     // =====================================
@@ -78,6 +150,7 @@ function Dashboard({ onLogout }) {
         { name: "Categories", icon: "▧" },
         { name: "Inventory", icon: "▣" },
         { name: "Orders", icon: "🛒" },
+        { name: "Blog", icon: "✎" },
         { name: "Customers", icon: "♙" },
         { name: "Settings", icon: "⚙" }
     ];
@@ -99,14 +172,6 @@ function Dashboard({ onLogout }) {
     // =====================================
     // PRODUCTS
     // =====================================
-
-    const [products, setProducts] = useState(() =>
-        readStorage("konfizProducts", [])
-    );
-
-    useEffect(() => {
-        saveStorage("konfizProducts", products);
-    }, [products]);
 
     const handleAddProduct = (newProduct) => {
         const product = {
@@ -193,7 +258,32 @@ function Dashboard({ onLogout }) {
         setSelectedCategoryId(id);
         setNewCategory("");
     };
+  const deleteCategory = (id) => {
+        const category = categories.find(item => getCatId(item) === id);
+        if (!category) return;
 
+        const categoryName = getCatName(category).toLowerCase();
+
+        const used = products.some(product =>
+            String(product.category || product.categoryName || "").toLowerCase() === categoryName ||
+            String(product.categoryId || "") === String(id)
+        );
+
+        if (used) {
+            alert("This category is currently used by a product.");
+            return;
+        }
+
+        if (!window.confirm("Delete this category and all its subcategories?")) {
+            return;
+        }
+
+        setCategories(previous =>
+            previous.filter(item => getCatId(item) !== id)
+        );
+
+        if (selectedCategoryId === id) setSelectedCategoryId("");
+    };
     const addSubcategory = () => {
         const name = newSubcategory.trim();
 
@@ -267,34 +357,7 @@ function Dashboard({ onLogout }) {
                 };
             })
         );
-    };
-
-    const deleteCategory = (id) => {
-        const category = categories.find(item => getCatId(item) === id);
-        if (!category) return;
-
-        const categoryName = getCatName(category).toLowerCase();
-
-        const used = products.some(product =>
-            String(product.category || product.categoryName || "").toLowerCase() === categoryName ||
-            String(product.categoryId || "") === String(id)
-        );
-
-        if (used) {
-            alert("This category is currently used by a product.");
-            return;
-        }
-
-        if (!window.confirm("Delete this category and all its subcategories?")) {
-            return;
-        }
-
-        setCategories(previous =>
-            previous.filter(item => getCatId(item) !== id)
-        );
-
-        if (selectedCategoryId === id) setSelectedCategoryId("");
-    };
+    };  
 
     const renderCategories = () => (
         <div className="manage-products">
@@ -377,7 +440,7 @@ function Dashboard({ onLogout }) {
                                         >
                                             <span>{getSubName(subcategory)}</span>
 
-                                            <button  type="button" onClick={() => deleteSubcategory(categoryId, getSubId(subcategory) )} > ×</button>
+                                            <button type="button" onClick={() => deleteSubcategory(categoryId, getSubId(subcategory))} > ×</button>
                                         </div>
                                     ))
                                 ) : (
@@ -462,31 +525,24 @@ function Dashboard({ onLogout }) {
 
         setEditForm({
             ...product,
-
             name: product.name || "",
             sku: product.sku || "",
             description: product.description || "",
             flavour: product.flavour || product.flavor || "",
             servingSuggestion: product.servingSuggestion || "",
-
             categoryId,
             category: product.category || "",
-
             subcategoryIds,
             subcategoryId: subcategoryIds[0] || "",
             subcategories: product.subcategories || [],
             subcategory: product.subcategory || "",
             subcategoryName: product.subcategoryName || "",
-
             rating: String(product.rating ?? 0),
             stock: String(product.stock ?? 0),
-
             isPremium: Boolean(product.isPremium ?? product.premium),
-
             unit,
             weightOptions: sizes.map(size => size.weight),
             sizes,
-
             price: String(product.price ?? sizes[0]?.price ?? 0),
             offerPrice: String(
                 product.offerPrice ?? sizes[0]?.offerPrice ?? 0
@@ -1184,16 +1240,23 @@ function Dashboard({ onLogout }) {
                         </select>
                     </div>
 
-                    {products.length === 0 ? (
+                    {productsLoading ? (
                         <div className="manage-products-empty">
-                            <div className="manage-empty-icon">🍨</div>
-                            <h3>Your catalogue is empty</h3>
-                            <p>Start adding delicious flavours to your KONFiZ store.</p>
-                            <button onClick={() => selectPage("Add Product")}>
-                                Add Your First Product
+                            <h3>Loading Products...</h3>
+                            <p>Please wait while products are fetched from MongoDB.</p>
+                        </div>
+                    ) : productsError ? (
+                        <div className="manage-products-empty">
+                            <h3>Unable to Load Products</h3>
+                            <p>{productsError}</p>
+                            <button
+                                type="button"
+                                onClick={() => window.location.reload()}
+                            >
+                                Retry
                             </button>
                         </div>
-                    ) : filteredProducts.length === 0 ? (
+                    ) : products.length === 0 ? (
                         <div className="manage-products-empty">
                             <div className="manage-empty-icon">🔍</div>
                             <h3>No matching products</h3>
@@ -1296,6 +1359,7 @@ function Dashboard({ onLogout }) {
                     )}
                 </div>
             </div>
+         
         );
     };
 
@@ -2102,6 +2166,8 @@ function Dashboard({ onLogout }) {
 
             case "Customers":
                 return renderCustomers();
+            case "Blog":
+                return <Blog />;
 
             case "Settings":
                 return renderSettings();
@@ -2679,18 +2745,14 @@ function Dashboard({ onLogout }) {
                                                     onClick={() =>
                                                         removeEditAddon(index)
                                                     }
-                                                >
-                                                    Remove
-                                                </button>
+                                                >  Remove </button>
                                             </div>
                                         ))}
 
                                         <button
                                             type="button"
                                             onClick={addEditAddon}
-                                        >
-                                            + Add Add-on
-                                        </button>
+                                        >     + Add Add-on </button>
                                     </>
                                 )}
 
@@ -2725,16 +2787,9 @@ function Dashboard({ onLogout }) {
                                 <button
                                     type="button"
                                     onClick={closeEditModal}
-                                >
-                                    Cancel
-                                </button>
-
-                                <button type="submit">
-                                    Save Changes
-                                </button>
-
+                                >  Cancel  </button>
+                                <button type="submit">     Save Changes </button>
                             </div>
-
                         </form>
                     </div>
                 </div>

@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from "react";
 import "../../style/add_product.css";
-import { addProduct } from "../../data/products/productStore";
+// import { addProduct } from "../../data/products/productStore";
 
 const DEFAULT_WEIGHTS = [100, 250, 500, 1000];
 
@@ -485,7 +485,7 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
     // SUBMIT PRODUCT
     // =====================================
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
 
@@ -520,22 +520,23 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
             return;
         }
 
-        const duplicateSKU = (() => {
-            const existing = JSON.parse(
-                localStorage.getItem("konfizProducts") || "[]"
-            );
+        //     const duplicateSKU = (() => {
+        //         const existing = JSON.parse(
+        //             localStorage.getItem("konfizProducts") || "[]"
+        //         );
 
-            return existing.some(
-                product =>
-                    String(product.sku || "").toLowerCase() ===
-                    formData.sku.trim().toLowerCase()
-            );
-        })();
+        //         return existing.some(
+        //             product =>
+        //                 String(product.sku || "").toLowerCase() ===
+        //                 formData.sku.trim().toLowerCase()
+        //         );
+        //     }
+        // )();
 
-        if (duplicateSKU) {
-            setError("This SKU already exists.");
-            return;
-        }
+        //     if (duplicateSKU) {
+        //         setError("This SKU already exists.");
+        //         return;
+        //     }
         // RATING VALIDATION
 
         const rating = Number(formData.rating);
@@ -735,19 +736,63 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
 
         // SAVE PRODUCT
 
-        try {
-            const savedProduct = addProduct(newProduct);
+        //     try {
+        //         const savedProduct = addProduct(newProduct);
 
-            if (!savedProduct) {
-                setError(
-                    "Product could not be saved. Storage may be full. Please check the browser console."
-                );
+        //         if (!savedProduct) {
+        //             setError(
+        //                 "Product could not be saved. Storage may be full. Please check the browser console."
+        //             );
+        //             return;
+        //         }
+
+        //         alert(
+        //             `${savedProduct.name} added successfully!`
+        //         );
+
+        //         if (typeof onAddProduct === "function") {
+        //             onAddProduct(savedProduct);
+        //         }
+
+        //         resetForm();
+
+        //     } catch (saveError) {
+        //         console.error(
+        //             "Product saving error:",
+        //             saveError
+        //         );
+
+        //         setError(
+        //             "Something went wrong while saving the product."
+        //         );
+        //     }
+        // };
+
+
+        // SAVE PRODUCT TO MONGODB
+
+        try {
+            const response = await fetch(
+                "http://localhost:5000/api/products",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(newProduct)
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                setError(result.message || "Unable to save product.");
                 return;
             }
 
-            alert(
-                `${savedProduct.name} added successfully!`
-            );
+            const savedProduct = result.product;
+
+            alert(`${savedProduct.name} added successfully!`);
 
             if (typeof onAddProduct === "function") {
                 onAddProduct(savedProduct);
@@ -756,17 +801,13 @@ function AddProduct({ onAddProduct, onCancel, categories = [] }) {
             resetForm();
 
         } catch (saveError) {
-            console.error(
-                "Product saving error:",
-                saveError
-            );
+            console.error("Product saving error:", saveError);
 
             setError(
-                "Something went wrong while saving the product."
+                "Unable to connect to the server. Please check your backend."
             );
         }
     };
-
     // =====================================
     // UI
     // =====================================

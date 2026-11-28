@@ -13,10 +13,18 @@ import { BrandPartnersStrip } from "../components/testimonials/testimonial_compo
 import WhyChooseUs from "../components/whyChooseUs";
 import FAQ from "../components/faq";
 import ReachOut from "../components/ReachOut";
-import { useProducts } from "../data/products/productStore";
 
 import "../../src/App.css";
 
+// =====================================
+// API CONFIGURATION
+// =====================================
+
+const API_URL = "http://localhost:5000/api";
+
+// =====================================
+// HOME CATEGORIES
+// =====================================
 
 const categories = [
     {
@@ -45,17 +53,77 @@ const categories = [
     }
 ];
 
+// =====================================
+// HOME COMPONENT
+// =====================================
 
 function Home() {
 
     // =====================================
-    // REAL-TIME PRODUCT STORE
+    // STATES
     // =====================================
 
-    const products = useProducts();
+    const [products, setProducts] = useState([]);
+    const [productsLoading, setProductsLoading] = useState(true);
 
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
+
+    // =====================================
+    // FETCH PRODUCTS FROM MONGODB
+    // =====================================
+
+    useEffect(() => {
+
+        const fetchProducts = async () => {
+
+            try {
+
+                setProductsLoading(true);
+
+                const response = await fetch(`${API_URL}/products`);
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch products");
+                }
+
+                const data = await response.json();
+
+                // Support both API response formats:
+                // 1. [product1, product2]
+                // 2. { products: [product1, product2] }
+
+                const productList = Array.isArray(data)
+                    ? data
+                    : Array.isArray(data.products)
+                        ? data.products
+                        : [];
+
+                // Normalize MongoDB product IDs
+                const normalizedProducts = productList.map(product => ({
+                    ...product,
+                    id: product._id || product.id
+                }));
+
+                setProducts(normalizedProducts);
+
+            } catch (error) {
+
+                console.error("Home product loading error:", error);
+
+                setProducts([]);
+
+            } finally {
+
+                setProductsLoading(false);
+
+            }
+
+        };
+
+        fetchProducts();
+
+    }, []);
 
     // =====================================
     // BEST SELLING PRODUCTS
@@ -81,104 +149,9 @@ function Home() {
         })
         .slice(0, 4);
 
-    // const [email, setEmail] = useState("");
-    // const [message, setMessage] = useState("");
-
-    // const [products, setProducts] = useState(() => {
-    //     try {
-    //         return JSON.parse(
-    //             localStorage.getItem("konfizProducts")
-    //         ) || [];
-    //     } catch {
-    //         return [];
-    //     }
-    // });
-
-
-    // LOAD ACTUAL PRODUCTS
-
-
-
     // =====================================
-    // REAL-TIME POPULAR PRODUCTS
+    // NEWSLETTER SUBSCRIPTION
     // =====================================
-
-    useEffect(() => {
-        {
-            popularProducts.length > 0 ? (
-
-                <div className="product-grid">
-
-                    {popularProducts.map((product) => (
-
-                        <Link
-                            to={`/products/details/${product.id}`}
-                            className="product-card"
-                            key={product.id}
-                        >
-
-                            <div className="product-image">
-
-                                <img
-                                    src={product.image}
-                                    alt={product.name}
-                                    loading="lazy"
-                                />
-
-                                {(product.tag || product.isPopular) && (
-
-                                    <span className="product-tag">
-                                        {product.tag || "Popular"}
-                                    </span>
-
-                                )}
-
-                            </div>
-
-                            <div className="product-info">
-
-                                <h3>{product.name}</h3>
-
-                                <p>
-                                    {product.description ||
-                                        "Deliciously made with love, just for you."}
-                                </p>
-
-                                <div className="product-card-bottom">
-
-                                    <span className="product-price">
-                                        ₹{product.price}
-                                    </span>
-
-                                    <span className="product-view-link">
-                                        View Product →
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-                        </Link>
-
-                    ))}
-
-                </div>
-
-            ) : (
-
-            <div className="no-products">
-                <h3>Our delicious collection is coming soon!</h3>
-                <p>We are preparing something special for you.</p>
-            </div>
-
-        )
-        }
-
-    }, []);
-
-
-    // NEWSLETTER
-
 
     const subscribe = (e) => {
 
@@ -187,9 +160,14 @@ function Home() {
         if (!email.trim()) return;
 
         setMessage("Thank you! You're on our sweet list with love.");
+
         setEmail("");
 
     };
+
+    // =====================================
+    // RENDER
+    // =====================================
 
     return (
 
@@ -197,10 +175,15 @@ function Home() {
 
             <Navbar />
 
-            {/* HERO SECTION */}
+            {/* =====================================
+                HERO SECTION
+            ===================================== */}
 
             <HeroSlider />
-            {/*  POPULAR PRODUCTS*/}
+
+            {/* =====================================
+                POPULAR PRODUCTS
+            ===================================== */}
 
             <section className="popular-products" id="products">
 
@@ -220,7 +203,13 @@ function Home() {
 
                 </div>
 
-                {popularProducts.length > 0 ? (
+                {productsLoading ? (
+
+                    <div className="no-products">
+                        <h3>Loading our delicious collection...</h3>
+                    </div>
+
+                ) : popularProducts.length > 0 ? (
 
                     <div className="product-grid">
 
@@ -283,7 +272,9 @@ function Home() {
 
                     <div className="no-products">
 
-                        <h3>Our delicious collection is coming soon!</h3>
+                        <h3>
+                            Our delicious collection is coming soon!
+                        </h3>
 
                         <p>
                             We are preparing something special for you.
@@ -303,12 +294,16 @@ function Home() {
 
             </section>
 
-
-            {/* VIDEO SECTION */}
+            {/* =====================================
+                VIDEO SECTION
+            ===================================== */}
 
             <DynamicVideo video={videoSchema.home} />
 
-            {/* brands  */}
+            {/* =====================================
+                BRAND PARTNERS
+            ===================================== */}
+
             <BrandPartnersStrip
                 title="Our Partners who Trusted Us"
                 speed={40}
@@ -321,13 +316,14 @@ function Home() {
                 limit={8}
             />
 
-
-            {/* ================================
-    CATEGORIES SECTION  ================================ */}
+            {/* =====================================
+                CATEGORIES SECTION
+            ===================================== */}
 
             <section className="categories section" id="categories">
 
                 <div className="section-heading">
+
                     <span className="eyebrow">
                         FIND YOUR FAVOURITE
                     </span>
@@ -340,6 +336,7 @@ function Home() {
                         From classic favourites to exciting new flavours,
                         discover something delicious for every moment.
                     </p>
+
                 </div>
 
                 <div className="category-grid">
@@ -355,15 +352,19 @@ function Home() {
                             <div className="category-card-image">
 
                                 {category.image ? (
+
                                     <img
                                         src={category.image}
                                         alt={category.name}
                                         loading="lazy"
                                     />
+
                                 ) : (
+
                                     <div className="category-placeholder">
                                         {category.emoji}
                                     </div>
+
                                 )}
 
                                 <span className="category-number">
@@ -379,8 +380,11 @@ function Home() {
                             <div className="category-card-content">
 
                                 <div>
+
                                     <h3>{category.name}</h3>
+
                                     <p>{category.count}</p>
+
                                 </div>
 
                                 <span className="category-explore">
@@ -397,10 +401,9 @@ function Home() {
 
             </section>
 
-
-            {/* testimonials */}
-
-
+            {/* =====================================
+                B2B TESTIMONIALS
+            ===================================== */}
 
             <TestimonialSection
                 type="b2b"
@@ -408,13 +411,11 @@ function Home() {
                 limit={8}
             />
 
+            {/* =====================================
+                BRAND STORY
+            ===================================== */}
 
-
-
-
-            {/* BRAND STORY*/}
-
-            <section className="story" id="story">
+            <section className="story">
 
                 <div className="story-image">
 
@@ -479,27 +480,42 @@ function Home() {
                 </div>
 
             </section>
+
+            {/* =====================================
+                B2C TESTIMONIALS
+            ===================================== */}
+
             <TestimonialSection
                 type="b2c"
                 layout="cards"
                 limit={8}
             />
 
+            {/* =====================================
+                PRODUCT GALLERY
+            ===================================== */}
 
             <ProductGallery />
 
-            {/* why choose us section  */}
+            {/* =====================================
+                WHY CHOOSE US
+            ===================================== */}
+
             <WhyChooseUs />
 
+            {/* =====================================
+                FAQ
+            ===================================== */}
 
-            {/* faq section  */}
             <FAQ
                 heading="Frequently Asked Questions"
                 subheading="Everything you need to know about enjoying KONFiZ."
                 limit={5}
             />
 
-            {/* PROMOTION */}
+            {/* =====================================
+                PROMOTION
+            ===================================== */}
 
             <section className="promotion">
 
@@ -543,7 +559,15 @@ function Home() {
 
             </section>
 
+            {/* =====================================
+                REACH OUT
+            ===================================== */}
+
             <ReachOut />
+
+            {/* =====================================
+                FOOTER
+            ===================================== */}
 
             <Footer />
 

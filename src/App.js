@@ -35,6 +35,8 @@ import QuickDelivery from "./pages/QuickDelivery";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import NotFound from "./pages/NotFound";
 import ProductDetails from "./pages/productdetails";
+import Blog from "./pages/blog_list";
+import BlogDetails from "./pages/blog_details";
 
 // =====================================
 // COMPONENT IMPORTS
@@ -178,6 +180,15 @@ function AppRoutes() {
                 <Route
                     path="/our-story"
                     element={<OurStory />}
+                />
+
+                <Route
+                    path="/blog"
+                    element={<Blog />}
+                />
+                <Route
+                    path="/blog/:slug"
+                    element={<BlogDetails />}
                 />
 
                 <Route
